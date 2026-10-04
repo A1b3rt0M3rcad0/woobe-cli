@@ -23,6 +23,13 @@ func runtimeError(e error) error {
 	if e == nil {
 		return nil
 	}
+	if errors.Is(e, context.Canceled) || errors.Is(e, context.DeadlineExceeded) {
+		return output.Normalize(e)
+	}
+	var auth *sdk.AuthenticationError
+	if errors.As(e, &auth) {
+		return &output.Error{Code: 3, Message: "runtime authentication failed", Status: auth.StatusCode}
+	}
 	var r *sdk.RequestError
 	if errors.As(e, &r) {
 		code := 7
@@ -60,12 +67,28 @@ func (a *App) runtimeCommands() {
 			n = 2
 		}
 		c := &cobra.Command{Use: action + " <alias> [run-or-session-id]", Args: cobra.ExactArgs(n), RunE: func(cmd *cobra.Command, args []string) error {
-			if (action == "stream" || action == "observe") && a.Mode != "jsonl" {
+			if (action == "stream" || action == "observe") && a.Mode != "jsonl" && !a.DryRun {
 				return output.New(2, "stream and observe require --output jsonl")
 			}
 			v, e := a.resolve()
 			if e != nil {
 				return e
+			}
+			if a.DryRun {
+				if kind != "agent" && kind != "network" {
+					return output.New(2, "--target-kind must be agent or network")
+				}
+				var body any
+				if action == "run" || action == "stream" {
+					b, e := a.body(true)
+					if e != nil {
+						return e
+					}
+					if e = json.Unmarshal(b, &body); e != nil {
+						return output.New(2, "invalid runtime input")
+					}
+				}
+				return a.emit(map[string]any{"action": action, "target_kind": kind, "alias": args[0], "resource_args": args[1:], "body": body, "api_url": v.APIURL, "executed": false})
 			}
 			key := os.Getenv("WOOBE_RUNTIME_KEY")
 			if v.RuntimeCredential != "" {
