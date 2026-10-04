@@ -1,13 +1,13 @@
 # Title
 
-feat: implement Go control-plane CLI foundation and resource commands
+feat: implement Go CLI with complete command discovery and recoverable manifests
 
 # Description
 
-Introduces the external `woobe` executable in Go with workspace/project control, Agent and Network configuration and releases, Tools HTTP/MCP, Knowledge upload, provider/model/Skill/ChatSurface management, key lifecycle, explicit runtime SDK credentials, JSON discovery and deterministic configuration manifests with checkpoints.
+Introduces the Go `woobe` client for workspace/project administration, Agent/Network configuration and releases, HTTP/MCP Tools, Knowledge upload, provider/model/Skill/ChatSurface management, key lifecycle and runtime SDK execution.
 
-The implementation consists of 30 commits on one feature branch. Its registry contains 188 HTTP operations; local and SDK commands are additional. PATCH input preserves omitted/null fields, issued secrets require exclusive private output files, administrative writes are never automatically retried, and unknown manifest writes block resume.
+37 commits on one feature branch. Unified discovery exposes 226 executable handlers including 188 HTTP operations, flags and input/output descriptors. Manifests support dependency references, comparison of supplied update fields, exclusive checkpoints and explicit-ID reconciliation after uncertain writes without replaying creation. Writes never automatically retry; PATCH omission/null is preserved; issued secrets require exclusive private files. Runtime dry-run makes no network calls. Table rendering preserves JSON contracts. Proposed endpoints require OpenAPI route/method advertisement before execution.
 
-**Draft: this is the initial implementation, not full design acceptance.** Authority categories/introspection require canonical backend contracts; Control Keys depend on an unintegrated backend branch; semantic resource diff/reconciliation and complete field schemas remain. `docs/STATUS.md` tracks each incomplete requirement and separates client fixtures from real authorization evidence. Keep further work in this same branch/PR.
+**Draft: full design acceptance remains open.** Canonical backend Control Key/authority/delegation integration, complete semantic resource-kind reconciliation, domain schemas, native keychains and real Woobe E2E remain. See `docs/STATUS.md`; all further CLI work stays in this branch/PR.
 
-Validation: local `go vet`, race tests, module verification, native build and packaging for Linux/macOS/Windows on amd64/arm64. No real Woobe E2E, GitHub CI result, release or merge is claimed.
+Validation: Go 1.27.1 module verification, vet, race tests (36 test functions, 64.6% total coverage), native build and six Linux/macOS/Windows amd64/arm64 packages with verified checksums. Initial 30-commit PR CI passed all seven jobs; follow-up head checks are attached to the PR. No real Woobe E2E, merge or release is claimed.

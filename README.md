@@ -8,8 +8,8 @@ bin/woobe help --output json
 bin/woobe schema --command "project agent create"
 ```
 
-The initial implementation provides 188 registered API operations, additional local/SDK commands, explicit context and credential selection, Agent/Network configuration and release operations, upload and manifest checkpoints.
+Unified discovery exposes 226 executable handlers including 188 HTTP operations, explicit context and credential selection, Agent/Network configuration and release operations, upload, remote manifest comparison and explicit-ID checkpoint reconciliation.
 
-**The full design is not complete.** See [implementation status](docs/STATUS.md), [usage](docs/USAGE.md), [operation catalog](docs/OPERATIONS.md) and the [canonical design](docs/PLAN.md). Proposed server capabilities return structured unsupported errors. No permissions are granted by the client.
+**The full design is not complete.** See [implementation status](docs/STATUS.md), [usage](docs/USAGE.md), [operation catalog](docs/OPERATIONS.md) and the [canonical design](docs/PLAN.md). Proposed server capabilities require OpenAPI advertisement and return unsupported errors when absent. No permissions are granted by the client.
 
 Validation: `make check`. Distribution: `bash scripts/package.sh VERSION`.

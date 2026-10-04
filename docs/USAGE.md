@@ -10,7 +10,7 @@ bin/woobe server-schema --command "project agent create" --api-url https://woobe
 bin/woobe completion bash
 ```
 
-The local schema is a transport descriptor. Use the server schema to discover the actual DTO. Domains remain validated and authorized by the server.
+Discovery covers all executable handlers and flags; local schemas describe invocation and transport/runtime output. Use the server schema to discover the actual DTO. Domains remain validated and authorized by the server.
 
 ## Context and credentials
 
@@ -72,7 +72,7 @@ woobe runtime target active tutor SESSION --runtime-credential runtime
 woobe runtime target cancel tutor RUN --runtime-credential runtime --yes
 ```
 
-Run JSON: `{"input":"Explain this topic","options":{"SessionID":"..."}}`. Omit options to let the runtime establish a Session. Option names currently follow the pinned SDK's Go JSON field names. For Network targets select `--target-kind network` explicitly. Local interruption stops observation; it does not issue remote cancellation. Administrative Runs use the separate `runtime run` family.
+Run JSON: `{"input":"Explain this topic","options":{"SessionID":"..."}}`. Omit options to let the runtime establish a Session. Option names currently follow the pinned SDK's Go JSON field names. For Network targets select `--target-kind network` explicitly. Local interruption stops observation; it does not issue remote cancellation. Administrative Runs use the separate `runtime run` family. All five SDK handlers honor `--dry-run` without network execution.
 
 ## Manifest validation, plan and checkpoint
 
@@ -84,9 +84,15 @@ woobe manifest apply --file resources.json --yes --checkpoint ./apply-checkpoint
 
 Document fields: `schema_version`, `workspace_id`, `project_id`, `steps`. Each step declares `id`, canonical `command`, positional `args`, JSON `body`, `depends_on`, optional `if_match`. Declare dependencies explicitly. Exact references such as `${steps.agent.id}` resolve persisted redacted results; interpolation inside larger strings is unsupported.
 
-Match manifest Workspace/Project to the selected context. Preserve the same manifest and checkpoint to resume. Committed steps are skipped; `unknown`/`in_flight` blocks execution. Never delete the checkpoint and blindly replay creation after a lost response.
+Match manifest Workspace/Project to the selected context. Preserve the same manifest and checkpoint to resume. Committed and reconciled steps are skipped; `unknown`/`in_flight` blocks execution. Never delete the checkpoint and blindly replay creation after a lost response.
 
-The explicit-step format composes existing server operations. It is not the complete semantic resource reconciler specified in the design. `manifest diff` is unavailable until that reconciler is implemented.
+The explicit-step format composes existing server operations. It is not the complete semantic resource reconciler specified in the design. `manifest diff --file resources.json` reads compatible update resources and compares supplied top-level fields. Creation existence and unresolved dependencies remain unevaluated.
+
+For uncertain writes: `woobe manifest reconcile STEP --resource-id ID --file resources.json --checkpoint ./apply-checkpoint.json --yes`. The same manifest, origin, workspace, project and credential reference are required. An authorized GET must match nonempty supplied desired fields. Evidence proves observed state, not original-write attribution. Resume apply using the same checkpoint. Concurrent use is rejected; remove a stale `.lock` only after confirming no process uses it.
+
+## Output and advertised extensions
+
+`--output table` renders rows/fields; JSON envelopes remain stable. Proposed extension endpoints require the exact route/method in `/openapi.json`; actual requests still require server authorization.
 
 ## Exit codes
 

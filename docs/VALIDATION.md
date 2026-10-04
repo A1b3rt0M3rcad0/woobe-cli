@@ -1,23 +1,9 @@
-# Local validation — 2026-10-04
+# Validation — 2026-10-04
 
-Compiler: Go 1.22.2, Linux amd64. Dependencies verified by `go mod verify`.
+Go 1.27.1, Linux amd64. Module verification, formatting, diff checks, vet, race tests and native build passed. 36 test functions plus subtests; statement coverage 64.6% total, 63.2% CLI, 81.4% transport. Coverage remains below full design acceptance.
 
-| Check | Result |
-| --- | --- |
-| `gofmt` and `git diff --check` | Passed |
-| `go vet ./...` | Passed |
-| `go test -race -coverprofile=coverage.out ./...` | Passed, 22 test functions plus table subtests |
-| Total statement coverage | 58.7%; below the final design acceptance gate |
-| CLI statement coverage | 54.8% |
-| HTTP transport statement coverage | 81.4% |
-| Native executable discovery/schema/parent-ID smoke | Passed |
-| Linux amd64 and arm64 packaging | Passed |
-| macOS amd64 and arm64 packaging | Passed |
-| Windows amd64 and arm64 packaging | Passed |
-| SHA256 verification of six archives | Passed |
-| GitHub CI | Not run: branch publication blocked |
-| Real Woobe E2E | Not run: no deployed test instance/credentials |
+Unified native discovery exposes 226 entries. Six Linux/macOS/Windows amd64/arm64 packages built; all archive SHA256 checks passed. Initial 30-commit PR CI passed all seven jobs (run 37242768678); follow-up head checks are available on PR #1.
 
-The tests verify HTTP authorization error mapping, not the backend authorization engine. They also verify no redirected credential request, no administrative write retry, omitted/null PATCH fields, explicit parent flags, private credential files, cross-origin cookie separation, manifest cycles/references, upload form scope, checkpoint skipping and uncertain-write blocking.
+New tests cover uncertain creation recovery by explicit-ID authorized GET, resumed dependent creation without replay, field-only remote diff, checkpoint locking, extension advertisement and authorization, complete executable discovery/schema, table redaction, SDK error mapping and zero network calls for runtime dry-run. Earlier transport, credential, upload, manifest and PATCH tests remain.
 
-Cross-build success verifies compilation/package generation. It does not certify OS keychain support, Windows human-session protection or server interoperability. The complete design remains open as tracked in `STATUS.md`.
+Real Woobe E2E was not run: no deployed test instance/credentials. Fixtures prove client behavior, not backend authority/tenancy enforcement. Cross-builds prove compilation, not native keychain or server compatibility. See `STATUS.md` for remaining full-plan requirements.
