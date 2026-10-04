@@ -104,7 +104,7 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 		}
 		return nil, resp.Header, &output.Error{Code: code, Message: "server rejected request", Status: resp.StatusCode, RequestID: resp.Header.Get("X-Request-ID"), Outcome: outcome}
 	}
-	if len(bytes.TrimSpace(b)) == 0 {
+	if method == "HEAD" || len(bytes.TrimSpace(b)) == 0 {
 		return nil, resp.Header, nil
 	}
 	var v any
