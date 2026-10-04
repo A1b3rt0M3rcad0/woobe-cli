@@ -68,4 +68,5 @@ func (a *App) manifestCommands() {
 		return a.emit(map[string]any{"valid": true, "manifest_hash": d.Hash(), "authorization": "not_evaluated"})
 	}})
 	a.manifestPlanCommands(g)
+	a.checkpointCommand(g)
 }
