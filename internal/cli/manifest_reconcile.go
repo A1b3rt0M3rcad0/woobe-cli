@@ -77,8 +77,8 @@ func (a *App) manifestReconcileCommand(g *cobra.Command) {
 		if e != nil {
 			return output.New(2, "checkpoint unavailable")
 		}
-		var cp checkpoint
-		if e = json.Unmarshal(b, &cp); e != nil || cp.Steps == nil {
+		cp, e := parseCheckpoint(b)
+		if e != nil {
 			return output.New(2, "invalid checkpoint")
 		}
 		if cp.Hash != d.Hash() || cp.Origin != v.APIURL || cp.Workspace != v.Workspace || cp.Project != v.Project || cp.Credential != v.Credential {

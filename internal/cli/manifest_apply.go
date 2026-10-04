@@ -54,8 +54,8 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 		}
 		cp := checkpoint{Hash: d.Hash(), Origin: v.APIURL, Workspace: v.Workspace, Project: v.Project, Credential: v.Credential, Steps: map[string]string{}, Results: map[string]any{}}
 		if b, err := os.ReadFile(path); err == nil {
-			var old checkpoint
-			if e = json.Unmarshal(b, &old); e != nil {
+			old, err := parseCheckpoint(b)
+			if err != nil {
 				return output.New(2, "invalid checkpoint")
 			}
 			if old.Hash != cp.Hash || old.Origin != cp.Origin || old.Workspace != cp.Workspace || old.Project != cp.Project || old.Credential != cp.Credential {

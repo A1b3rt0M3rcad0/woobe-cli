@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
 	"os"
@@ -14,8 +13,8 @@ func (a *App) checkpointCommand(g *cobra.Command) {
 		if e != nil {
 			return output.New(2, "checkpoint unavailable")
 		}
-		var cp checkpoint
-		if json.Unmarshal(b, &cp) != nil || cp.Steps == nil {
+		cp, e := parseCheckpoint(b)
+		if e != nil {
 			return output.New(2, "invalid checkpoint")
 		}
 		counts := map[string]int{}
