@@ -93,6 +93,12 @@ func ResolveStep(s Step, results map[string]any) (Step, error) {
 func ValidateReferences(s Step) error {
 	deps := map[string]bool{}
 	for _, id := range s.DependsOn {
+		if deps[id] {
+			return fmt.Errorf("duplicate dependency in step %s", s.ID)
+		}
+		if id == s.ID {
+			return fmt.Errorf("step cannot depend on itself")
+		}
 		deps[id] = true
 	}
 	var check func(any) error
