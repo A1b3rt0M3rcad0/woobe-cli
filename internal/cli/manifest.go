@@ -27,7 +27,7 @@ func (a *App) validateManifest(d manifest.Document) error {
 				break
 			}
 		}
-		if found == nil {
+		if found == nil || found.Kind != "http" {
 			return output.New(2, "unknown manifest operation: "+s.Command)
 		}
 		if found.Status == "proposed" {

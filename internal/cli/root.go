@@ -89,6 +89,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.aliasCommands()
 	a.remoteSchemaCommand()
 	a.discoveryCommands()
+	a.completeDiscovery()
 	return a
 }
 func (a *App) emit(v any) error {

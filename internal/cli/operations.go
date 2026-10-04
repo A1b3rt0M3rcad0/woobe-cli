@@ -9,19 +9,22 @@ import (
 )
 
 type Operation struct {
-	Command          string   `json:"command"`
-	ID               string   `json:"operation_id"`
-	Method           string   `json:"method"`
-	Path             string   `json:"path"`
-	Scope            string   `json:"scope"`
-	PermissionSource string   `json:"permission_source"`
-	Permission       string   `json:"permission,omitempty"`
-	Effect           string   `json:"effect"`
-	Status           string   `json:"availability"`
-	Body             bool     `json:"body_required"`
-	Secret           bool     `json:"secret_emission"`
-	Params           []string `json:"path_parameters"`
-	QueryScope       string   `json:"query_scope,omitempty"`
+	Kind             string           `json:"kind"`
+	Usage            string           `json:"usage"`
+	Flags            []FlagDescriptor `json:"flags"`
+	Command          string           `json:"command"`
+	ID               string           `json:"operation_id"`
+	Method           string           `json:"method"`
+	Path             string           `json:"path"`
+	Scope            string           `json:"scope"`
+	PermissionSource string           `json:"permission_source"`
+	Permission       string           `json:"permission,omitempty"`
+	Effect           string           `json:"effect"`
+	Status           string           `json:"availability"`
+	Body             bool             `json:"body_required"`
+	Secret           bool             `json:"secret_emission"`
+	Params           []string         `json:"path_parameters"`
+	QueryScope       string           `json:"query_scope,omitempty"`
 }
 
 var placeholders = regexp.MustCompile(`\{([^}]+)\}`)
@@ -147,7 +150,7 @@ func (a *App) register(op Operation) {
 	g.AddCommand(cmd)
 }
 func (a *App) discoveryCommands() {
-	a.Root.SetHelpCommand(&cobra.Command{Use: "help [command-path]", Short: "Discover command metadata", RunE: func(cmd *cobra.Command, args []string) error {
+	help := &cobra.Command{Use: "help [command-path]", Short: "Discover command metadata", RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return a.emit(a.Registry)
 		}
@@ -158,16 +161,18 @@ func (a *App) discoveryCommands() {
 			}
 		}
 		return output.New(2, "unknown operation")
-	}})
+	}}
+	a.Root.SetHelpCommand(help)
+	a.Root.AddCommand(help)
 	var command, kind string
 	c := &cobra.Command{Use: "schema", RunE: func(*cobra.Command, []string) error {
 		for _, op := range a.Registry {
 			if op.Command == command {
-				schema := map[string]any{"$schema": "https://json-schema.org/draft/2020-12/schema", "schema_version": "1", "operation": op, "kind": kind, "type": "object", "additionalProperties": true, "description": "Transport schema; domain validation is authoritative on server"}
+				schema := commandSchema(op, kind)
 				if kind != "input" && kind != "output" {
 					return output.New(2, "kind must be input or output")
 				}
-				return a.emit(schema)
+				return output.Write(a.Out, a.Mode, schema, nil, nil)
 			}
 		}
 		return output.New(2, "unknown operation")
