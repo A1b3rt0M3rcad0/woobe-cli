@@ -2,11 +2,11 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/config"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/controlplane"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/credentials"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/identity"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
 	"io"
@@ -190,7 +190,7 @@ func (a *App) body(required bool) ([]byte, error) {
 	if e != nil {
 		return nil, output.New(2, "cannot read input")
 	}
-	if len(b) > 8<<20 || !json.Valid(b) {
+	if len(b) > 8<<20 || jsoninput.Validate(b) != nil {
 		return nil, output.New(2, "input must be JSON within 8 MiB")
 	}
 	return b, nil
