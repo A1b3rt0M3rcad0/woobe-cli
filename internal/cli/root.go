@@ -150,6 +150,7 @@ func (a *App) client() (*controlplane.Client, error) {
 	}
 	c, e := controlplane.New(v.APIURL, key, a.Timeout)
 	if e == nil {
+		c.Headers.Set("User-Agent", "woobe-cli/"+Version)
 		if key == "" {
 			session, jar, err := identity.Load(filepath.Join(filepath.Dir(a.ConfigPath), "sessions"), v.APIURL)
 			if err != nil {
