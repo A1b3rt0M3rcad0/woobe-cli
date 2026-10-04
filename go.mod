@@ -2,6 +2,8 @@ module github.com/A1b3rt0M3rcad0/woobe-cli
 
 go 1.22
 
+toolchain go1.27.1
+
 require (
 	github.com/A1b3rt0M3rcad0/woobe-sdk-go v0.1.0
 	github.com/spf13/cobra v1.8.1
