@@ -215,6 +215,10 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 	if e == nil {
 		return 0
 	}
+	if partial, ok := e.(*diagnosticPartial); ok {
+		_ = output.Write(a.Out, a.Mode, output.Redact(partial.Data), nil, &output.Error{Code: 10, Message: partial.Error()})
+		return 10
+	}
 	if _, ok := e.(*output.Error); !ok {
 		if output.Normalize(e).Code == 1 {
 			e = output.New(2, e.Error())

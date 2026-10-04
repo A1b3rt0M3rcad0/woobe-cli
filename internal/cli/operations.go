@@ -189,15 +189,5 @@ func (a *App) discoveryCommands() {
 	c.Flags().StringVar(&command, "command", "", "Canonical command path")
 	c.Flags().StringVar(&kind, "kind", "input", "input, output or document")
 	a.Root.AddCommand(c)
-	a.Root.AddCommand(&cobra.Command{Use: "doctor", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
-		c, e := a.client()
-		if e != nil {
-			return e
-		}
-		v, _, e := c.Request(cmd.Context(), "GET", "/identity/instance/status", nil, nil)
-		if e != nil {
-			return e
-		}
-		return a.emit(map[string]any{"instance": v, "client_version": Version, "server_authority_enforcement": "not verified by connectivity check", "extensions": "see docs/STATUS.md"})
-	}})
+	a.doctorCommand()
 }
