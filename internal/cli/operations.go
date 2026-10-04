@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/manifest"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
 	"net/url"
@@ -171,8 +172,14 @@ func (a *App) discoveryCommands() {
 		for _, op := range a.Registry {
 			if op.Command == command {
 				schema := commandSchema(op, kind)
-				if kind != "input" && kind != "output" {
+				if kind != "input" && kind != "output" && kind != "document" {
 					return output.New(2, "kind must be input or output")
+				}
+				if kind == "document" {
+					if !strings.HasPrefix(command, "manifest ") {
+						return output.New(2, "document schema is available for manifest commands")
+					}
+					schema = manifest.Schema()
 				}
 				return output.Write(a.Out, a.Mode, schema, nil, nil)
 			}
@@ -180,7 +187,7 @@ func (a *App) discoveryCommands() {
 		return output.New(2, "unknown operation")
 	}}
 	c.Flags().StringVar(&command, "command", "", "Canonical command path")
-	c.Flags().StringVar(&kind, "kind", "input", "input or output")
+	c.Flags().StringVar(&kind, "kind", "input", "input, output or document")
 	a.Root.AddCommand(c)
 	a.Root.AddCommand(&cobra.Command{Use: "doctor", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
 		c, e := a.client()
