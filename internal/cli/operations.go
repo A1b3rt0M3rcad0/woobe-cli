@@ -89,7 +89,7 @@ func (a *App) register(op Operation) {
 		}
 		return nil
 	}, RunE: func(cmd *cobra.Command, args []string) error {
-		if op.Status == "proposed" {
+		if op.Status == "proposed" && !a.DryRun {
 			if e := a.requireAdvertised(cmd.Context(), op); e != nil {
 				return e
 			}
