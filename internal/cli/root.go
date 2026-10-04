@@ -38,7 +38,7 @@ func New(in io.Reader,out,errOut io.Writer)*App {
  f.StringVar(&a.SecretFile,"secret-file","","Exclusive private destination for issued secret")
  r.PersistentPreRunE=func(*cobra.Command,[]string)error{if a.Mode!="json"&&a.Mode!="jsonl"&&a.Mode!="table"{return output.New(2,"invalid output mode")};if a.Timeout<=0{return output.New(2,"timeout must be positive")};return nil}
  r.AddCommand(&cobra.Command{Use:"version",Args:cobra.NoArgs,RunE:func(*cobra.Command,[]string)error{return a.emit(map[string]any{"version":Version,"schema_version":"1"})}})
- a.contextCommands();a.requestCommands();a.workspaceCommands();a.projectCommands();a.agentCommands();a.releaseCommands();a.discoveryCommands();return a
+ a.contextCommands();a.requestCommands();a.workspaceCommands();a.projectCommands();a.agentCommands();a.releaseCommands();a.networkCommands();a.discoveryCommands();return a
 }
 func(a *App) emit(v any)error{return output.Write(a.Out,a.Mode,output.Redact(v),map[string]string{"workspace_id":a.Workspace,"project_id":a.Project},nil)}
 func(a *App) store()credentials.Store{return credentials.Store{Dir:filepath.Join(filepath.Dir(a.ConfigPath),"credentials")}}
