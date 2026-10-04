@@ -88,6 +88,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.exportCommands()
 	a.aliasCommands()
 	a.remoteSchemaCommand()
+	a.validateInputCommand()
 	a.discoveryCommands()
 	a.completeDiscovery()
 	return a
