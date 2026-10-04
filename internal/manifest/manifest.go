@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"io"
 )
 
@@ -26,6 +27,9 @@ type Step struct {
 
 func Parse(b []byte) (Document, error) {
 	var d Document
+	if e := jsoninput.Validate(b); e != nil {
+		return d, e
+	}
 	dec := json.NewDecoder(bytes.NewReader(b))
 	dec.DisallowUnknownFields()
 	if e := dec.Decode(&d); e != nil {
