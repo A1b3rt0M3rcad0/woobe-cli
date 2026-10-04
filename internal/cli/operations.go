@@ -90,7 +90,9 @@ func (a *App) register(op Operation) {
 		return nil
 	}, RunE: func(cmd *cobra.Command, args []string) error {
 		if op.Status == "proposed" {
-			return output.New(9, "capability requires a server extension; see docs/STATUS.md")
+			if e := a.requireAdvertised(cmd.Context(), op); e != nil {
+				return e
+			}
 		}
 		_, e := a.resolve()
 		if e != nil {
