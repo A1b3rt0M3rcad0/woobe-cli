@@ -46,7 +46,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.StringVar(&a.Project, "project", "", "Project ID")
 	f.StringVar(&a.Credential, "credential", "", "Administrative credential reference")
 	f.StringVar(&a.RuntimeCredential, "runtime-credential", "", "Runtime credential reference")
-	f.StringVar(&a.Mode, "output", "json", "json, jsonl or table (indented JSON)")
+	f.StringVar(&a.Mode, "output", "json", "json, jsonl or table")
 	f.DurationVar(&a.Timeout, "timeout", 30*time.Second, "HTTP deadline")
 	f.BoolVar(&a.Yes, "yes", false, "Accept the specified destructive operation")
 	f.BoolVar(&a.NoInput, "no-input", false, "Deterministic execution (always enabled)")

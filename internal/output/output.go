@@ -45,14 +45,14 @@ type Envelope struct {
 }
 
 func Write(w io.Writer, mode string, data any, scope map[string]string, err error) error {
+	if mode == "table" {
+		return renderTable(w, data, err)
+	}
 	e := Envelope{SchemaVersion: "1", Success: err == nil, Context: scope, Data: data, Meta: map[string]any{"complete": err == nil}}
 	if err != nil {
 		e.Error = Normalize(err)
 	}
 	enc := json.NewEncoder(w)
-	if mode == "table" {
-		enc.SetIndent("", "  ")
-	}
 	if mode != "table" && mode != "json" && mode != "jsonl" {
 		return New(2, fmt.Sprintf("unsupported output %q", mode))
 	}
