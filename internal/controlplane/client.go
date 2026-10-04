@@ -75,10 +75,10 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 	}
 	b, e := io.ReadAll(io.LimitReader(resp.Body, 32<<20+1))
 	if e != nil {
-		return nil, resp.Header, output.New(7, "response could not be read")
+		return nil, resp.Header, responseError(method, resp, 7, "response could not be read")
 	}
 	if len(b) > 32<<20 {
-		return nil, resp.Header, output.New(9, "response exceeds limit")
+		return nil, resp.Header, responseError(method, resp, 9, "response exceeds limit")
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		code := 7
@@ -111,7 +111,7 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.UseNumber()
 	if e = d.Decode(&v); e != nil {
-		return nil, resp.Header, output.New(9, "server returned non-JSON response")
+		return nil, resp.Header, responseError(method, resp, 9, "server returned non-JSON response")
 	}
 	if env, ok := v.(map[string]any); ok {
 		if success, ok := env["success"].(bool); ok && !success {
@@ -120,7 +120,15 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 	}
 	var extra any
 	if d.Decode(&extra) != io.EOF {
-		return nil, resp.Header, output.New(9, "server returned multiple JSON values")
+		return nil, resp.Header, responseError(method, resp, 9, "server returned multiple JSON values")
 	}
 	return v, resp.Header, nil
+}
+
+func responseError(method string, resp *http.Response, code int, message string) *output.Error {
+	outcome := ""
+	if method != "GET" && method != "HEAD" {
+		outcome = "unknown"
+	}
+	return &output.Error{Code: code, Message: message, Status: resp.StatusCode, RequestID: resp.Header.Get("X-Request-ID"), Outcome: outcome}
 }
