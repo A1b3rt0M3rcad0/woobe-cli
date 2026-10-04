@@ -81,7 +81,11 @@ func (a *App) manifestReconcileCommand(g *cobra.Command) {
 		if e != nil {
 			return output.New(2, "invalid checkpoint")
 		}
-		if cp.Hash != d.Hash() || cp.Origin != v.APIURL || cp.Workspace != v.Workspace || cp.Project != v.Project || cp.Credential != v.Credential {
+		fingerprint, e := a.credentialFingerprint(v)
+		if e != nil {
+			return e
+		}
+		if cp.CredentialFingerprint != fingerprint || cp.Hash != d.Hash() || cp.Origin != v.APIURL || cp.Workspace != v.Workspace || cp.Project != v.Project || cp.Credential != v.Credential {
 			return output.New(6, "checkpoint belongs to another plan or context")
 		}
 		if cp.Steps[args[0]] != "unknown" && cp.Steps[args[0]] != "in_flight" {

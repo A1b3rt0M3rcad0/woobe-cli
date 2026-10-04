@@ -12,14 +12,15 @@ import (
 )
 
 type checkpoint struct {
-	Hash            string                    `json:"manifest_hash"`
-	Origin          string                    `json:"api_url"`
-	Workspace       string                    `json:"workspace_id"`
-	Project         string                    `json:"project_id"`
-	Credential      string                    `json:"credential_ref"`
-	Steps           map[string]string         `json:"steps"`
-	Results         map[string]any            `json:"results,omitempty"`
-	Reconciliations map[string]Reconciliation `json:"reconciliations,omitempty"`
+	CredentialFingerprint string                    `json:"credential_fingerprint,omitempty"`
+	Hash                  string                    `json:"manifest_hash"`
+	Origin                string                    `json:"api_url"`
+	Workspace             string                    `json:"workspace_id"`
+	Project               string                    `json:"project_id"`
+	Credential            string                    `json:"credential_ref"`
+	Steps                 map[string]string         `json:"steps"`
+	Results               map[string]any            `json:"results,omitempty"`
+	Reconciliations       map[string]Reconciliation `json:"reconciliations,omitempty"`
 }
 
 func (a *App) manifestApplyCommand(g *cobra.Command) {
@@ -52,13 +53,17 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			}
 			defer release()
 		}
-		cp := checkpoint{Hash: d.Hash(), Origin: v.APIURL, Workspace: v.Workspace, Project: v.Project, Credential: v.Credential, Steps: map[string]string{}, Results: map[string]any{}}
+		fingerprint, e := a.credentialFingerprint(v)
+		if e != nil {
+			return e
+		}
+		cp := checkpoint{CredentialFingerprint: fingerprint, Hash: d.Hash(), Origin: v.APIURL, Workspace: v.Workspace, Project: v.Project, Credential: v.Credential, Steps: map[string]string{}, Results: map[string]any{}}
 		if b, err := os.ReadFile(path); err == nil {
 			old, err := parseCheckpoint(b)
 			if err != nil {
 				return output.New(2, "invalid checkpoint")
 			}
-			if old.Hash != cp.Hash || old.Origin != cp.Origin || old.Workspace != cp.Workspace || old.Project != cp.Project || old.Credential != cp.Credential {
+			if old.Hash != cp.Hash || old.Origin != cp.Origin || old.Workspace != cp.Workspace || old.Project != cp.Project || old.Credential != cp.Credential || old.CredentialFingerprint != cp.CredentialFingerprint {
 				return output.New(6, "checkpoint belongs to another plan or context")
 			}
 			if old.Steps == nil {
