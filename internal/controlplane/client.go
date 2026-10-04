@@ -48,6 +48,10 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 		return nil, nil, output.New(2, "invalid request")
 	}
 	req.Header = c.Headers.Clone()
+	if method == "GET" || method == "HEAD" {
+		req.Header.Del("If-Match")
+		req.Header.Del("Idempotency-Key")
+	}
 	req.Header.Set("Accept", "application/json")
 	if c.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.Token)
