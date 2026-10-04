@@ -62,6 +62,9 @@ func (d Document) Order() ([]Step, error) {
 		if _, ok := byID[s.ID]; ok {
 			return nil, fmt.Errorf("duplicate step id %s", s.ID)
 		}
+		if e := validateBody(s.Body); e != nil {
+			return nil, e
+		}
 		if e := ValidateReferences(s); e != nil {
 			return nil, e
 		}
