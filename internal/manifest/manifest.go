@@ -50,6 +50,12 @@ func Parse(b []byte) (Document, error) {
 }
 func (d Document) Hash() string {
 	b, _ := json.Marshal(d)
+	var v any
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.UseNumber()
+	if dec.Decode(&v) == nil {
+		b, _ = json.Marshal(v)
+	}
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
 }
