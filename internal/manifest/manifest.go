@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"io"
+	"regexp"
 )
 
 type Document struct {
@@ -59,10 +60,13 @@ func (d Document) Hash() string {
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
 }
+
+var stepID = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,128}$`)
+
 func (d Document) Order() ([]Step, error) {
 	byID := map[string]Step{}
 	for _, s := range d.Steps {
-		if s.ID == "" || s.Command == "" {
+		if !stepID.MatchString(s.ID) || s.Command == "" {
 			return nil, fmt.Errorf("step id and command required")
 		}
 		if _, ok := byID[s.ID]; ok {
