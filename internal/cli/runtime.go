@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/controlplane"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	sdk "github.com/A1b3rt0M3rcad0/woobe-sdk-go"
 	"github.com/spf13/cobra"
@@ -79,7 +80,7 @@ func (a *App) runtimeCommands() {
 			if kind != "agent" && kind != "network" {
 				return output.New(2, "--target-kind must be agent or network")
 			}
-			cp, e := a.client()
+			cp, e := controlplane.New(v.APIURL, "", a.Timeout)
 			if e != nil {
 				return e
 			}

@@ -29,6 +29,13 @@ func New(base, token string, timeout time.Duration) (*Client, error) {
 	return &Client{Base: strings.TrimRight(base, "/"), Token: token, HTTP: h, Headers: make(http.Header)}, nil
 }
 func (c *Client) Request(ctx context.Context, method, path string, q url.Values, body []byte) (any, http.Header, error) {
+	var reader io.Reader
+	if body != nil {
+		reader = bytes.NewReader(body)
+	}
+	return c.RequestReader(ctx, method, path, q, reader, "application/json")
+}
+func (c *Client) RequestReader(ctx context.Context, method, path string, q url.Values, body io.Reader, contentType string) (any, http.Header, error) {
 	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || strings.ContainsAny(path, "?#\\") {
 		return nil, nil, output.New(2, "request path must be an origin-relative path; use --query for query parameters")
 	}
@@ -36,7 +43,7 @@ func (c *Client) Request(ctx context.Context, method, path string, q url.Values,
 	if len(q) > 0 {
 		raw += "?" + q.Encode()
 	}
-	req, e := http.NewRequestWithContext(ctx, method, raw, bytes.NewReader(body))
+	req, e := http.NewRequestWithContext(ctx, method, raw, body)
 	if e != nil {
 		return nil, nil, output.New(2, "invalid request")
 	}
@@ -46,7 +53,7 @@ func (c *Client) Request(ctx context.Context, method, path string, q url.Values,
 		req.Header.Set("Authorization", "Bearer "+c.Token)
 	}
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Type", contentType)
 	}
 	resp, e := c.HTTP.Do(req)
 	if e != nil {
@@ -105,6 +112,15 @@ func (c *Client) Request(ctx context.Context, method, path string, q url.Values,
 	d.UseNumber()
 	if e = d.Decode(&v); e != nil {
 		return nil, resp.Header, output.New(9, "server returned non-JSON response")
+	}
+	if env, ok := v.(map[string]any); ok {
+		if success, ok := env["success"].(bool); ok && !success {
+			return nil, resp.Header, &output.Error{Code: 7, Message: "server returned unsuccessful response", Outcome: "unknown"}
+		}
+	}
+	var extra any
+	if d.Decode(&extra) != io.EOF {
+		return nil, resp.Header, output.New(9, "server returned multiple JSON values")
 	}
 	return v, resp.Header, nil
 }

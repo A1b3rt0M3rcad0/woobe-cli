@@ -24,3 +24,23 @@ func TestStrictDocument(t *testing.T) {
 		}
 	}
 }
+func TestReferenceResolution(t *testing.T) {
+	s := Step{Args: []string{"${steps.agent.id}"}, Body: []byte(`{"nodes":[{"agent_id":"${steps.agent.id}"}]}`)}
+	got, e := ResolveStep(s, map[string]any{"agent": map[string]any{"id": "a"}})
+	if e != nil || got.Args[0] != "a" {
+		t.Fatal(got, e)
+	}
+	if _, e = ResolveStep(s, map[string]any{}); e == nil {
+		t.Fatal("missing reference accepted")
+	}
+}
+func TestReferencesMustDeclareDependencies(t *testing.T) {
+	s := Step{ID: "prompt", Command: "x", Args: []string{"${steps.agent.id}"}}
+	if ValidateReferences(s) == nil {
+		t.Fatal("implicit dependency accepted")
+	}
+	s.DependsOn = []string{"agent"}
+	if e := ValidateReferences(s); e != nil {
+		t.Fatal(e)
+	}
+}

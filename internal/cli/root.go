@@ -84,8 +84,10 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.authCommands()
 	a.runtimeCommands()
 	a.manifestCommands()
+	a.uploadCommands()
 	a.exportCommands()
 	a.aliasCommands()
+	a.remoteSchemaCommand()
 	a.discoveryCommands()
 	return a
 }
@@ -177,7 +179,12 @@ func (a *App) body(required bool) ([]byte, error) {
 	if a.File == "-" {
 		b, e = io.ReadAll(io.LimitReader(a.In, 8<<20+1))
 	} else {
-		b, e = os.ReadFile(a.File)
+		f, err := os.Open(a.File)
+		if err != nil {
+			return nil, output.New(2, "cannot read input")
+		}
+		defer f.Close()
+		b, e = io.ReadAll(io.LimitReader(f, 8<<20+1))
 	}
 	if e != nil {
 		return nil, output.New(2, "cannot read input")

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/config"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/manifest"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
 	"os"
@@ -17,6 +18,7 @@ type checkpoint struct {
 	Project    string            `json:"project_id"`
 	Credential string            `json:"credential_ref"`
 	Steps      map[string]string `json:"steps"`
+	Results    map[string]any    `json:"results,omitempty"`
 }
 
 func (a *App) manifestApplyCommand(g *cobra.Command) {
@@ -42,7 +44,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 		if (d.Workspace != "" && v.Workspace != d.Workspace) || (d.Project != "" && v.Project != d.Project) {
 			return output.New(6, "manifest scope must match selected context")
 		}
-		cp := checkpoint{Hash: d.Hash(), Origin: v.APIURL, Workspace: v.Workspace, Project: v.Project, Credential: v.Credential, Steps: map[string]string{}}
+		cp := checkpoint{Hash: d.Hash(), Origin: v.APIURL, Workspace: v.Workspace, Project: v.Project, Credential: v.Credential, Steps: map[string]string{}, Results: map[string]any{}}
 		if b, err := os.ReadFile(path); err == nil {
 			var old checkpoint
 			if e = json.Unmarshal(b, &old); e != nil {
@@ -55,6 +57,9 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 				return output.New(2, "invalid checkpoint steps")
 			}
 			cp = old
+			if cp.Results == nil {
+				cp.Results = map[string]any{}
+			}
 		} else if !os.IsNotExist(err) {
 			return output.New(2, "cannot read checkpoint")
 		}
@@ -75,6 +80,10 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			}
 			if a.DryRun {
 				return a.emit(map[string]any{"manifest_hash": d.Hash(), "executed": false})
+			}
+			s, e = manifest.ResolveStep(s, cp.Results)
+			if e != nil {
+				return output.New(2, e.Error())
 			}
 			cp.Steps[s.ID] = "in_flight"
 			if e = save(); e != nil {
@@ -116,6 +125,17 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 				}
 				return &output.Error{Code: 10, Message: "partial apply stopped at " + s.ID, Outcome: cp.Steps[s.ID]}
 			}
+			var result output.Envelope
+			if e = json.Unmarshal(childOut.Bytes(), &result); e != nil {
+				return &output.Error{Code: 10, Message: "operation committed but result could not be checkpointed", Outcome: "unknown"}
+			}
+			data := result.Data
+			if env, ok := data.(map[string]any); ok {
+				if nested, ok := env["data"]; ok {
+					data = nested
+				}
+			}
+			cp.Results[s.ID] = output.Redact(data)
 			cp.Steps[s.ID] = "committed"
 			if e = save(); e != nil {
 				return &output.Error{Code: 10, Message: "write committed but checkpoint save failed", Outcome: "unknown"}

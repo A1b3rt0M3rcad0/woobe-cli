@@ -137,3 +137,49 @@ func TestAgentParentFlagAndInvalidUsage(t *testing.T) {
 		t.Fatal(code)
 	}
 }
+func TestManifestCreationReferences(t *testing.T) {
+	n := 0
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n++
+		if n == 1 {
+			_, _ = w.Write([]byte(`{"data":{"id":"agent-a"}}`))
+			return
+		}
+		if r.URL.Path != "/ai/agents/agent-a/prompts" {
+			t.Error(r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`{"data":{"id":"prompt-a"}}`))
+	}))
+	defer s.Close()
+	d := `{"schema_version":"1","project_id":"p","steps":[{"id":"agent","command":"project agent create","body":{"name":"A","project_id":"p"}},{"id":"prompt","command":"project agent prompt create","args":["${steps.agent.id}"],"body":{"content":"Study"},"depends_on":["agent"]}]}`
+	out := &bytes.Buffer{}
+	a := New(bytes.NewBufferString(d), out, &bytes.Buffer{})
+	code := a.Execute(context.Background(), []string{"manifest", "apply", "--api-url", s.URL, "--project", "p", "--yes", "--file", "-", "--checkpoint", filepath.Join(t.TempDir(), "cp"), "--config", filepath.Join(t.TempDir(), "config")})
+	if code != 0 || n != 2 {
+		t.Fatal(code, out.String())
+	}
+}
+func TestDocumentUpload(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if e := r.ParseMultipartForm(1 << 20); e != nil {
+			t.Error(e)
+		}
+		if r.FormValue("project_id") != "p" || r.FormValue("collection_id") != "c" {
+			t.Error("scope missing")
+		}
+		f, _, e := r.FormFile("file")
+		if e != nil {
+			t.Error(e)
+		} else {
+			defer f.Close()
+		}
+		_, _ = w.Write([]byte(`{"data":{"id":"doc"}}`))
+	}))
+	defer s.Close()
+	p := filepath.Join(t.TempDir(), "document.txt")
+	_ = os.WriteFile(p, []byte("content"), 0600)
+	code, v := invoke(t, []string{"project", "knowledge", "document", "upload", "--api-url", s.URL, "--project", "p", "--collection", "c", "--document-file", p}, "")
+	if code != 0 {
+		t.Fatal(v)
+	}
+}
