@@ -24,7 +24,7 @@ PYSCHEMA
       task_archive="$(pwd)/dist/$archive.zip"
       (cd "$task_dir" && zip -q "$task_archive" "$executable" README.md USAGE.md manifest.schema.json)
     else
-      tar -czf "dist/$archive.tar.gz" -C "$task_dir" "$executable" README.md
+      tar -czf "dist/$archive.tar.gz" -C "$task_dir" "$executable" README.md USAGE.md manifest.schema.json
     fi
     rm -rf "$task_dir"
   done

@@ -14,6 +14,7 @@ jobs:
           go-version: '1.27.1'
       - run: go test ./...
       - run: bash scripts/package.sh "$GITHUB_REF_NAME"
+      - run: python3 scripts/verify_artifacts.py
       - run: gh release create "$GITHUB_REF_NAME" dist/*.tar.gz dist/*.zip dist/SHA256SUMS dist/artifacts.json --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}

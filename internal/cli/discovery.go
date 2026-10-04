@@ -61,7 +61,7 @@ func (a *App) completeDiscovery() {
 					kind = "http-session"
 					effect = "mutation"
 					availability = "observed"
-				case path == "manifest apply":
+				case path == "manifest apply" || path == "manifest reconcile":
 					kind = "composition"
 					effect = "mutation"
 				case path == "manifest diff":

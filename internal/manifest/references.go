@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -74,7 +75,9 @@ func ResolveStep(s Step, results map[string]any) (Step, error) {
 	s.Args = args
 	if len(s.Body) > 0 {
 		var body any
-		if e := json.Unmarshal(s.Body, &body); e != nil {
+		dec := json.NewDecoder(bytes.NewReader(s.Body))
+		dec.UseNumber()
+		if e := dec.Decode(&body); e != nil {
 			return s, e
 		}
 		body, e := Resolve(body, results)

@@ -173,7 +173,7 @@ func (a *App) discoveryCommands() {
 			if op.Command == command {
 				schema := commandSchema(op, kind)
 				if kind != "input" && kind != "output" && kind != "document" {
-					return output.New(2, "kind must be input or output")
+					return output.New(2, "kind must be input, output or document")
 				}
 				if kind == "document" {
 					if !strings.HasPrefix(command, "manifest ") {
