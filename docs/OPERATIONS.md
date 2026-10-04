@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from unified discovery: 226 entries, including 188 HTTP operations. Availability records provenance; route advertisement does not grant authority. Permission entries are historical hints. Use `schema --command COMMAND` for invocation/flag/output descriptors.
+Generated from unified discovery: 230 entries, including 188 HTTP operations. Route advertisement does not grant authority. Permission entries are historical hints. Use `schema --command COMMAND` for invocation/output and `--kind document` for explicit-step manifests.
 
 | Command | Kind | HTTP | Availability | Permission hint |
 | --- | --- | --- | --- | --- |
@@ -30,13 +30,16 @@ Generated from unified discovery: 226 entries, including 188 HTTP operations. Av
 | `context use` | `local` | — | `local` | — |
 | `control-key` | `alias` | — | `local` | — |
 | `doctor` | `diagnostic-http` | — | `server-dependent` | — |
+| `export` | `http-projection` | — | `observed` | — |
 | `help` | `local` | — | `local` | — |
 | `instance bootstrap` | `http` | `POST /identity/instance/bootstrap` | `observed` | — |
 | `instance status` | `http` | `GET /identity/instance/status` | `observed` | — |
 | `manifest apply` | `composition` | — | `local` | — |
 | `manifest diff` | `composition` | — | `server-dependent` | — |
+| `manifest export` | `http-projection` | — | `observed` | — |
 | `manifest plan` | `local` | — | `local` | — |
-| `manifest reconcile` | `local` | — | `local` | — |
+| `manifest reconcile` | `composition` | — | `local` | — |
+| `manifest status` | `local` | — | `local` | — |
 | `manifest validate` | `local` | — | `local` | — |
 | `network` | `alias` | — | `local` | — |
 | `permission check` | `http` | `POST /identity/access/check` | `proposed` | — |
@@ -206,6 +209,7 @@ Generated from unified discovery: 226 entries, including 188 HTTP operations. Av
 | `runtime target stream` | `runtime-sdk` | — | `server-dependent` | — |
 | `schema` | `local` | — | `local` | — |
 | `server-schema` | `diagnostic-http` | — | `server-dependent` | — |
+| `validate-input` | `diagnostic-http` | — | `server-dependent` | — |
 | `version` | `local` | — | `local` | — |
 | `workspace authority category archive` | `http` | `POST /identity/workspaces/{workspace_id}/authority-categories/{category_id}/archive` | `proposed` | — |
 | `workspace authority category clone` | `http` | `POST /identity/workspaces/{workspace_id}/authority-categories/{category_id}/clone` | `proposed` | — |

@@ -113,3 +113,30 @@ For uncertain writes: `woobe manifest reconcile STEP --resource-id ID --file res
 | 130 | Local interruption |
 
 JSONL runtime stdout contains semantic SDK events; client errors go to stderr. Other JSON output is one envelope. Credentials and administrative secret fields are redacted; semantic runtime event payloads are preserved.
+
+## Input validation and checkpoint inspection
+
+```sh
+woobe schema --command "manifest validate" --kind document
+woobe validate-input --command "project agent create" --file agent.json
+woobe manifest status --checkpoint ./apply-checkpoint.json
+woobe doctor
+```
+
+`validate-input` sends only an OpenAPI GET; it does not submit the supplied body. It supports object/array/primitive types, required/properties/additionalProperties, sizes, enum/const, numeric bounds with exact rationals, RE2-compatible patterns, local references and composition. Unsupported assertions (including format), external references and excessive schema depth return exit 9. Domain validation and authorization still occur on the server. Validation is explicit; writes do not silently add schema-fetch requirements.
+
+JSON inputs reject duplicate fields, more than one value and nesting beyond 128. Manifests require object configuration bodies, exclude read steps and literal sensitive fields (including credential `value`), and reject duplicate/self dependencies. IDs match `[a-zA-Z0-9_-]{1,128}`. Canonical hashing ignores object-key order/formatting and preserves array order, null and numeric values. Updated hash/fingerprint rules can reject old checkpoints; preserve them for manual reconciliation instead of deleting/replaying.
+
+Control Key fingerprints bind checkpoint recovery to actual key material, including environment keys. Human-session principal binding still needs authoritative server identity. `doctor` runs instance, identity and OpenAPI reads independently; partial diagnostics include evidence and exit 10. Advertised routes never imply effective authority.
+
+## Resource projections and distribution
+
+```sh
+woobe export NETWORK --command "project network get" --project PROJECT --destination network.json
+woobe export TRACE --command "project trace get" --destination trace.json
+woobe manifest export --resource agent --id AGENT --destination agent.json
+```
+
+Generic export accepts canonical resource `get` operations with exact route-order IDs. Manifest shortcuts cover agent, network, skill-version, knowledge collection and surface. Every projection remains `complete:false` and `apply_ready:false`, with observed ETag/request ID when available. Unsupported Tool getters are not fabricated. Secret fields are redacted before file/output rendering. Projection export does not guarantee pagination or round-trip apply.
+
+Packages include the executable, README, usage and `manifest.schema.json`. `artifacts.json` records version, source commit, compiler, OS/architecture, byte size and SHA256 for exactly six archives. `python3 scripts/verify_artifacts.py` verifies contents, schemas and checksums before release publication. No release/tag is created by this PR.
