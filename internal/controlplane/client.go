@@ -36,8 +36,8 @@ func (c *Client) Request(ctx context.Context, method, path string, q url.Values,
 	return c.RequestReader(ctx, method, path, q, reader, "application/json")
 }
 func (c *Client) RequestReader(ctx context.Context, method, path string, q url.Values, body io.Reader, contentType string) (any, http.Header, error) {
-	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || strings.ContainsAny(path, "?#\\") {
-		return nil, nil, output.New(2, "request path must be an origin-relative path; use --query for query parameters")
+	if e := ValidatePath(path); e != nil {
+		return nil, nil, e
 	}
 	raw := c.Base + path
 	if len(q) > 0 {
@@ -135,4 +135,11 @@ func responseError(method string, resp *http.Response, code int, message string)
 		outcome = "unknown"
 	}
 	return &output.Error{Code: code, Message: message, Status: resp.StatusCode, RequestID: resp.Header.Get("X-Request-ID"), Outcome: outcome}
+}
+
+func ValidatePath(path string) error {
+	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || strings.ContainsAny(path, "?#\\") {
+		return output.New(2, "request path must be origin-relative; use --query for query parameters")
+	}
+	return nil
 }

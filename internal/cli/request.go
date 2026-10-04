@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/controlplane"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
 	"os"
@@ -24,6 +25,9 @@ func (a *App) requestCommands() {
 	}})
 }
 func (a *App) call(cmd *cobra.Command, method, path string, b []byte, secret bool) error {
+	if e := controlplane.ValidatePath(path); e != nil {
+		return e
+	}
 	c, e := a.client()
 	if e != nil {
 		return e
