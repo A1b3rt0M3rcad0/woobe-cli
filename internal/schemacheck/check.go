@@ -76,12 +76,51 @@ func check(raw, v, doc any, p string, depth int) error {
 		return unsupported(p, "schema must be object or boolean")
 	}
 	allowed := map[string]bool{}
-	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items minItems maxItems uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const") {
+	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items minItems maxItems uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not") {
 		allowed[k] = true
 	}
 	for k := range s {
 		if !allowed[k] && !strings.HasPrefix(k, "x-") {
 			return unsupported(p, "unsupported keyword: "+k)
+		}
+	}
+	if ref, ok := s["$ref"].(string); ok {
+		target, e := Resolve(doc, ref)
+		if e != nil {
+			return e
+		}
+		if e = check(target, v, doc, p, depth+1); e != nil {
+			return e
+		}
+	}
+	for _, key := range []string{"allOf", "anyOf", "oneOf"} {
+		if raw, ok := s[key]; ok {
+			branches, ok := raw.([]any)
+			if !ok || len(branches) == 0 {
+				return unsupported(p, "invalid composition")
+			}
+			matches := 0
+			for _, b := range branches {
+				e := check(b, v, doc, p, depth+1)
+				if x, ok := e.(*Error); ok && x.Unsupported {
+					return e
+				}
+				if e == nil {
+					matches++
+				}
+			}
+			if key == "allOf" && matches != len(branches) || key == "anyOf" && matches == 0 || key == "oneOf" && matches != 1 {
+				return fail(p, key+" mismatch")
+			}
+		}
+	}
+	if b, ok := s["not"]; ok {
+		e := check(b, v, doc, p, depth+1)
+		if x, ok := e.(*Error); ok && x.Unsupported {
+			return e
+		}
+		if e == nil {
+			return fail(p, "not mismatch")
 		}
 	}
 	if v == nil && s["nullable"] == true {
