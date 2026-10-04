@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/manifest"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
@@ -33,11 +34,20 @@ func (a *App) validateManifest(d manifest.Document) error {
 		if found.Status == "proposed" {
 			return output.New(9, "manifest uses absent server extension")
 		}
+		if found.Method == "GET" || found.Method == "HEAD" {
+			return output.New(2, "manifest steps must mutate configuration; use explicit reads for inspection")
+		}
 		if found.Secret || found.Effect == "publication" || found.Effect == "execution" || found.Method == "DELETE" {
 			return output.New(2, "manifest permits configuration operations only; issuance publication execution and deletion must be explicit commands")
 		}
 		if len(s.Args) != len(found.Params) {
 			return output.New(2, "wrong manifest resource arguments")
+		}
+		if len(s.Body) > 0 {
+			var obj map[string]any
+			if json.Unmarshal(s.Body, &obj) != nil || obj == nil {
+				return output.New(2, "manifest configuration body must be an object")
+			}
 		}
 		if found.Body && len(s.Body) == 0 {
 			return output.New(2, "manifest operation requires body")
