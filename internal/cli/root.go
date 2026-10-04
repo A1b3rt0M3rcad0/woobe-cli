@@ -86,6 +86,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.manifestCommands()
 	a.uploadCommands()
 	a.exportCommands()
+	a.projectionCommand()
 	a.aliasCommands()
 	a.remoteSchemaCommand()
 	a.validateInputCommand()
