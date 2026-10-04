@@ -1,20 +1,139 @@
 package cli
+
 import (
- "bytes"
- "context"
- "encoding/json"
- "net/http"
- "net/http/httptest"
- "os"
- "path/filepath"
- "testing"
+	"bytes"
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"testing"
 )
-func invoke(t *testing.T,args []string,input string)(int,map[string]any){t.Helper();out:=&bytes.Buffer{};a:=New(bytes.NewBufferString(input),out,&bytes.Buffer{});args=append(args,"--config",filepath.Join(t.TempDir(),"config.json"));code:=a.Execute(context.Background(),args);var v map[string]any;if e:=json.Unmarshal(out.Bytes(),&v);e!=nil{t.Fatalf("%s: %v",out,e)};return code,v}
-func TestDiscoveryWithoutCredential(t *testing.T){code,v:=invoke(t,[]string{"help","--output","json"},"");if code!=0||v["success"]!=true{t.Fatal(v)};if len(v["data"].([]any))<150{t.Fatal("incomplete command registry")}}
-func TestAgentCreateAndPatch(t *testing.T){n:=0;s:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){n++;if r.URL.Path!="/ai/agents"&&r.URL.Path!="/ai/agents/a"{t.Error(r.URL.Path)};var b map[string]any;_ =json.NewDecoder(r.Body).Decode(&b);if r.Method=="PATCH"{if _,ok:=b["name"];ok{t.Error("destructive patch")};if x,ok:=b["description"];!ok||x!=nil{t.Error("missing explicit null")}};_,_=w.Write([]byte(`{"data":{"id":"a","api_key":"do-not-print"}}`))}));defer s.Close()
- code,v:=invoke(t,[]string{"project","agent","create","--api-url",s.URL,"--project","p","--file","-"},`{"project_id":"p","name":"A"}`);if code!=0{t.Fatal(v)};data:=v["data"].(map[string]any)["data"].(map[string]any);if data["api_key"]!="[REDACTED]"{t.Fatal("secret leak")};code,v=invoke(t,[]string{"project","agent","update","a","--api-url",s.URL,"--project","p","--file","-"},`{"description":null}`);if code!=0||n!=2{t.Fatal(v)}
+
+func invoke(t *testing.T, args []string, input string) (int, map[string]any) {
+	t.Helper()
+	out := &bytes.Buffer{}
+	a := New(bytes.NewBufferString(input), out, &bytes.Buffer{})
+	args = append(args, "--config", filepath.Join(t.TempDir(), "config.json"))
+	code := a.Execute(context.Background(), args)
+	var v map[string]any
+	if e := json.Unmarshal(out.Bytes(), &v); e != nil {
+		t.Fatalf("%s: %v", out, e)
+	}
+	return code, v
 }
-func TestMissingScopeAndProposedCapability(t *testing.T){code,_:=invoke(t,[]string{"project","agent","list"},"");if code!=2{t.Fatal(code)};code,_=invoke(t,[]string{"workspace","authority","category","create","--file","-"},`{}`);if code!=9{t.Fatal(code)}}
-func TestSecretIssuanceRefusesOverwrite(t *testing.T){n:=0;s:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){n++;_,_=w.Write([]byte(`{"api_key":"secret"}`))}));defer s.Close();p:=filepath.Join(t.TempDir(),"key");_ =os.WriteFile(p,[]byte("existing"),0600);code,_:=invoke(t,[]string{"project","api-key","create","--api-url",s.URL,"--project","p","--file","-","--secret-file",p},`{}`);if code!=2||n!=0{t.Fatal("issued before destination validation")}}
-func TestManifestApplyResume(t *testing.T){n:=0;s:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){n++;_,_=w.Write([]byte(`{"data":{"id":"a"}}`))}));defer s.Close();d:=`{"schema_version":"1","project_id":"p","steps":[{"id":"a","command":"project agent create","body":{"project_id":"p","name":"A"}}]}`;dir:=t.TempDir();args:=[]string{"manifest","apply","--api-url",s.URL,"--project","p","--yes","--file","-","--checkpoint",filepath.Join(dir,"checkpoint"),"--config",filepath.Join(dir,"config")};for i:=0;i<2;i++{a:=New(bytes.NewBufferString(d),&bytes.Buffer{},&bytes.Buffer{});if code:=a.Execute(context.Background(),args);code!=0{t.Fatal(code)}};if n!=1{t.Fatal("committed creation duplicated")}}
-func TestManifestUnknownBlocksResume(t *testing.T){n:=0;s:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){n++;h,_,_:=w.(http.Hijacker).Hijack();_ =h.Close()}));defer s.Close();d:=`{"schema_version":"1","project_id":"p","steps":[{"id":"a","command":"project agent create","body":{}}]}`;dir:=t.TempDir();args:=[]string{"manifest","apply","--api-url",s.URL,"--project","p","--yes","--file","-","--checkpoint",filepath.Join(dir,"checkpoint"),"--config",filepath.Join(dir,"config")};for i:=0;i<2;i++{a:=New(bytes.NewBufferString(d),&bytes.Buffer{},&bytes.Buffer{});if code:=a.Execute(context.Background(),args);code!=10{t.Fatal(code)}};if n!=1{t.Fatal("unknown creation replayed")}}
+func TestDiscoveryWithoutCredential(t *testing.T) {
+	code, v := invoke(t, []string{"help", "--output", "json"}, "")
+	if code != 0 || v["success"] != true {
+		t.Fatal(v)
+	}
+	if len(v["data"].([]any)) < 150 {
+		t.Fatal("incomplete command registry")
+	}
+}
+func TestAgentCreateAndPatch(t *testing.T) {
+	n := 0
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n++
+		if r.URL.Path != "/ai/agents" && r.URL.Path != "/ai/agents/a" {
+			t.Error(r.URL.Path)
+		}
+		var b map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&b)
+		if r.Method == "PATCH" {
+			if _, ok := b["name"]; ok {
+				t.Error("destructive patch")
+			}
+			if x, ok := b["description"]; !ok || x != nil {
+				t.Error("missing explicit null")
+			}
+		}
+		_, _ = w.Write([]byte(`{"data":{"id":"a","api_key":"do-not-print"}}`))
+	}))
+	defer s.Close()
+	code, v := invoke(t, []string{"project", "agent", "create", "--api-url", s.URL, "--project", "p", "--file", "-"}, `{"project_id":"p","name":"A"}`)
+	if code != 0 {
+		t.Fatal(v)
+	}
+	data := v["data"].(map[string]any)["data"].(map[string]any)
+	if data["api_key"] != "[REDACTED]" {
+		t.Fatal("secret leak")
+	}
+	code, v = invoke(t, []string{"project", "agent", "update", "a", "--api-url", s.URL, "--project", "p", "--file", "-"}, `{"description":null}`)
+	if code != 0 || n != 2 {
+		t.Fatal(v)
+	}
+}
+func TestMissingScopeAndProposedCapability(t *testing.T) {
+	code, _ := invoke(t, []string{"project", "agent", "list"}, "")
+	if code != 2 {
+		t.Fatal(code)
+	}
+	code, _ = invoke(t, []string{"workspace", "authority", "category", "create", "--file", "-"}, `{}`)
+	if code != 9 {
+		t.Fatal(code)
+	}
+}
+func TestSecretIssuanceRefusesOverwrite(t *testing.T) {
+	n := 0
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { n++; _, _ = w.Write([]byte(`{"api_key":"secret"}`)) }))
+	defer s.Close()
+	p := filepath.Join(t.TempDir(), "key")
+	_ = os.WriteFile(p, []byte("existing"), 0600)
+	code, _ := invoke(t, []string{"project", "api-key", "create", "--api-url", s.URL, "--project", "p", "--file", "-", "--secret-file", p}, `{}`)
+	if code != 2 || n != 0 {
+		t.Fatal("issued before destination validation")
+	}
+}
+func TestManifestApplyResume(t *testing.T) {
+	n := 0
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { n++; _, _ = w.Write([]byte(`{"data":{"id":"a"}}`)) }))
+	defer s.Close()
+	d := `{"schema_version":"1","project_id":"p","steps":[{"id":"a","command":"project agent create","body":{"project_id":"p","name":"A"}}]}`
+	dir := t.TempDir()
+	args := []string{"manifest", "apply", "--api-url", s.URL, "--project", "p", "--yes", "--file", "-", "--checkpoint", filepath.Join(dir, "checkpoint"), "--config", filepath.Join(dir, "config")}
+	for i := 0; i < 2; i++ {
+		a := New(bytes.NewBufferString(d), &bytes.Buffer{}, &bytes.Buffer{})
+		if code := a.Execute(context.Background(), args); code != 0 {
+			t.Fatal(code)
+		}
+	}
+	if n != 1 {
+		t.Fatal("committed creation duplicated")
+	}
+}
+func TestManifestUnknownBlocksResume(t *testing.T) {
+	n := 0
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n++
+		h, _, _ := w.(http.Hijacker).Hijack()
+		_ = h.Close()
+	}))
+	defer s.Close()
+	d := `{"schema_version":"1","project_id":"p","steps":[{"id":"a","command":"project agent create","body":{}}]}`
+	dir := t.TempDir()
+	args := []string{"manifest", "apply", "--api-url", s.URL, "--project", "p", "--yes", "--file", "-", "--checkpoint", filepath.Join(dir, "checkpoint"), "--config", filepath.Join(dir, "config")}
+	for i := 0; i < 2; i++ {
+		a := New(bytes.NewBufferString(d), &bytes.Buffer{}, &bytes.Buffer{})
+		if code := a.Execute(context.Background(), args); code != 10 {
+			t.Fatal(code)
+		}
+	}
+	if n != 1 {
+		t.Fatal("unknown creation replayed")
+	}
+}
+func TestAgentParentFlagAndInvalidUsage(t *testing.T) {
+	code, v := invoke(t, []string{"project", "agent", "release", "get", "release", "--agent", "agent", "--dry-run"}, "")
+	if code != 0 {
+		t.Fatal(v)
+	}
+	if v["data"].(map[string]any)["path"] != "/ai/agents/agent/releases/release" {
+		t.Fatal(v)
+	}
+	code, _ = invoke(t, []string{"nonexistent"}, "")
+	if code != 2 {
+		t.Fatal(code)
+	}
+}

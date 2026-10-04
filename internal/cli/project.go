@@ -1,17 +1,22 @@
 package cli
-func(a *App) projectCommands(){for _,op:=range []Operation{
- {Command:"project list",Method:"GET",Path:"/core/projects",Scope:"project",Body:false,QueryScope:"workspace_id"},
- {Command:"project create",Method:"POST",Path:"/core/projects",Scope:"project",Body:true},
- {Command:"project get",Method:"GET",Path:"/core/projects/{resource_id}",Scope:"project",Body:false},
- {Command:"project update",Method:"PATCH",Path:"/core/projects/{resource_id}",Scope:"project",Body:true},
- {Command:"project overview",Method:"GET",Path:"/core/projects/{project_id}/overview",Scope:"project",Body:false},
- {Command:"project run list",Method:"GET",Path:"/core/projects/{project_id}/runs",Scope:"project",Body:false},
- {Command:"project member list",Method:"GET",Path:"/core/projects/{project_id}/members",Scope:"project",Body:false},
- {Command:"project member grant",Method:"POST",Path:"/core/projects/{project_id}/members",Scope:"project",Body:true},
- {Command:"project member revoke",Method:"DELETE",Path:"/core/projects/{project_id}/members/{user_id}",Scope:"project",Body:false},
- {Command:"project access grant",Method:"POST",Path:"/core/projects/{project_id}/access",Scope:"project",Body:true},
- {Command:"project access revoke",Method:"DELETE",Path:"/core/projects/{project_id}/access/{subject_type}/{subject_id}",Scope:"project",Body:false},
- {Command:"project env list",Method:"GET",Path:"/core/projects/{project_id}/environment-keys",Scope:"project",Body:false},
- {Command:"project env set",Method:"PUT",Path:"/core/projects/{project_id}/environment-keys/{key}",Scope:"project",Body:true},
- {Command:"project env unset",Method:"DELETE",Path:"/core/projects/{project_id}/environment-keys/{key}",Scope:"project",Body:false},
-}{a.register(op)}}
+
+func (a *App) projectCommands() {
+	for _, op := range []Operation{
+		{Command: "project list", Method: "GET", Path: "/core/projects", Scope: "project", Body: false, QueryScope: "workspace_id"},
+		{Command: "project create", Method: "POST", Path: "/core/projects", Scope: "project", Body: true},
+		{Command: "project get", Method: "GET", Path: "/core/projects/{resource_id}", Scope: "project", Body: false},
+		{Command: "project update", Method: "PATCH", Path: "/core/projects/{resource_id}", Scope: "project", Body: true},
+		{Command: "project overview", Method: "GET", Path: "/core/projects/{project_id}/overview", Scope: "project", Body: false},
+		{Command: "project run list", Method: "GET", Path: "/core/projects/{project_id}/runs", Scope: "project", Body: false},
+		{Command: "project member list", Method: "GET", Path: "/core/projects/{project_id}/members", Scope: "project", Body: false},
+		{Command: "project member grant", Method: "POST", Path: "/core/projects/{project_id}/members", Scope: "project", Body: true},
+		{Command: "project member revoke", Method: "DELETE", Path: "/core/projects/{project_id}/members/{user_id}", Scope: "project", Body: false},
+		{Command: "project access grant", Method: "POST", Path: "/core/projects/{project_id}/access", Scope: "project", Body: true},
+		{Command: "project access revoke", Method: "DELETE", Path: "/core/projects/{project_id}/access/{subject_type}/{subject_id}", Scope: "project", Body: false},
+		{Command: "project env list", Method: "GET", Path: "/core/projects/{project_id}/environment-keys", Scope: "project", Body: false},
+		{Command: "project env set", Method: "PUT", Path: "/core/projects/{project_id}/environment-keys/{key}", Scope: "project", Body: true},
+		{Command: "project env unset", Method: "DELETE", Path: "/core/projects/{project_id}/environment-keys/{key}", Scope: "project", Body: false},
+	} {
+		a.register(op)
+	}
+}
