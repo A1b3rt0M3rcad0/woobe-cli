@@ -1,0 +1,39 @@
+package cli
+import (
+ "encoding/json"
+ "net/url"
+ "regexp"
+ "strings"
+ "github.com/spf13/cobra"
+ "github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
+)
+type Operation struct {
+ Command string `json:"command"`; ID string `json:"operation_id"`; Method string `json:"method"`; Path string `json:"path"`
+ Scope string `json:"scope"`; Permission string `json:"permission,omitempty"`; Effect string `json:"effect"`
+ Status string `json:"availability"`; Body bool `json:"body_required"`; Secret bool `json:"secret_emission"`
+ Params []string `json:"path_parameters"`; QueryScope string `json:"query_scope,omitempty"`
+}
+var placeholders=regexp.MustCompile(`\{([^}]+)\}`)
+func(a *App) group(path string)*cobra.Command{cur:=a.Root;for _,part:=range strings.Fields(path){var found *cobra.Command;for _,c:=range cur.Commands(){if c.Name()==part{found=c;break}};if found==nil{found=&cobra.Command{Use:part,Short:part+" operations"};cur.AddCommand(found)};cur=found};return cur}
+func(a *App) register(op Operation){
+ if op.ID==""{op.ID=strings.ReplaceAll(op.Command," ",".")};if op.Status==""{op.Status="observed"};if op.Effect==""{op.Effect="read";if op.Method!="GET"{op.Effect="mutation"}}
+ for _,m:=range placeholders.FindAllStringSubmatch(op.Path,-1){if m[1]!="workspace_id"&&m[1]!="project_id"{op.Params=append(op.Params,m[1])}}
+ a.Registry=append(a.Registry,op);parts:=strings.Fields(op.Command);g:=a.group(strings.Join(parts[:len(parts)-1]," "));use:=parts[len(parts)-1];for _,p:=range op.Params{use+=" <"+p+">"}
+ cmd:=&cobra.Command{Use:use,Short:op.Method+" "+op.Path,Args:cobra.ExactArgs(len(op.Params)),RunE:func(cmd *cobra.Command,args []string)error{
+ if op.Status=="proposed"{return output.New(9,"capability requires a server extension; see docs/STATUS.md")}
+ _,e:=a.resolve();if e!=nil{return e};path:=op.Path
+ for _,p:=range []struct{name,value string}{{"workspace_id",a.Workspace},{"project_id",a.Project}}{if strings.Contains(path,"{"+p.name+"}"){if p.value==""{return output.New(2,p.name+" required")};path=strings.ReplaceAll(path,"{"+p.name+"}",url.PathEscape(p.value))}}
+ for i,p:=range op.Params{if args[i]==""||args[i]=="."||args[i]==".."{return output.New(2,"invalid resource ID")};path=strings.ReplaceAll(path,"{"+p+"}",url.PathEscape(args[i]))}
+ b,e:=a.body(op.Body);if e!=nil{return e}
+ if op.QueryScope!="" {id:=a.Project;if op.QueryScope=="workspace_id"{id=a.Workspace};if id==""{return output.New(2,op.QueryScope+" required")};a.Query=append(a.Query,op.QueryScope+"="+id)}
+ if (op.Effect=="publication"||op.Effect=="execution"||strings.HasSuffix(op.Command," revoke")||strings.HasSuffix(op.Command," cancel"))&&!a.Yes&&!a.DryRun{return output.New(2,"operation requires --yes")}
+ return a.call(cmd,op.Method,path,b,op.Secret)
+ }};g.AddCommand(cmd)
+}
+func(a *App) discoveryCommands(){
+ a.Root.SetHelpCommand(&cobra.Command{Use:"help [command-path]",Short:"Discover command metadata",RunE:func(cmd *cobra.Command,args []string)error{if len(args)==0{return a.emit(a.Registry)};path:=strings.Join(args," ");for _,op:=range a.Registry{if op.Command==path{return a.emit(op)}};return output.New(2,"unknown operation")}})
+ var command,kind string
+ c:=&cobra.Command{Use:"schema",RunE:func(*cobra.Command,[]string)error{for _,op:=range a.Registry{if op.Command==command{schema:=map[string]any{"$schema":"https://json-schema.org/draft/2020-12/schema","schema_version":"1","operation":op,"kind":kind,"type":"object","additionalProperties":true,"description":"Transport schema; domain validation is authoritative on server"};if kind!="input"&&kind!="output"{return output.New(2,"kind must be input or output")};return a.emit(schema)}};return output.New(2,"unknown operation")}};c.Flags().StringVar(&command,"command","","Canonical command path");c.Flags().StringVar(&kind,"kind","input","input or output");a.Root.AddCommand(c)
+ a.Root.AddCommand(&cobra.Command{Use:"doctor",Args:cobra.NoArgs,RunE:func(cmd *cobra.Command,_ []string)error{c,e:=a.client();if e!=nil{return e};v,_,e:=c.Request(cmd.Context(),"GET","/identity/instance/status",nil,nil);if e!=nil{return e};return a.emit(map[string]any{"instance":v,"client_version":Version,"server_authority_enforcement":"not verified by connectivity check","extensions": "see docs/STATUS.md"})}})
+ _=json.Valid
+}
