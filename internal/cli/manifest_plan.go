@@ -2,7 +2,6 @@ package cli
 
 import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/manifest"
-	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -36,8 +35,8 @@ func (a *App) manifestPlanCommands(g *cobra.Command) {
 		}
 		return a.emit(map[string]any{"manifest_hash": d.Hash(), "workspace_id": d.Workspace, "project_id": d.Project, "operations": plan, "complete": true, "atomic": false})
 	}})
-	g.AddCommand(&cobra.Command{Use: "diff", Args: cobra.NoArgs, RunE: func(*cobra.Command, []string) error {
-		return output.New(9, "semantic remote diff requires resource schemas and server revision contracts; use plan for explicit operations")
-	}})
+	a.manifestDiffCommand(g)
+
 	a.manifestApplyCommand(g)
+	a.manifestReconcileCommand(g)
 }

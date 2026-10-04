@@ -12,13 +12,14 @@ import (
 )
 
 type checkpoint struct {
-	Hash       string            `json:"manifest_hash"`
-	Origin     string            `json:"api_url"`
-	Workspace  string            `json:"workspace_id"`
-	Project    string            `json:"project_id"`
-	Credential string            `json:"credential_ref"`
-	Steps      map[string]string `json:"steps"`
-	Results    map[string]any    `json:"results,omitempty"`
+	Hash            string                    `json:"manifest_hash"`
+	Origin          string                    `json:"api_url"`
+	Workspace       string                    `json:"workspace_id"`
+	Project         string                    `json:"project_id"`
+	Credential      string                    `json:"credential_ref"`
+	Steps           map[string]string         `json:"steps"`
+	Results         map[string]any            `json:"results,omitempty"`
+	Reconciliations map[string]Reconciliation `json:"reconciliations,omitempty"`
 }
 
 func (a *App) manifestApplyCommand(g *cobra.Command) {
@@ -43,6 +44,13 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 		}
 		if (d.Workspace != "" && v.Workspace != d.Workspace) || (d.Project != "" && v.Project != d.Project) {
 			return output.New(6, "manifest scope must match selected context")
+		}
+		if !a.DryRun {
+			release, e := acquireCheckpointLock(path)
+			if e != nil {
+				return e
+			}
+			defer release()
 		}
 		cp := checkpoint{Hash: d.Hash(), Origin: v.APIURL, Workspace: v.Workspace, Project: v.Project, Credential: v.Credential, Steps: map[string]string{}, Results: map[string]any{}}
 		if b, err := os.ReadFile(path); err == nil {
@@ -73,7 +81,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 		steps, _ := d.Order()
 		for _, s := range steps {
 			switch cp.Steps[s.ID] {
-			case "committed":
+			case "committed", "reconciled":
 				continue
 			case "unknown", "in_flight":
 				return &output.Error{Code: 10, Message: "previous write requires remote reconciliation before resume: " + s.ID, Outcome: "unknown"}

@@ -65,7 +65,9 @@ func (a *App) completeDiscovery() {
 					kind = "composition"
 					effect = "mutation"
 				case path == "manifest diff":
-					availability = "proposed"
+					kind = "composition"
+					effect = "read"
+					availability = "server-dependent"
 				case path == "agent" || path == "network" || path == "control-key":
 					kind = "alias"
 					effect = "delegated"
