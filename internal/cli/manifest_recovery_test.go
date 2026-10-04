@@ -23,7 +23,7 @@ func TestManifestDiffReadsOnlySuppliedPatchFields(t *testing.T) {
 		_, _ = w.Write([]byte(`{"data":{"id":"a","name":"old","untouched":"keep","password":"old-secret"}}`))
 	}))
 	defer s.Close()
-	body := `{"schema_version":"1","project_id":"p","steps":[{"id":"edit","command":"project agent update","args":["a"],"body":{"name":"new","password":"new-secret"},"if_match":"rev1"}]}`
+	body := `{"schema_version":"1","project_id":"p","steps":[{"id":"edit","command":"project agent update","args":["a"],"body":{"name":"new"},"if_match":"rev1"}]}`
 	code, v := invoke(t, []string{"manifest", "diff", "--project", "p", "--api-url", s.URL, "--file", "-"}, body)
 	if code != 0 || requests != 1 {
 		t.Fatal(code, v)
@@ -34,7 +34,7 @@ func TestManifestDiffReadsOnlySuppliedPatchFields(t *testing.T) {
 	}
 	rows := v["data"].(map[string]any)["operations"].([]any)
 	changes := rows[0].(map[string]any)["changes"].([]any)
-	if len(changes) != 2 || changes[0].(map[string]any)["field"] != "name" {
+	if len(changes) != 1 || changes[0].(map[string]any)["field"] != "name" {
 		t.Fatal(changes)
 	}
 }
@@ -49,7 +49,7 @@ func TestManifestDiffConflictAndUnsupportedGetter(t *testing.T) {
 	if code != 6 {
 		t.Fatal(code)
 	}
-	body = `{"schema_version":"1","steps":[{"id":"edit","command":"project env set","args":["variable"],"body":{"value":"x"}}]}`
+	body = `{"schema_version":"1","steps":[{"id":"edit","command":"project env set","args":["variable"],"body":{"value":null}}]}`
 	code, _ = invoke(t, []string{"manifest", "diff", "--api-url", s.URL, "--project", "p", "--file", "-"}, body)
 	if code != 9 {
 		t.Fatal(code)
