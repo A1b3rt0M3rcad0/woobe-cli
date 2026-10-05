@@ -21,3 +21,12 @@ func TestRequestPagesPartialOutput(t *testing.T) {
 		t.Fatal("secret leaked")
 	}
 }
+
+func TestPagedDryRunRejectsInvalidPathsAndLimits(t *testing.T) {
+	for _, args := range [][]string{{"request-pages", "//foreign.invalid", "--dry-run"}, {"request-pages", "/items", "--max-pages", "0", "--dry-run"}} {
+		code, _ := invoke(t, args, "")
+		if code != 2 {
+			t.Fatal(code)
+		}
+	}
+}

@@ -38,7 +38,7 @@ func nextLink(header string) (string, error) {
 			}
 			v = strings.Trim(strings.TrimSpace(v), `"`)
 			for _, rel := range strings.Fields(v) {
-				if rel == "next" {
+				if strings.EqualFold(rel, "next") {
 					if next != "" {
 						return "", output.New(9, "multiple pagination next links")
 					}

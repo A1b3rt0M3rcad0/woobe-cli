@@ -217,8 +217,8 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 		return 0
 	}
 	if partial, ok := e.(*partialPages); ok {
-		_ = output.Write(a.Out, a.Mode, output.Redact(partial.Data), nil, &output.Error{Code: 10, Message: partial.Message})
-		return 10
+		_ = output.Write(a.Out, a.Mode, output.Redact(partial.Data), nil, &output.Error{Code: partial.Code, Message: partial.Message})
+		return partial.Code
 	}
 	if partial, ok := e.(*diagnosticPartial); ok {
 		_ = output.Write(a.Out, a.Mode, output.Redact(partial.Data), nil, &output.Error{Code: 10, Message: partial.Error()})

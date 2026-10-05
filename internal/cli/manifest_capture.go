@@ -31,6 +31,20 @@ func (a *App) manifestCaptureCommand(g *cobra.Command) {
 		if len(fields) == 0 {
 			return output.New(2, "at least one --field is required")
 		}
+		seenFields := map[string]bool{}
+		for _, field := range fields {
+			if field == "" || field == "id" || field == "project_id" || field == "workspace_id" || output.Sensitive(field) || seenFields[field] {
+				return output.New(2, "selected fields must be unique readable configuration names")
+			}
+			seenFields[field] = true
+		}
+		selectedContext, e := a.resolve()
+		if e != nil {
+			return e
+		}
+		if selectedContext.Project == "" {
+			return output.New(2, "capture requires explicit selected project")
+		}
 		parentIDs := map[string]string{}
 		for _, p := range parents {
 			name, value, ok := strings.Cut(p, "=")
