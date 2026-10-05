@@ -35,7 +35,7 @@ func checkDocument(schema, value, document any, request bool) error {
 	if e := valueWork(value, 0, &budget); e != nil {
 		return e
 	}
-	if e := inspect(schema, document, "$", 0, map[string]bool{}, &budget, request, false); e != nil {
+	if e := inspect(schema, document, "$", 0, map[string]bool{}, &budget, request, false, modernDialect(document)); e != nil {
 		return e
 	}
 	return check(schema, value, document, "$", 0, &budget, request)

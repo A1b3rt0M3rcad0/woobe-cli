@@ -104,3 +104,19 @@ func TestAdvertisedDialectGuard(t *testing.T) {
 		}
 	}
 }
+
+func TestLegacyNullableInModernDocumentDoesNotAuthorizeWrite(t *testing.T) {
+	writes := 0
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/openapi.json" {
+			w.Write([]byte(`{"openapi":"3.1.0","paths":{"/ai/agents":{"post":{"requestBody":{"content":{"application/json":{"schema":{"type":"string","nullable":true}}}}}}}}`))
+			return
+		}
+		writes++
+	}))
+	defer s.Close()
+	code, result := invoke(t, []string{"project", "agent", "create", "--validate-body", "--api-url", s.URL, "--file", "-"}, `null`)
+	if code != 9 || writes != 0 || result["error"].(map[string]any)["write_outcome"] != "not_attempted" {
+		t.Fatal(code, writes, result)
+	}
+}

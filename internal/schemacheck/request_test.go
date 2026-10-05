@@ -118,3 +118,32 @@ func TestFormatAndDialectDeclarationsFailClosed(t *testing.T) {
 		}
 	}
 }
+
+func TestAdvertisedDialectDoesNotEnableLegacyNullable(t *testing.T) {
+	for _, doc := range []any{
+		decode(`{"openapi":"3.1.0"}`),
+		decode(`{"jsonSchemaDialect":"https://json-schema.org/draft/2020-12/schema"}`),
+		decode(`{"$schema":"https://json-schema.org/draft/2020-12/schema"}`),
+	} {
+		e := CheckRequest(decode(`{"properties":{"absent":{"type":"string","nullable":true}}}`), decode(`{}`), doc)
+		if x, ok := e.(*Error); !ok || !x.Unsupported {
+			t.Fatal(doc, e)
+		}
+	}
+	for _, schema := range []string{
+		`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string","nullable":true}`,
+		`{"$schema":"https://json-schema.org/draft/2020-12/schema","properties":{"absent":{"nullable":true}}}`,
+		`{"properties":{"absent":{"$schema":"https://json-schema.org/draft/2020-12/schema","nullable":false}}}`,
+	} {
+		e := CheckRequest(decode(schema), nil, nil)
+		if x, ok := e.(*Error); !ok || !x.Unsupported {
+			t.Fatal(schema, e)
+		}
+	}
+	if e := CheckRequest(decode(`{"type":"string","nullable":true}`), nil, nil); e != nil {
+		t.Fatal("unversioned legacy subset changed", e)
+	}
+	if e := CheckRequest(decode(`{"type":["string","null"]}`), nil, decode(`{"openapi":"3.1.0"}`)); e != nil {
+		t.Fatal(e)
+	}
+}

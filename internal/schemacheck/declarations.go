@@ -45,6 +45,9 @@ func declarations(s map[string]any, p string) error {
 		if v != "https://json-schema.org/draft/2020-12/schema" && v != "https://spec.openapis.org/oas/3.1/dialect/base" {
 			return unsupported(p, "unsupported schema dialect")
 		}
+		if _, exists := s["nullable"]; exists {
+			return unsupported(p, "legacy nullable is not supported in an advertised 2020-12 dialect")
+		}
 	}
 	if v, ok := s["format"]; ok {
 		name, ok := v.(string)
