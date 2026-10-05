@@ -54,7 +54,7 @@ O denominador inclui backend, CLI, documentação e distribuição. Concluída s
 | 2.8 | Implementar JSON, tabela, stderr e códigos de saída. | concluída | internal/output and root implement JSON/table and typed exit/stream error behavior, verified in tests. |
 | 2.9 | Portar para Go os comportamentos compatíveis de request/control-key, sem dependência de execução do protótipo Python. | parcial | Go request/control-key handlers exist; branch-dependent Control Key server compatibility is unverified. |
 | 2.10 | Implementar doctor/version/help e validação de capacidades. | concluída | doctor/version/help and advertised-route diagnostics are implemented with fixtures. |
-| 2.11 | Implementar help JSON e exportação de schemas a partir do registro único, com compatibilidade e efeito das operações. | parcial | Single Cobra-derived discovery includes 237 handlers and 188 HTTP operations. Advertised body validation checks explicit bounded schema subset; full dialect/DTO semantics remain partial. |
+| 2.11 | Implementar help JSON e exportação de schemas a partir do registro único, com compatibilidade e efeito das operações. | parcial | Cobra-derived discovery includes 238 handlers and 188 HTTP operations. Shared advertised body validation, manifest preflight, opt-in before-write checks and snapshot digest pin are delivered; full schema/DTO/path/query semantics remain partial. |
 | 3.1 | Workspace list/get/create/update. | concluída | workspace.go provides observed CRUD handlers and operation discovery. |
 | 3.2 | Membros e convites suportados, com limites de papel. | parcial | Member/invite handlers exist; server role ceilings are unverified. |
 | 3.3 | Project list/get/create/update/overview. | concluída | project.go provides observed CRUD/overview handlers. |
@@ -107,9 +107,9 @@ O denominador inclui backend, CLI, documentação e distribuição. Concluída s
 | 8.1 | Schema de manifest versionado. | concluída | Versioned step v1/resource v2 schemas are packaged and tested. |
 | 8.2 | Validate/diff/plan/export. | parcial | Validate/plan/field diff/projection/capture are implemented; complete semantic export/import is absent. |
 | 8.3 | Apply por operação e dependências. | concluída | Explicit actions compile to dependency-ordered steps; apply/ref/recovery fixtures pass. |
-| 8.4 | IDs/revisões esperadas e revalidação antes de mutar. | parcial | Explicit IDs/ETags/opt-in reads exist; full authoritative revision/idempotency/existence reconciliation remains. |
-| 8.5 | Checkpoint e retomada por reconciliação. | concluída | Private checkpoints, locks, scoped key binding and explicit-ID reconciliation resume without replay in tests. |
-| 8.6 | Relatório parcial/skipped e código de saída próprio. | concluída | Partial apply reports step states/counts/save status; unchanged checkpoints and exit 10 are tested. |
+| 8.4 | IDs/revisões esperadas e revalidação antes de mutar. | parcial | Expected If-Match forwarded, optional --validate-body checks resolved bodies before write attempts, schema digest pin and read-only preflight exist. Full route/query/DTO/domain/revision semantics and real-backend revalidation remain partial. |
+| 8.5 | Checkpoint e retomada por reconciliação. | concluída | Locked key/context-bound checkpoint resume, strict bounded reads/saves, exact returned numeric references, plan/result/dependency integrity and explicit-ID reconciliation are delivered. Original-write attribution/server idempotency and human principal binding remain partial. |
+| 8.6 | Relatório parcial/skipped e código de saída próprio. | concluída | Partial reports include checkpoint state/counts, stopped step, save status and cause. not_attempted steps are resumable; committed steps skipped and uncertain attempts require reconciliation. Fixture tests prove dependent validation cannot send a refused write. |
 | 8.7 | Importação de categorias sem concessão implícita. | pendente | AuthorityCategory declarative import is unavailable pending canonical server contract. |
 | 8.8 | Referências protegidas para credenciais. | pendente | Manifests reject literal secrets; protected secret-provider references are not implemented. |
 | 8.9 | Nenhuma publicação/prune implícitos. | concluída | Manifest validation rejects publication/execution/key issuance/delete; there is no implicit prune. |

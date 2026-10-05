@@ -1,15 +1,13 @@
 # Title
 
-feat: extend CLI contexts and bounded contract validation with migration evidence
+feat: validate manifest bodies before writes and harden recovery transport
 
 # Description
 
-The CLI preserves explicit context selection and prevents a Workspace override from inheriting the previous Project. Configuration loading is strict and bounded; contexts support clearing fields and independent administrative/runtime credential attachments.
+Adds exactly 30 commits after PR #3, for 143 commits above the initial master. Resolved manifest bodies can opt into advertised schema validation before write attempts; read-only preflight reports deferred dependency values, strict completeness and schema snapshot identity. Unsupported validation flags are refused. The backend remains responsible for authorization, route/query schemas and domain rules.
 
-This continuation adds 30 commits on an ordered PR stack: 12 context commits in the existing feature PR, 16 schema/test commits in the validation PR, and 2 migration/final-acceptance commits in the last PR. Across the stack there are 113 commits above the initial master, 237 runnable commands and 188 HTTP operations.
+Checkpoint loading/saving is bounded, plan/result/dependency ownership is verified, returned numeric precision is preserved and pre-write failures are resumable with structured partial evidence. Default writes use fresh HTTP/1 connections to block net/http replay even with Idempotency-Key; reads retain pooled connections. Ambiguous response JSON, path segments and conflicting scope queries are refused.
 
-Advertised request-body validation now supports additional object/dependency/conditional/array assertions, exact numeric equality, local pointers and bounded work. Inactive unsupported schemas fail closed. Validation makes only an OpenAPI GET and does not authorize or execute the selected write. Full schema dialect/DTO semantics and automatic write-time validation remain open.
+Local validation: 151 test functions plus subtests, race tests, vet, module verification, native build/discovery. Coverage 77.6%; discovery 238 handlers / 188 HTTP operations. Final published-head CI and six-target package verification are reported in PR metadata.
 
-Local validation: 122 test functions plus subtests, go test -race, vet, module verification, native build and 76.0% total statement coverage. Bounded schema fuzzing is included in CI. Final stack CI and distribution checks are reported on the PR head.
-
-Draft acceptance remains open: canonical backend authority integration, real Woobe E2E, semantic resource coverage and native credential providers remain. No merge or release is claimed. Audited full-plan completeness is 39/101 delivered (38.6%), 33 partial and 29 pending; no real-server phase acceptance is verified. Python-to-Go migration is documented against the pinned inspected prototype.
+Full-plan completion remains 39/101 (38.6%), 33 partial, 29 pending. This advances partial requirements without claiming their complete backend/domain/E2E acceptance. Canonical backend authority, real Woobe E2E, complete semantic reconciliation and native credential providers remain open. No backend mutation, merge or release is performed. Review order: #1 → #2 → #3 → recovery/preflight PR.

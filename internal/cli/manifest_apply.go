@@ -3,7 +3,6 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/config"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/manifest"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
@@ -80,13 +79,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 		} else if !os.IsNotExist(err) {
 			return output.New(2, "cannot read checkpoint")
 		}
-		save := func() error {
-			b, e := json.MarshalIndent(cp, "", "  ")
-			if e != nil {
-				return e
-			}
-			return config.AtomicWrite(path, b, 0600)
-		}
+		save := func() error { return saveCheckpoint(path, cp) }
 		if a.DryRun {
 			return a.emit(map[string]any{"manifest_hash": d.Hash(), "checkpoint": cp, "executed": false, "validation": "local_plan_only"})
 		}
@@ -129,14 +122,14 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 					cp.Results[s.ID] = output.Redact(observed)
 					cp.Steps[s.ID] = "unchanged"
 					if e = save(); e != nil {
-						return e
+						return stopBeforeWrite(path, cp, s.ID, e)
 					}
 					continue
 				}
 			}
 			cp.Steps[s.ID] = "in_flight"
 			if e = save(); e != nil {
-				return e
+				return stopBeforeWrite(path, cp, s.ID, e)
 			}
 			childOut := &bytes.Buffer{}
 			childErr := &bytes.Buffer{}

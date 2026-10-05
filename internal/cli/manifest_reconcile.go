@@ -43,6 +43,9 @@ func saveCheckpoint(path string, cp checkpoint) error {
 	if e != nil {
 		return e
 	}
+	if len(b) > 32<<20 {
+		return output.New(9, "checkpoint exceeds 32 MiB")
+	}
 	return config.AtomicWrite(path, b, 0600)
 }
 func (a *App) manifestReconcileCommand(g *cobra.Command) {

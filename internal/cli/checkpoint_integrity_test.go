@@ -4,6 +4,7 @@ import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/manifest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -61,5 +62,21 @@ func TestCheckpointDependencyStates(t *testing.T) {
 func TestNotAttemptedStateIsResumable(t *testing.T) {
 	if _, e := parseCheckpoint([]byte(`{"steps":{"a":"not_attempted"}}`)); e != nil {
 		t.Fatal(e)
+	}
+}
+
+func TestOversizedCheckpointDoesNotReplaceExistingFile(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "cp")
+	before := []byte(`{"steps":{}}`)
+	if e := os.WriteFile(p, before, 0600); e != nil {
+		t.Fatal(e)
+	}
+	cp := checkpoint{Steps: map[string]string{}, Results: map[string]any{"a": strings.Repeat("x", 32<<20)}}
+	if saveCheckpoint(p, cp) == nil {
+		t.Fatal("oversized save")
+	}
+	after, e := os.ReadFile(p)
+	if e != nil || string(after) != string(before) {
+		t.Fatal(e, string(after))
 	}
 }

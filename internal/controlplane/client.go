@@ -32,7 +32,7 @@ func New(base, token string, timeout time.Duration) (*Client, error) {
 			return nil, e
 		}
 	}
-	h := &http.Client{Timeout: timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	h := &http.Client{Transport: sharedNoReplayTransport, Timeout: timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	return &Client{Base: strings.TrimRight(base, "/"), Token: token, HTTP: h, Headers: make(http.Header)}, nil
 }
 func (c *Client) Request(ctx context.Context, method, path string, q url.Values, body []byte) (any, http.Header, error) {
