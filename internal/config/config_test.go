@@ -28,3 +28,11 @@ func TestConfigSizeLimit(t *testing.T) {
 		t.Fatal("oversize accepted")
 	}
 }
+
+func TestUnknownConfigFields(t *testing.T) {
+	for _, s := range []string{`{"version":1,"credentail":"wrong"}`, `{"version":1,"contexts":{"a":{"api_url":"http://localhost","project":"wrong"}}}`} {
+		if _, e := loadText(t, s); e == nil {
+			t.Fatal(s)
+		}
+	}
+}

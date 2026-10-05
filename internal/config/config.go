@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
@@ -52,7 +53,9 @@ func Load(path string) (Config, error) {
 	if err = jsoninput.Validate(b); err != nil {
 		return c, fmt.Errorf("invalid config JSON: %w", err)
 	}
-	if err = json.Unmarshal(b, &c); err != nil {
+	d := json.NewDecoder(bytes.NewReader(b))
+	d.DisallowUnknownFields()
+	if err = d.Decode(&c); err != nil {
 		return c, err
 	}
 	if c.Version != 1 {
