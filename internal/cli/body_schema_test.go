@@ -32,3 +32,16 @@ func TestRequestBodyReferenceChains(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestActualJSONMediaMatching(t *testing.T) {
+	for _, media := range []string{"application/json", "application/*", "*/*"} {
+		def := schemaDoc(`{"requestBody":{"content":{"` + media + `":{"schema":true}}}}`)
+		if e := validateBodySchema(nil, def, []byte(`{}`)); e != nil {
+			t.Fatal(e)
+		}
+	}
+	def := schemaDoc(`{"requestBody":{"content":{"application/custom+json":{"schema":true}}}}`)
+	if output.Normalize(validateBodySchema(nil, def, []byte(`{}`))).Code != 9 {
+		t.Fatal("wrong media accepted")
+	}
+}

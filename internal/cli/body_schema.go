@@ -19,7 +19,13 @@ func validateBodySchema(doc, def map[string]any, b []byte) error {
 	}
 	obj, _ := body.(map[string]any)
 	content, _ := obj["content"].(map[string]any)
-	media, _ := content["application/json"].(map[string]any)
+	var media map[string]any
+	for _, key := range []string{"application/json", "application/*", "*/*"} {
+		if raw, exists := content[key]; exists {
+			media, _ = raw.(map[string]any)
+			break
+		}
+	}
 	schema, ok := media["schema"]
 	if !ok {
 		return output.New(9, "operation has no application/json schema")
