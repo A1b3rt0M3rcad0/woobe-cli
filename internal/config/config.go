@@ -107,5 +107,10 @@ func Validate(c Config) error {
 	if c.Version != 1 {
 		return fmt.Errorf("unsupported config version %d", c.Version)
 	}
+	if c.Current != "" {
+		if _, ok := c.Contexts[c.Current]; !ok {
+			return fmt.Errorf("active context does not exist")
+		}
+	}
 	return nil
 }

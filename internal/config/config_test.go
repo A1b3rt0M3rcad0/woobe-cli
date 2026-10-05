@@ -53,3 +53,13 @@ func TestSaveInvalidVersionPreservesConfig(t *testing.T) {
 		t.Fatal("config replaced")
 	}
 }
+
+func TestDanglingActiveContext(t *testing.T) {
+	if _, e := loadText(t, `{"version":1,"current":"missing","contexts":{}}`); e == nil {
+		t.Fatal("dangling current")
+	}
+	c, e := Load(filepath.Join(t.TempDir(), "missing"))
+	if e != nil || c.Version != 1 || c.Contexts == nil {
+		t.Fatal(c, e)
+	}
+}
