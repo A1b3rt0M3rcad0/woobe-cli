@@ -207,3 +207,12 @@ func TestMalformedTypeUnionAndHugeEnum(t *testing.T) {
 		}
 	}
 }
+
+func TestNullablePreservesOtherConstraints(t *testing.T) {
+	if Check(decode(`{"type":"string","nullable":true,"enum":["x"]}`), nil, nil) == nil {
+		t.Fatal("enum bypassed")
+	}
+	if e := Check(decode(`{"type":"string","nullable":true}`), nil, nil); e != nil {
+		t.Fatal(e)
+	}
+}

@@ -1,11 +1,11 @@
 # Implementation status
 
-Date: 2026-10-04. Branch: `feat/go-control-plane-cli`. This is the 83-commit implementation, **not completion of the full design**. Keep all follow-up CLI work in this branch and one PR.
+Date: 2026-10-05. The implementation contains 113 commits above the initial master across an ordered PR stack: `feat/go-control-plane-cli` (foundation/context integrity), `feat/cli-schema-validation` (bounded contract validation), then `docs/cli-migration-acceptance` (migration and final validation evidence). This is **not completion of the full design**. The latest user instruction authorizes multiple PRs; no merge or release is claimed.
 
 ## Delivered client behavior
 
 - Go 1.22 language minimum; Go 1.27.1 toolchain/CI; Cobra v1.8.1; `woobe-sdk-go` v0.1.0 resolves the inspected commit `5a78817a64dc5dcb15aa1d38ec54d4c289f7f56c`.
-- 188 registry-backed API operations: 171 observed in the inspected master, 5 branch-dependent Control Key routes, 12 proposed extension contracts. Unified discovery covers all 234 executable handlers, including the 188 HTTP operations.
+- 188 registry-backed API operations: 171 observed in the inspected master, 5 branch-dependent Control Key routes, 12 proposed extension contracts. Unified discovery covers all 237 executable handlers, including the 188 HTTP operations.
 - Workspace membership/invites; Project/access/environment keys; Agent prompts/contracts/model configs; Agent release lifecycle/tests; multiple Networks, drafts/promotions/activations/environments; HTTP/MCP Tools; Knowledge/Documents/snapshots; providers/models; Skills; ChatSurfaces/keys; Runs/traces/usage.
 - `request` sends only origin-relative paths, forbids redirects and never automatically retries a mutation.
 - Explicit parent identifiers: either positional IDs in route order, or flags such as `--agent`, `--release`, `--network`. Help lists route order. `agent`, `network` and `control-key` aliases forward to canonical handlers.
@@ -31,7 +31,7 @@ Additional delivery: strict bounded duplicate-free JSON; secret-free manifest bo
 | Runtime key constraints and production negative tests | SDK adapter exists; real Agent/Network authorization, environment and target tests remain. |
 | Full resource-kind declarative format from design | Both explicit steps v1 and resource intents v2 are supported. V2 compiles thirteen kinds with explicit create/update, typed parent/target references and dependencies. Opt-in authorized reads checkpoint unchanged compatible updates. Remote diff compares supplied top-level update fields through compatible authorized GETs and checks observed ETags. Creation existence and unresolved dependencies remain unevaluated. Full semantic reconciliation, generic canonical-get projections and `manifest export` are available but explicitly partial/non-apply-ready. Semantic export/import and completeness tracking remain. |
 | Automatic reconciliation of uncertain writes | Explicit-ID authorized-read reconciliation checks nonempty supplied expected fields and persists evidence. It proves observed state, not attribution of the lost write; automatic attribution and server idempotency remain. |
-| All discovery from one registry | Delivered for all 234 executable handlers and their flags/input/output descriptors. Domain DTO validation remains server-derived. |
+| All discovery from one registry | Delivered for all 237 executable handlers and their flags/input/output descriptors. Domain DTO validation remains server-derived. |
 | Canonical field-level schemas and constraints | Server-schema offers authoritative discovery when enabled; `validate-input` reads the authoritative request-body schema and checks an explicit bounded subset, including local references and composition. Unsupported assertions/external references return exit 9; full DTO/schema semantics and automatic validation before every write remain. |
 | Pagination and long streams | Manual repeatable query parameters supported; complete endpoint-specific pagination and SDK reconnect/gap scenarios remain. Reconnect is disabled rather than accepting unverified replay behavior. |
 | Login/refresh/logout E2E | Cookie/CSRF persistence tested with fixtures, not a deployed Woobe installation. No automatic refresh/retry path. |
@@ -48,3 +48,6 @@ One branch, `feat/go-control-plane-cli`, and one draft PR: https://github.com/A1
 Resource continuation: schema v2, kinds/compile discovery, explicit identity and typed dependencies, unchanged-update observations and both packaged schemas. No implicit upsert or complete export/import is claimed.
 
 Latest continuation: 13 typed resource kinds, explicit field capture/update round trips, bounded Link pagination, source revision in binaries and structured partial apply evidence. Full-plan delivery assessment is 38/101 (37.6%), with 33 partial and 30 pending items; see COMPLETENESS.md for all evidence and unverified phase acceptance.
+
+
+Latest 30-commit continuation: strict bounded config, explicit context clearing/runtime attachments, Workspace override inheritance fixes and named show; expanded body-schema subset with inactive-branch inspection, exact numeric equality, recursive local pointers and bounded evaluator; read-only HTTP acceptance fixtures, fuzzing and Python-to-Go migration guide. Local validation: 122 test functions plus subtests, race/vet/module checks, 76.0% total statement coverage (CLI 71.8%, config 75.8%, schema 84.3%). Cross-build is not execution on each OS. Real backend phase acceptance remains 0/10; migration guide delivery raises the full-plan count to 39/101 (38.6%).

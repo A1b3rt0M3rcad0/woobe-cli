@@ -192,3 +192,13 @@ Falhas de apply agora incluem checkpoint, contagens por estado, etapa interrompi
 ## Medida de completude
 
 `python3 scripts/completeness.py` valida a correspondência com todas as 101 entregas do §18 e verifica o relatório gerado. `docs/COMPLETENESS.md` documenta estado/evidência por item e a fórmula. Esse percentual inclui backend e E2E; não deriva de commits, número de comandos ou cobertura de código.
+
+## Context integrity and extended schema validation
+
+`context show NAME` resolves the selected profile. Explicit empty `--project`, `--workspace`, `--credential` and `--runtime-credential` override inherited values for that invocation. Changing Workspace clears an inherited Project unless a Project is supplied explicitly. Persist clearing with `context unset NAME workspace`, `context unset NAME project`, or `context unset NAME credential runtime-credential`; stored secrets are preserved. Attach a separate runtime reference with `context runtime-credential attach NAME --runtime-credential REF` and detach it with `context runtime-credential detach NAME`.
+
+Config v1 is bounded to 1 MiB, rejects unknown/duplicate fields, dangling active context names and invalid context URLs/names, and validates before atomic replacement. See [MIGRATION.md](MIGRATION.md) for Python prototype command/credential/output migration.
+
+The explicit `validate-input` subset additionally supports min/maxProperties, dependentRequired, dependentSchemas, propertyNames, RE2 patternProperties, if/then/else, prefixItems and contains with min/maxContains. Numeric enum/const and uniqueness use exact mathematical equality; nullable alters type acceptance without bypassing enum/composition constraints. Local JSON pointers support escaped property names, URI fragment decoding and array indices. Schema inspection includes inactive properties/branches; an unsupported rule there returns exit 9 rather than valid=true.
+
+Limits: schema depth 64, input depth 128, shared work budget 100,000 nodes/evaluations, numeric representation at most 4,096 characters and exponent magnitude at most 4,096. Inputs exceeding evaluator bounds return exit 9. Format, external references/anchors, schema resource IDs, unevaluated-property/item semantics and unsupported assertion dialects remain outside the subset. readOnly/writeOnly and documentation keywords are annotations here, not request-direction policy. Server authorization, domain validation and create/PATCH rules remain authoritative. No automatic schema probe is added to writes.

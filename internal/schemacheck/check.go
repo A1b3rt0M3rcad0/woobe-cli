@@ -185,10 +185,7 @@ func check(raw, v, doc any, p string, depth int, budget *int) error {
 			}
 		}
 	}
-	if v == nil && s["nullable"] == true {
-		return nil
-	}
-	if typ, ok := s["type"]; ok {
+	if typ, ok := s["type"]; ok && !(v == nil && s["nullable"] == true) {
 		if e := validType(typ, p); e != nil {
 			return e
 		}
