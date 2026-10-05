@@ -3,7 +3,6 @@ package cli
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 )
 
@@ -34,7 +33,6 @@ func TestBodyValidationPreventsSelectedWrite(t *testing.T) {
 	if reads != 2 || writes != 1 {
 		t.Fatal(reads, writes)
 	}
-	_ = strings.TrimSpace
 }
 
 func TestValidationFlagIsNeverSilentlyIgnored(t *testing.T) {

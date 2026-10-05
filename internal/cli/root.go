@@ -243,7 +243,7 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 		return 0
 	}
 	if p, ok := e.(*preflightFailure); ok {
-		_ = output.Write(a.Out, a.Mode, output.Redact(p.Data), nil, p.Cause)
+		_ = a.emitPreflight(p.Data, p.Cause)
 		return p.Cause.Code
 	}
 	if partial, ok := e.(*manifestPartial); ok {

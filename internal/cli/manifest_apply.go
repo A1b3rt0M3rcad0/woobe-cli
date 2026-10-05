@@ -175,7 +175,9 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 				if e = save(); e != nil {
 					return partialApply(cp, s.ID, "apply failed and checkpoint persistence failed", "unknown", false)
 				}
-				return partialApply(cp, s.ID, "partial apply stopped", cp.Steps[s.ID], true)
+				partial := partialApply(cp, s.ID, "partial apply stopped", cp.Steps[s.ID], true).(*manifestPartial)
+				partial.Cause = env.Error
+				return partial
 			}
 			var result output.Envelope
 			dec := json.NewDecoder(bytes.NewReader(childOut.Bytes()))
