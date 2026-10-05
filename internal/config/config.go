@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -116,6 +117,12 @@ func Validate(c Config) error {
 	for name := range c.Contexts {
 		if !regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,100}$`).MatchString(name) {
 			return fmt.Errorf("invalid context name")
+		}
+	}
+	for _, v := range c.Contexts {
+		u, e := url.Parse(v.APIURL)
+		if e != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+			return fmt.Errorf("invalid context API URL")
 		}
 	}
 	return nil

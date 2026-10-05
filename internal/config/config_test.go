@@ -71,3 +71,11 @@ func TestContextNames(t *testing.T) {
 		}
 	}
 }
+
+func TestContextOrigins(t *testing.T) {
+	for _, u := range []string{"", "file:///tmp", "https://user:secret@host", "https://host/?q=1", "https://host/#x"} {
+		if Validate(Config{Version: 1, Contexts: map[string]Context{"dev": {APIURL: u}}}) == nil {
+			t.Fatal(u)
+		}
+	}
+}
