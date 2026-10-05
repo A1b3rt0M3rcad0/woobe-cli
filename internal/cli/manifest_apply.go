@@ -154,7 +154,9 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 				return partialApply(cp, s.ID, "partial apply stopped", cp.Steps[s.ID], true)
 			}
 			var result output.Envelope
-			if e = json.Unmarshal(childOut.Bytes(), &result); e != nil {
+			dec := json.NewDecoder(bytes.NewReader(childOut.Bytes()))
+			dec.UseNumber()
+			if e = dec.Decode(&result); e != nil {
 				return partialApply(cp, s.ID, "operation committed but result could not be checkpointed", "unknown", true)
 			}
 			data := result.Data
