@@ -1,0 +1,725 @@
+{
+  "as_of": "2026-10-04 America/Sao_Paulo",
+  "method": "Equal-weight roadmap deliveries; partial=0, pending=0, done=1. Done means delivered implementation/evidence at stated boundary, not real-server phase acceptance.",
+  "phase_acceptance_verified": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "items": [
+    {
+      "id": "0.1",
+      "phase": 0,
+      "requirement": "Atualizar a referência da master no início da implementação.",
+      "status": "partial",
+      "evidence": "docs/PLAN.md records inspected revisions; current backend master integration is unverified."
+    },
+    {
+      "id": "0.2",
+      "phase": 0,
+      "requirement": "Localizar o cadastro de categorias citado pelo usuário, inclusive em outra branch.",
+      "status": "pending",
+      "evidence": "Canonical authority category implementation has not been located/integrated."
+    },
+    {
+      "id": "0.3",
+      "phase": 0,
+      "requirement": "Documentar quais contratos serão reaproveitados.",
+      "status": "done",
+      "evidence": "docs/OPERATIONS.md, docs/STATUS.md and SDK/source pins distinguish reusable routes from proposals."
+    },
+    {
+      "id": "0.4",
+      "phase": 0,
+      "requirement": "Abrir branch de integração a partir da master.",
+      "status": "partial",
+      "evidence": "One CLI branch exists; the separate backend integration branch/delivery is unverified."
+    },
+    {
+      "id": "0.5",
+      "phase": 0,
+      "requirement": "Portar ControlPlanePrincipal, emissão de control key, grants, guard e testes pertinentes.",
+      "status": "pending",
+      "evidence": "No backend principal/grant/guard port delivered in this repository."
+    },
+    {
+      "id": "0.6",
+      "phase": 0,
+      "requirement": "Resolver a colisão Alembic com revisão livre e down_revision atual.",
+      "status": "pending",
+      "evidence": "No Alembic migration integration delivered."
+    },
+    {
+      "id": "0.7",
+      "phase": 0,
+      "requirement": "Preservar ModelSpec e demais mudanças da master.",
+      "status": "pending",
+      "evidence": "Backend master preservation has not been validated by integration."
+    },
+    {
+      "id": "0.8",
+      "phase": 0,
+      "requirement": "Inicializar o module Go no repositório canônico `woobe-cli`, fixar toolchain/dependências e documentar a migração do protótipo Python.",
+      "status": "done",
+      "evidence": "go.mod, cmd/woobe, scripts/package.sh and docs/USAGE.md establish canonical Go client and Python-free runtime."
+    },
+    {
+      "id": "0.9",
+      "phase": 0,
+      "requirement": "Atualizar ADR e documentação para o estado integrado.",
+      "status": "partial",
+      "evidence": "Client status documents exist; integrated backend ADR/state is missing."
+    },
+    {
+      "id": "1.1",
+      "phase": 1,
+      "requirement": "Registrar cada operação administrativa por operation_id, principal, escopo e efeito.",
+      "status": "pending",
+      "evidence": "Backend implementation and real authorization matrix are not delivered/verified here."
+    },
+    {
+      "id": "1.2",
+      "phase": 1,
+      "requirement": "Cobrir aliases/rotas legadas ou negar seu uso com Control Key.",
+      "status": "pending",
+      "evidence": "Backend implementation and real authorization matrix are not delivered/verified here."
+    },
+    {
+      "id": "1.3",
+      "phase": 1,
+      "requirement": "Corrigir pesquisa POST, auth status MCP, catálogos e runtime environments.",
+      "status": "pending",
+      "evidence": "Backend implementation and real authorization matrix are not delivered/verified here."
+    },
+    {
+      "id": "1.4",
+      "phase": 1,
+      "requirement": "Separar staging, produção e execução de ferramentas.",
+      "status": "pending",
+      "evidence": "Backend implementation and real authorization matrix are not delivered/verified here."
+    },
+    {
+      "id": "1.5",
+      "phase": 1,
+      "requirement": "Resolver todos os tipos de ID ao Project proprietário.",
+      "status": "pending",
+      "evidence": "Backend implementation and real authorization matrix are not delivered/verified here."
+    },
+    {
+      "id": "1.6",
+      "phase": 1,
+      "requirement": "Aplicar política de ações a principals humanos; fechar viewer e teto de delegação de admin.",
+      "status": "pending",
+      "evidence": "Backend implementation and real authorization matrix are not delivered/verified here."
+    },
+    {
+      "id": "1.7",
+      "phase": 1,
+      "requirement": "Preservar comparação de subconjunto por Project e Workspace.",
+      "status": "pending",
+      "evidence": "Backend implementation and real authorization matrix are not delivered/verified here."
+    },
+    {
+      "id": "1.8",
+      "phase": 1,
+      "requirement": "Especificar delegação de Runtime Keys e política de grants de Project recém-criado.",
+      "status": "pending",
+      "evidence": "Backend implementation and real authorization matrix are not delivered/verified here."
+    },
+    {
+      "id": "1.9",
+      "phase": 1,
+      "requirement": "Definir revisão/controle de concorrência para grants e alterações sem mecanismo existente.",
+      "status": "pending",
+      "evidence": "Backend implementation and real authorization matrix are not delivered/verified here."
+    },
+    {
+      "id": "1.10",
+      "phase": 1,
+      "requirement": "Implementar idempotência administrativa nas operações exigidas e consistência entre criação de Project e grant do criador.",
+      "status": "pending",
+      "evidence": "Backend implementation and real authorization matrix are not delivered/verified here."
+    },
+    {
+      "id": "1.11",
+      "phase": 1,
+      "requirement": "Documentar autoridade/expiração dos descendentes e semântica de revogação.",
+      "status": "pending",
+      "evidence": "Backend implementation and real authorization matrix are not delivered/verified here."
+    },
+    {
+      "id": "1.12",
+      "phase": 1,
+      "requirement": "Garantir projeção de segredos no servidor.",
+      "status": "pending",
+      "evidence": "Backend implementation and real authorization matrix are not delivered/verified here."
+    },
+    {
+      "id": "2.1",
+      "phase": 2,
+      "requirement": "Disponibilizar catálogo de permissions/operations/capabilities versionado.",
+      "status": "partial",
+      "evidence": "Local operation catalog exists; effective permissions/capabilities need server contracts."
+    },
+    {
+      "id": "2.2",
+      "phase": 2,
+      "requirement": "Disponibilizar introspecção própria e preflight sem mutação.",
+      "status": "partial",
+      "evidence": "server-schema, doctor and validate-input perform reads; self authority/preflight contracts remain absent."
+    },
+    {
+      "id": "2.3",
+      "phase": 2,
+      "requirement": "Implementar a entrada `cmd/woobe` e a árvore Cobra, com divisão em `internal/cli`, application, controlplane, identity, runtime, contracts, config e output.",
+      "status": "partial",
+      "evidence": "Cobra/controlplane/identity/config/output exist; application/contracts/runtime boundaries are not fully split as proposed."
+    },
+    {
+      "id": "2.4",
+      "phase": 2,
+      "requirement": "Implementar transporte Go, cancelamento, erros tipados, adapters de credenciais e injeção de stdin/stdout/stderr.",
+      "status": "done",
+      "evidence": "internal/controlplane, credentials, output and root support cancellation/typed errors and injected IO; client tests pass."
+    },
+    {
+      "id": "2.5",
+      "phase": 2,
+      "requirement": "Implementar contextos locais e resolução determinística.",
+      "status": "done",
+      "evidence": "internal/config and context.go implement explicit flag/env/context resolution."
+    },
+    {
+      "id": "2.6",
+      "phase": 2,
+      "requirement": "Implementar login/refresh/logout de sessão com cookies e CSRF.",
+      "status": "partial",
+      "evidence": "Cookie/CSRF fixtures exist; Windows session storage and real login E2E remain."
+    },
+    {
+      "id": "2.7",
+      "phase": 2,
+      "requirement": "Implementar importação e referências protegidas de Control/Runtime Keys.",
+      "status": "partial",
+      "evidence": "POSIX credential references/environment fallback exist; native keychains/Windows protection remain."
+    },
+    {
+      "id": "2.8",
+      "phase": 2,
+      "requirement": "Implementar JSON, tabela, stderr e códigos de saída.",
+      "status": "done",
+      "evidence": "internal/output and root implement JSON/table and typed exit/stream error behavior, verified in tests."
+    },
+    {
+      "id": "2.9",
+      "phase": 2,
+      "requirement": "Portar para Go os comportamentos compatíveis de request/control-key, sem dependência de execução do protótipo Python.",
+      "status": "partial",
+      "evidence": "Go request/control-key handlers exist; branch-dependent Control Key server compatibility is unverified."
+    },
+    {
+      "id": "2.10",
+      "phase": 2,
+      "requirement": "Implementar doctor/version/help e validação de capacidades.",
+      "status": "done",
+      "evidence": "doctor/version/help and advertised-route diagnostics are implemented with fixtures."
+    },
+    {
+      "id": "2.11",
+      "phase": 2,
+      "requirement": "Implementar help JSON e exportação de schemas a partir do registro único, com compatibilidade e efeito das operações.",
+      "status": "partial",
+      "evidence": "All handlers/flags have local schemas; complete domain/dialect/compatibility schemas remain."
+    },
+    {
+      "id": "3.1",
+      "phase": 3,
+      "requirement": "Workspace list/get/create/update.",
+      "status": "done",
+      "evidence": "workspace.go provides observed CRUD handlers and operation discovery."
+    },
+    {
+      "id": "3.2",
+      "phase": 3,
+      "requirement": "Membros e convites suportados, com limites de papel.",
+      "status": "partial",
+      "evidence": "Member/invite handlers exist; server role ceilings are unverified."
+    },
+    {
+      "id": "3.3",
+      "phase": 3,
+      "requirement": "Project list/get/create/update/overview.",
+      "status": "done",
+      "evidence": "project.go provides observed CRUD/overview handlers."
+    },
+    {
+      "id": "3.4",
+      "phase": 3,
+      "requirement": "Acesso humano e acesso pendente por convite.",
+      "status": "done",
+      "evidence": "auth/workspace/project handlers cover observed membership/access and invite operations."
+    },
+    {
+      "id": "3.5",
+      "phase": 3,
+      "requirement": "Control Key CRUD/lifecycle e grants por Project.",
+      "status": "partial",
+      "evidence": "Five Control Key routes are branch-dependent; canonical server acceptance remains unverified."
+    },
+    {
+      "id": "3.6",
+      "phase": 3,
+      "requirement": "Project API Keys e Runtime Keys.",
+      "status": "done",
+      "evidence": "keys.go supplies observed key lifecycle handlers and exclusive secret issuance outputs."
+    },
+    {
+      "id": "3.7",
+      "phase": 3,
+      "requirement": "Environment keys com valores protegidos.",
+      "status": "done",
+      "evidence": "Environment key handlers use recursive value/secret output redaction and explicit issuance controls."
+    },
+    {
+      "id": "3.8",
+      "phase": 3,
+      "requirement": "Alterações incrementais de grants com proteção de revisão.",
+      "status": "partial",
+      "evidence": "Expected revision headers exist; authoritative grant concurrency behavior is unverified."
+    },
+    {
+      "id": "3.9",
+      "phase": 3,
+      "requirement": "Testes de reader mínimo e credencial com permissões diferentes por Project.",
+      "status": "pending",
+      "evidence": "No real reader/multi-Project authority E2E matrix run."
+    },
+    {
+      "id": "4.1",
+      "phase": 4,
+      "requirement": "Reutilizar ou implementar entidade/versionamento de categoria.",
+      "status": "pending",
+      "evidence": "Canonical category entity/versioning integration unavailable."
+    },
+    {
+      "id": "4.2",
+      "phase": 4,
+      "requirement": "Validar permissões primitivas e compatibilidade de scope.",
+      "status": "pending",
+      "evidence": "Canonical primitive permission/scope validation unavailable."
+    },
+    {
+      "id": "4.3",
+      "phase": 4,
+      "requirement": "List/get/create/update/clone/history/archive/delete.",
+      "status": "partial",
+      "evidence": "Proposed category routes are advertisement-gated; full history/clone lifecycle contract is absent."
+    },
+    {
+      "id": "4.4",
+      "phase": 4,
+      "requirement": "Aplicar categoria/revisão a grants, preservando lista concreta.",
+      "status": "pending",
+      "evidence": "Canonical category-to-grant expansion unavailable."
+    },
+    {
+      "id": "4.5",
+      "phase": 4,
+      "requirement": "Atribuições humanas, se fizerem parte do modelo existente/escopo integrado.",
+      "status": "pending",
+      "evidence": "Canonical human assignment contract unavailable."
+    },
+    {
+      "id": "4.6",
+      "phase": 4,
+      "requirement": "Perfis iniciais versionados de reader/editor/builder/publisher/admin.",
+      "status": "partial",
+      "evidence": "Design lists profiles; canonical integrated versioned profile seeding is absent."
+    },
+    {
+      "id": "4.7",
+      "phase": 4,
+      "requirement": "Plan/diff de atualização de categoria aplicada.",
+      "status": "pending",
+      "evidence": "No authoritative applied-category plan/diff contract."
+    },
+    {
+      "id": "4.8",
+      "phase": 4,
+      "requirement": "Subconjunto e condições de delegação após expansão.",
+      "status": "pending",
+      "evidence": "No real expanded delegation subset matrix."
+    },
+    {
+      "id": "4.9",
+      "phase": 4,
+      "requirement": "Garantir que nova revisão não amplia automaticamente credenciais.",
+      "status": "pending",
+      "evidence": "No verified category revision isolation enforcement."
+    },
+    {
+      "id": "4.10",
+      "phase": 4,
+      "requirement": "Eventos de auditoria de criação, revisão e aplicação.",
+      "status": "pending",
+      "evidence": "No verified category administrative audit events."
+    },
+    {
+      "id": "5.1",
+      "phase": 5,
+      "requirement": "Agents e configurações principais.",
+      "status": "done",
+      "evidence": "agent.go provides observed Agent configuration CRUD."
+    },
+    {
+      "id": "5.2",
+      "phase": 5,
+      "requirement": "Prompts, contratos e model configs.",
+      "status": "done",
+      "evidence": "agent.go supplies prompt/contract/model configuration handlers; composed fixture passes."
+    },
+    {
+      "id": "5.3",
+      "phase": 5,
+      "requirement": "Bindings de Tools, Skills e Knowledge.",
+      "status": "partial",
+      "evidence": "Knowledge binding route exists; complete typed Tool/Skill/Knowledge bindings are not validated."
+    },
+    {
+      "id": "5.4",
+      "phase": 5,
+      "requirement": "Releases/tests/promotion/activation/rollback.",
+      "status": "done",
+      "evidence": "release.go supplies create/test/promote/activation/rollback handlers with explicit execution/publication confirmation."
+    },
+    {
+      "id": "5.5",
+      "phase": 5,
+      "requirement": "Networks múltiplas por Project.",
+      "status": "done",
+      "evidence": "network.go uses explicit Network IDs under Project; composed fixture covers separate Network creation."
+    },
+    {
+      "id": "5.6",
+      "phase": 5,
+      "requirement": "Draft, nodes/bindings e revisão esperada.",
+      "status": "partial",
+      "evidence": "Draft update/revision headers exist; full nodes/bindings DTO/reconciliation remains."
+    },
+    {
+      "id": "5.7",
+      "phase": 5,
+      "requirement": "Versions, previews, staging e production activations.",
+      "status": "done",
+      "evidence": "network.go provides observed version/promotion/activation commands."
+    },
+    {
+      "id": "5.8",
+      "phase": 5,
+      "requirement": "Ambientes de Agent/Network com política adequada.",
+      "status": "partial",
+      "evidence": "Environment handlers exist; server policy by environment is unverified."
+    },
+    {
+      "id": "5.9",
+      "phase": 5,
+      "requirement": "Lifecycle de exclusão/arquivamento conforme suporte real.",
+      "status": "partial",
+      "evidence": "Generic requests exist; complete resource lifecycle coverage/semantics remain unverified."
+    },
+    {
+      "id": "5.10",
+      "phase": 5,
+      "requirement": "Diff/export de configurações autorizado.",
+      "status": "partial",
+      "evidence": "Authorized projections/capture/field diff exist; complete semantic export for all configuration is absent."
+    },
+    {
+      "id": "6.1",
+      "phase": 6,
+      "requirement": "Tools HTTP/MCP, lifecycle, uso, testes e execução explícita.",
+      "status": "done",
+      "evidence": "tool.go provides HTTP/MCP lifecycle/test/execute handlers with explicit execution effects."
+    },
+    {
+      "id": "6.2",
+      "phase": 6,
+      "requirement": "Discovery/refresh e autenticação MCP suportada.",
+      "status": "done",
+      "evidence": "Observed MCP discovery/refresh/auth handlers exist; real deployment acceptance remains a separate gate."
+    },
+    {
+      "id": "6.3",
+      "phase": 6,
+      "requirement": "Permissões MCP allow/deny/review.",
+      "status": "partial",
+      "evidence": "MCP permission endpoints exist; canonical allow/deny/review conditions are not validated."
+    },
+    {
+      "id": "6.4",
+      "phase": 6,
+      "requirement": "Segredos e credentials com projeção correta.",
+      "status": "partial",
+      "evidence": "Client redaction/secret issuance is tested; server projection and native storage remain unverified."
+    },
+    {
+      "id": "6.5",
+      "phase": 6,
+      "requirement": "Collections, Documents, upload/search e Vector Snapshots.",
+      "status": "done",
+      "evidence": "knowledge.go/upload.go supply collection/document/search/snapshot handlers and multipart fixture."
+    },
+    {
+      "id": "6.6",
+      "phase": 6,
+      "requirement": "Providers/models e discovery separado da persistência.",
+      "status": "done",
+      "evidence": "catalog.go separates observed provider/model discovery/read/write handlers."
+    },
+    {
+      "id": "6.7",
+      "phase": 6,
+      "requirement": "Catálogos e compatibilidade de ModelSpec/estratégias.",
+      "status": "partial",
+      "evidence": "Catalogs exist; full strategy/ModelSpec compatibility matrix is absent."
+    },
+    {
+      "id": "6.8",
+      "phase": 6,
+      "requirement": "Skills e versões.",
+      "status": "done",
+      "evidence": "surface.go provides Skill/version handlers; resource manifests include typed SkillVersion parents."
+    },
+    {
+      "id": "6.9",
+      "phase": 6,
+      "requirement": "ChatSurfaces, lifecycle e Access Keys.",
+      "status": "done",
+      "evidence": "Surface lifecycle/access-key handlers exist; configuration capture supports ChatSurface updates."
+    },
+    {
+      "id": "6.10",
+      "phase": 6,
+      "requirement": "Paginação/export conforme capacidade real.",
+      "status": "partial",
+      "evidence": "request-pages follows bounded Link next routes and export/capture exists; endpoint pagination/completeness remains unverified."
+    },
+    {
+      "id": "7.1",
+      "phase": 7,
+      "requirement": "Runtime público por SDK/adapter, com credencial própria.",
+      "status": "done",
+      "evidence": "runtime.go uses pinned Go SDK with separately selected runtime credentials."
+    },
+    {
+      "id": "7.2",
+      "phase": 7,
+      "requirement": "Agent e Network Run, HTTP e streaming.",
+      "status": "done",
+      "evidence": "Agent/Network run/stream adapters use pinned SDK; real target E2E is separately unverified."
+    },
+    {
+      "id": "7.3",
+      "phase": 7,
+      "requirement": "Contratos de output/External Context.",
+      "status": "partial",
+      "evidence": "Semantic event output exists; full External Context/output contract validation remains incomplete."
+    },
+    {
+      "id": "7.4",
+      "phase": 7,
+      "requirement": "Active Run, observe/reattach e cancelamento.",
+      "status": "done",
+      "evidence": "SDK ActiveRun/ObserveRun/CancelRun adapters are implemented and discovered."
+    },
+    {
+      "id": "7.5",
+      "phase": 7,
+      "requirement": "Sessions/mensagens e histórico administrativo autorizado.",
+      "status": "done",
+      "evidence": "Observed session/message/admin run handlers are provided."
+    },
+    {
+      "id": "7.6",
+      "phase": 7,
+      "requirement": "Rerun explícito e reset de contexto suportado.",
+      "status": "done",
+      "evidence": "Explicit rerun/reset endpoints are registered; they do not silently retry writes."
+    },
+    {
+      "id": "7.7",
+      "phase": 7,
+      "requirement": "Traces, invocations, snapshots e diagnostics.",
+      "status": "done",
+      "evidence": "Observed trace/invocation/snapshot/diagnostic handlers are provided."
+    },
+    {
+      "id": "7.8",
+      "phase": 7,
+      "requirement": "Usage/metrics existentes.",
+      "status": "done",
+      "evidence": "Observed usage summary/daily handlers are provided."
+    },
+    {
+      "id": "7.9",
+      "phase": 7,
+      "requirement": "Auditoria administrativa, sem confundir com runtime tracing.",
+      "status": "partial",
+      "evidence": "Audit routes require proposed backend capabilities; real administrative audit contract remains absent."
+    },
+    {
+      "id": "7.10",
+      "phase": 7,
+      "requirement": "Interrupção, deadline, gap e degradação sem duplicação de Run.",
+      "status": "partial",
+      "evidence": "Cancellation/deadline are supported; reconnect/gap replay scenarios are not implemented/certified."
+    },
+    {
+      "id": "8.1",
+      "phase": 8,
+      "requirement": "Schema de manifest versionado.",
+      "status": "done",
+      "evidence": "Versioned step v1/resource v2 schemas are packaged and tested."
+    },
+    {
+      "id": "8.2",
+      "phase": 8,
+      "requirement": "Validate/diff/plan/export.",
+      "status": "partial",
+      "evidence": "Validate/plan/field diff/projection/capture are implemented; complete semantic export/import is absent."
+    },
+    {
+      "id": "8.3",
+      "phase": 8,
+      "requirement": "Apply por operação e dependências.",
+      "status": "done",
+      "evidence": "Explicit actions compile to dependency-ordered steps; apply/ref/recovery fixtures pass."
+    },
+    {
+      "id": "8.4",
+      "phase": 8,
+      "requirement": "IDs/revisões esperadas e revalidação antes de mutar.",
+      "status": "partial",
+      "evidence": "Explicit IDs/ETags/opt-in reads exist; full authoritative revision/idempotency/existence reconciliation remains."
+    },
+    {
+      "id": "8.5",
+      "phase": 8,
+      "requirement": "Checkpoint e retomada por reconciliação.",
+      "status": "done",
+      "evidence": "Private checkpoints, locks, scoped key binding and explicit-ID reconciliation resume without replay in tests."
+    },
+    {
+      "id": "8.6",
+      "phase": 8,
+      "requirement": "Relatório parcial/skipped e código de saída próprio.",
+      "status": "done",
+      "evidence": "Partial apply reports step states/counts/save status; unchanged checkpoints and exit 10 are tested."
+    },
+    {
+      "id": "8.7",
+      "phase": 8,
+      "requirement": "Importação de categorias sem concessão implícita.",
+      "status": "pending",
+      "evidence": "AuthorityCategory declarative import is unavailable pending canonical server contract."
+    },
+    {
+      "id": "8.8",
+      "phase": 8,
+      "requirement": "Referências protegidas para credenciais.",
+      "status": "pending",
+      "evidence": "Manifests reject literal secrets; protected secret-provider references are not implemented."
+    },
+    {
+      "id": "8.9",
+      "phase": 8,
+      "requirement": "Nenhuma publicação/prune implícitos.",
+      "status": "done",
+      "evidence": "Manifest validation rejects publication/execution/key issuance/delete; there is no implicit prune."
+    },
+    {
+      "id": "8.10",
+      "phase": 8,
+      "requirement": "Não usar export incompleto como PATCH destrutivo.",
+      "status": "done",
+      "evidence": "Projection documents are not accepted as manifests; capture selects explicit readable fields and tests preserve omissions/null."
+    },
+    {
+      "id": "9.1",
+      "phase": 9,
+      "requirement": "Build do executável Go `woobe` e versão semântica com revisão identificável.",
+      "status": "done",
+      "evidence": "Go build/version exposes source commit, compiler and OS/architecture; packaging injects release version and commit."
+    },
+    {
+      "id": "9.2",
+      "phase": 9,
+      "requirement": "Instalação limpa a partir de binários publicados e `go install` por tag.",
+      "status": "pending",
+      "evidence": "No published tag/release or fresh go install by tag validated."
+    },
+    {
+      "id": "9.3",
+      "phase": 9,
+      "requirement": "CI do CLI e suites integradas do backend.",
+      "status": "partial",
+      "evidence": "Seven CLI jobs pass; integrated backend suite is unavailable."
+    },
+    {
+      "id": "9.4",
+      "phase": 9,
+      "requirement": "Documentação de cada comando, permissão, exemplo e capacidade mínima.",
+      "status": "partial",
+      "evidence": "Generated catalog/usage exist; all domain examples/effective permission/capability contracts are incomplete."
+    },
+    {
+      "id": "9.5",
+      "phase": 9,
+      "requirement": "Completion e smoke de help.",
+      "status": "done",
+      "evidence": "Cobra completion/help discovery and native build smoke pass."
+    },
+    {
+      "id": "9.6",
+      "phase": 9,
+      "requirement": "Matriz de compatibilidade cliente/servidor/protocolo.",
+      "status": "partial",
+      "evidence": "SDK/toolchain/protocol pins exist; real server compatibility matrix remains unverified."
+    },
+    {
+      "id": "9.7",
+      "phase": 9,
+      "requirement": "Binários por sistema/arquitetura declarados, checksums SHA-256 e manifesto dos artefatos.",
+      "status": "done",
+      "evidence": "Six OS/arch packages have schemas, SHA256 and artifact metadata with archive verification."
+    },
+    {
+      "id": "9.8",
+      "phase": 9,
+      "requirement": "Guia de migração do CLI mínimo Python para o CLI Go.",
+      "status": "pending",
+      "evidence": "No standalone migration guide mapping all inspected Python workflows."
+    },
+    {
+      "id": "9.9",
+      "phase": 9,
+      "requirement": "Changelog e notas de release com capabilities realmente entregues.",
+      "status": "partial",
+      "evidence": "PR/status notes exist; final release changelog/capability notes have not been published."
+    },
+    {
+      "id": "9.10",
+      "phase": 9,
+      "requirement": "Smoke em instalação Woobe com infraestrutura real e targets de teste.",
+      "status": "pending",
+      "evidence": "No deployed Woobe instance/credentials for real infrastructure smoke."
+    }
+  ]
+}

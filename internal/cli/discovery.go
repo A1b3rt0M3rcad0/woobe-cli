@@ -1,0 +1,159 @@
+package cli
+
+import (
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"sort"
+	"strings"
+)
+
+type FlagDescriptor struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Description string `json:"description"`
+	Required    bool   `json:"required"`
+}
+
+// CompleteDiscovery derives executable command paths and flags from the actual
+// Cobra tree. HTTP policy metadata remains attached to its registered handler.
+func (a *App) completeDiscovery() {
+	a.Root.InitDefaultCompletionCmd()
+	known := map[string]int{}
+	for i, op := range a.Registry {
+		known[op.Command] = i
+	}
+	var walk func(*cobra.Command)
+	walk = func(cmd *cobra.Command) {
+		cmd.InitDefaultHelpFlag()
+		path := strings.TrimPrefix(cmd.CommandPath(), "woobe ")
+		if cmd.RunE != nil || cmd.Run != nil {
+			i, ok := known[path]
+			if !ok {
+				kind, effect, availability := "local", "local", "local"
+				switch {
+				case strings.HasPrefix(path, "completion "):
+					kind = "shell-completion"
+					effect = "local"
+				case strings.HasPrefix(path, "runtime target "):
+					kind = "runtime-sdk"
+					effect = "read"
+					availability = "server-dependent"
+					if strings.HasSuffix(path, " run") || strings.HasSuffix(path, " stream") || strings.HasSuffix(path, " cancel") {
+						effect = "execution"
+					}
+				case path == "project knowledge document upload":
+					kind = "multipart-http"
+					effect = "mutation"
+					availability = "observed"
+				case path == "project agent export" || path == "export" || path == "manifest export" || path == "manifest capture":
+					kind = "http-projection"
+					effect = "read"
+					availability = "observed"
+				case path == "request" || path == "request-pages":
+					kind = "generic-http"
+					effect = "specified_by_request"
+					availability = "server-dependent"
+				case path == "doctor" || path == "server-schema" || path == "validate-input":
+					kind = "diagnostic-http"
+					effect = "read"
+					availability = "server-dependent"
+				case path == "auth logout":
+					kind = "http-session"
+					effect = "mutation"
+					availability = "observed"
+				case path == "manifest apply" || path == "manifest reconcile":
+					kind = "composition"
+					effect = "mutation"
+				case path == "manifest diff":
+					kind = "composition"
+					effect = "read"
+					availability = "server-dependent"
+				case path == "agent" || path == "network" || path == "control-key":
+					kind = "alias"
+					effect = "delegated"
+				}
+				op := Operation{Command: path, ID: strings.ReplaceAll(path, " ", "."), Kind: kind, Effect: effect, Status: availability, Scope: "client", PermissionSource: "not_evaluated"}
+				a.Registry = append(a.Registry, op)
+				i = len(a.Registry) - 1
+			}
+			op := &a.Registry[i]
+			if op.Kind == "" {
+				op.Kind = "http"
+			}
+			op.Usage = cmd.UseLine()
+			switch path {
+			case "manifest validate", "manifest plan", "manifest diff", "manifest apply", "manifest reconcile", "manifest compile":
+				op.Body = true
+			}
+			flags := map[string]FlagDescriptor{}
+			add := func(f *pflag.Flag) {
+				if f.Hidden {
+					return
+				}
+				_, required := f.Annotations[cobra.BashCompOneRequiredFlag]
+				flags[f.Name] = FlagDescriptor{Name: f.Name, Type: f.Value.Type(), Description: f.Usage, Required: required}
+			}
+			cmd.InheritedFlags().VisitAll(add)
+			cmd.Flags().VisitAll(add)
+			op.Flags = nil
+			for _, f := range flags {
+				if f.Name == "file" && op.Body {
+					f.Required = true
+				}
+				op.Flags = append(op.Flags, f)
+			}
+			sort.Slice(op.Flags, func(i, j int) bool { return op.Flags[i].Name < op.Flags[j].Name })
+		}
+		for _, child := range cmd.Commands() {
+			walk(child)
+		}
+	}
+	// help is installed explicitly so it is discoverable before Execute.
+	walk(a.Root)
+	sort.Slice(a.Registry, func(i, j int) bool { return a.Registry[i].Command < a.Registry[j].Command })
+}
+
+func flagSchema(f FlagDescriptor) map[string]any {
+	t := "string"
+	switch f.Type {
+	case "bool":
+		t = "boolean"
+	case "int", "int64", "uint", "uint64":
+		t = "integer"
+	case "stringArray", "stringSlice":
+		t = "array"
+	}
+	s := map[string]any{"type": t, "description": f.Description}
+	if t == "array" {
+		s["items"] = map[string]any{"type": "string"}
+	}
+	return s
+}
+func commandSchema(op Operation, kind string) map[string]any {
+	s := map[string]any{"$schema": "https://json-schema.org/draft/2020-12/schema", "schema_version": "1", "operation": op, "kind": kind, "type": "object"}
+	if kind == "input" {
+		props := map[string]any{}
+		required := []string{}
+		for _, f := range op.Flags {
+			props[f.Name] = flagSchema(f)
+			if f.Required {
+				required = append(required, f.Name)
+			}
+		}
+		s["properties"] = map[string]any{"args": map[string]any{"type": "array", "items": map[string]any{"type": "string"}}, "flags": map[string]any{"type": "object", "properties": props, "required": required, "additionalProperties": false}, "body": map[string]any{"description": "Endpoint body; consult server-schema for authoritative domain fields"}}
+		s["additionalProperties"] = false
+		s["description"] = "CLI invocation transport schema. Resource IDs accept positional arguments or named flags; server owns domain validation and authorization."
+	} else if op.Kind == "shell-completion" {
+		s["type"] = "string"
+		s["description"] = "Shell completion script written as text"
+	} else if strings.HasPrefix(op.Command, "runtime target ") && (strings.HasSuffix(op.Command, " stream") || strings.HasSuffix(op.Command, " observe")) {
+		s["required"] = []string{"protocol_version", "event_id", "run_id", "session_id", "run_kind", "sequence", "type", "occurred_at", "payload"}
+		s["properties"] = map[string]any{"protocol_version": map[string]any{"const": 2}, "event_id": map[string]any{"type": "string"}, "run_id": map[string]any{"type": "string"}, "session_id": map[string]any{"type": "string"}, "run_kind": map[string]any{"enum": []string{"AGENT", "NETWORK"}}, "sequence": map[string]any{"type": "integer", "minimum": 0}, "type": map[string]any{"type": "string"}, "occurred_at": map[string]any{"type": "string", "format": "date-time"}, "payload": map[string]any{"type": "object"}}
+		s["additionalProperties"] = false
+	} else {
+		s["required"] = []string{"schema_version", "success", "meta"}
+		s["properties"] = map[string]any{"schema_version": map[string]any{"const": "1"}, "success": map[string]any{"type": "boolean"}, "context": map[string]any{"type": "object", "additionalProperties": map[string]any{"type": "string"}}, "data": map[string]any{}, "error": map[string]any{"type": "object"}, "meta": map[string]any{"type": "object", "required": []string{"complete"}, "properties": map[string]any{"complete": map[string]any{"type": "boolean"}}}}
+		s["additionalProperties"] = false
+	}
+	return s
+}
