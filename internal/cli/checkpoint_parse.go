@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
+	"io"
+	"os"
 )
 
 func parseCheckpoint(b []byte) (checkpoint, error) {
@@ -26,4 +28,20 @@ func parseCheckpoint(b []byte) (checkpoint, error) {
 		}
 	}
 	return cp, nil
+}
+
+func readCheckpoint(path string) ([]byte, error) {
+	f, e := os.Open(path)
+	if e != nil {
+		return nil, e
+	}
+	defer f.Close()
+	b, e := io.ReadAll(io.LimitReader(f, 32<<20+1))
+	if e != nil {
+		return nil, e
+	}
+	if len(b) > 32<<20 {
+		return nil, output.New(2, "checkpoint exceeds 32 MiB")
+	}
+	return b, nil
 }

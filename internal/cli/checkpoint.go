@@ -3,13 +3,12 @@ package cli
 import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 func (a *App) checkpointCommand(g *cobra.Command) {
 	var path string
 	c := &cobra.Command{Use: "status", Short: "Inspect a local checkpoint without remote calls or mutations", Args: cobra.NoArgs, RunE: func(*cobra.Command, []string) error {
-		b, e := os.ReadFile(path)
+		b, e := readCheckpoint(path)
 		if e != nil {
 			return output.New(2, "checkpoint unavailable")
 		}

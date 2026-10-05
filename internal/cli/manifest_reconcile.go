@@ -73,7 +73,7 @@ func (a *App) manifestReconcileCommand(g *cobra.Command) {
 			return e
 		}
 		defer release()
-		b, e := os.ReadFile(path)
+		b, e := readCheckpoint(path)
 		if e != nil {
 			return output.New(2, "checkpoint unavailable")
 		}

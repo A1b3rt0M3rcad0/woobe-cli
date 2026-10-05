@@ -59,7 +59,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			return e
 		}
 		cp := checkpoint{CredentialFingerprint: fingerprint, Hash: d.Hash(), Origin: v.APIURL, Workspace: v.Workspace, Project: v.Project, Credential: v.Credential, Steps: map[string]string{}, Results: map[string]any{}}
-		if b, err := os.ReadFile(path); err == nil {
+		if b, err := readCheckpoint(path); err == nil {
 			old, err := parseCheckpoint(b)
 			if err != nil {
 				return output.New(2, "invalid checkpoint")
