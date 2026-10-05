@@ -24,7 +24,12 @@ func (a *App) requestCommands() {
 		return a.call(cmd, method, args[1], b, false)
 	}})
 }
-func (a *App) call(cmd *cobra.Command, method, path string, b []byte, secret bool) error {
+func (a *App) call(cmd *cobra.Command, method, path string, b []byte, secret bool) (err error) {
+	defer func() {
+		if err != nil && method != "GET" && method != "HEAD" && output.Normalize(err).Outcome == "" {
+			err = notAttempted(err)
+		}
+	}()
 	if e := controlplane.ValidatePath(path); e != nil {
 		return e
 	}

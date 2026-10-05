@@ -89,7 +89,12 @@ func (a *App) register(op Operation) {
 			return output.New(2, "required resource IDs must be supplied positionally or by their named flags")
 		}
 		return nil
-	}, RunE: func(cmd *cobra.Command, args []string) error {
+	}, RunE: func(cmd *cobra.Command, args []string) (err error) {
+		defer func() {
+			if err != nil && op.Method != "GET" && op.Method != "HEAD" && output.Normalize(err).Outcome == "" {
+				err = notAttempted(err)
+			}
+		}()
 		if op.Status == "proposed" && !a.DryRun {
 			if e := a.requireAdvertised(cmd.Context(), op); e != nil {
 				return e

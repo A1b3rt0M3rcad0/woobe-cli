@@ -149,8 +149,11 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			if code != 0 {
 				cp.Steps[s.ID] = "unknown"
 				var env output.Envelope
-				if json.Unmarshal(childOut.Bytes(), &env) == nil && env.Error != nil && env.Error.Outcome == "rejected" {
-					cp.Steps[s.ID] = "rejected"
+				if json.Unmarshal(childOut.Bytes(), &env) == nil && env.Error != nil {
+					switch env.Error.Outcome {
+					case "rejected", "not_attempted":
+						cp.Steps[s.ID] = env.Error.Outcome
+					}
 				}
 				if e = save(); e != nil {
 					return partialApply(cp, s.ID, "apply failed and checkpoint persistence failed", "unknown", false)
