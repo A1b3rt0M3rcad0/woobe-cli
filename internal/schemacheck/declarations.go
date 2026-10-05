@@ -82,7 +82,7 @@ func declarations(s map[string]any, p string) error {
 			return unsupported(p, "pattern incompatible with RE2")
 		}
 	}
-	for _, k := range []string{"minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf", "minItems", "maxItems", "minLength", "maxLength"} {
+	for _, k := range []string{"minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf", "minItems", "maxItems", "minProperties", "maxProperties", "minLength", "maxLength"} {
 		if v, ok := s[k]; ok {
 			n := number(v)
 			if n == nil {

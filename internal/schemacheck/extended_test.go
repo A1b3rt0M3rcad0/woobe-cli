@@ -54,3 +54,17 @@ func TestUnsupportedInactiveProperty(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestObjectPropertyBounds(t *testing.T) {
+	s := decode(`{"minProperties":1,"maxProperties":2}`)
+	for _, v := range []string{`{"a":1}`, `{"a":null,"b":2}`} {
+		if e := Check(s, decode(v), nil); e != nil {
+			t.Fatal(v, e)
+		}
+	}
+	for _, v := range []string{`{}`, `{"a":1,"b":2,"c":3}`} {
+		if Check(s, decode(v), nil) == nil {
+			t.Fatal(v)
+		}
+	}
+}

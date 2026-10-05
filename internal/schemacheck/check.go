@@ -112,7 +112,7 @@ func check(raw, v, doc any, p string, depth int) error {
 		return e
 	}
 	allowed := map[string]bool{}
-	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items minItems maxItems uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not") {
+	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items minItems maxItems minProperties maxProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not") {
 		allowed[k] = true
 	}
 	for k := range s {
@@ -196,6 +196,9 @@ func check(raw, v, doc any, p string, depth int) error {
 		}
 	}
 	if obj, ok := v.(map[string]any); ok {
+		if e := bounds(s, "minProperties", "maxProperties", len(obj), p); e != nil {
+			return e
+		}
 		if req, ok := s["required"].([]any); ok {
 			for _, r := range req {
 				name, ok := r.(string)
