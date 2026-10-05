@@ -36,3 +36,12 @@ func TestBodyValidationPreventsSelectedWrite(t *testing.T) {
 	}
 	_ = strings.TrimSpace
 }
+
+func TestValidationFlagIsNeverSilentlyIgnored(t *testing.T) {
+	for _, args := range [][]string{{"request", "POST", "/anything"}, {"runtime", "target", "run", "alias"}, {"project", "agent", "get", "a"}, {"project", "knowledge", "document", "upload"}} {
+		code, v := invoke(t, append(args, "--validate-body"), "")
+		if code != 9 {
+			t.Fatal(args, code, v)
+		}
+	}
+}

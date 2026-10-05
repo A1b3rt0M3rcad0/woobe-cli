@@ -60,7 +60,14 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.StringVar(&a.IfMatch, "if-match", "", "Expected server ETag")
 	f.StringVar(&a.IdempotencyKey, "idempotency-key", "", "Key, only when supported by server")
 	f.StringVar(&a.SecretFile, "secret-file", "", "Exclusive private destination for issued secret")
-	r.PersistentPreRunE = func(*cobra.Command, []string) error {
+	r.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		if a.ValidateBody {
+			path := strings.TrimPrefix(cmd.CommandPath(), "woobe ")
+			op, ok := a.operation(path)
+			if !(path == "manifest apply" || path == "manifest preflight" || path == "validate-input" || (ok && op.Kind == "http" && op.Method != "GET" && op.Method != "HEAD")) {
+				return output.New(9, "--validate-body requires a canonical HTTP write or manifest apply/preflight")
+			}
+		}
 		if a.Mode != "json" && a.Mode != "jsonl" && a.Mode != "table" {
 			return output.New(2, "invalid output mode")
 		}
