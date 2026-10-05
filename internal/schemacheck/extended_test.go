@@ -29,3 +29,12 @@ func TestUniqueNumericItems(t *testing.T) {
 		}
 	}
 }
+
+func TestInvalidTypeDeclarations(t *testing.T) {
+	for _, s := range []string{`{"type":[]}`, `{"type":"typo"}`, `{"type":["number",4]}`, `{"type":["null","null"]}`} {
+		e := Check(decode(s), nil, nil)
+		if x, ok := e.(*Error); !ok || !x.Unsupported {
+			t.Fatal(s, e)
+		}
+	}
+}

@@ -155,6 +155,9 @@ func check(raw, v, doc any, p string, depth int) error {
 		return nil
 	}
 	if typ, ok := s["type"]; ok {
+		if e := validType(typ, p); e != nil {
+			return e
+		}
 		matched := false
 		switch t := typ.(type) {
 		case string:
