@@ -30,6 +30,7 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 		}
 		steps, _ := d.Order()
 		rows := []map[string]any{}
+		var failure *output.Error
 		complete := true
 		for _, s := range steps {
 			var body any
@@ -53,10 +54,27 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 				e = validateBodySchema(doc, def, s.Body)
 			}
 			if e != nil {
-				return e
+				complete = false
+				cause := output.Normalize(e)
+				if failure == nil || cause.Code == 9 {
+					failure = cause
+				}
+				rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "failed", "error": cause, "write_executed": false})
+				continue
 			}
 			rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "valid", "write_executed": false})
 		}
-		return a.emit(map[string]any{"manifest_hash": d.Hash(), "operations": rows, "complete": complete, "authorization": "not_evaluated", "path_query_validation": "not_evaluated", "executed": false})
+		data := map[string]any{"manifest_hash": d.Hash(), "operations": rows, "complete": complete, "authorization": "not_evaluated", "path_query_validation": "not_evaluated", "executed": false}
+		if failure != nil {
+			return &preflightFailure{Data: data, Cause: failure}
+		}
+		return a.emit(data)
 	}})
 }
+
+type preflightFailure struct {
+	Data  map[string]any
+	Cause *output.Error
+}
+
+func (e *preflightFailure) Error() string { return "manifest body preflight failed" }
