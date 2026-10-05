@@ -1,4 +1,4 @@
-# Remaining full-plan work after 143 commits
+# Remaining full-plan work after 150 commits
 
 The latest continuation is reviewed in an ordered CLI PR stack: foundation/context integrity, schema validation, then migration/acceptance documentation and recovery/body-preflight hardening. Commit count is not an acceptance criterion. This is an implementation checkpoint, not completion or production certification.
 
@@ -12,11 +12,13 @@ The latest continuation is reviewed in an ordered CLI PR stack: foundation/conte
 | 2 | Complete schema semantics and write-time validation | Current bounded subset rejects unsupported rules. Opt-in write-body validation, pinned snapshots and body-only manifest preflight are delivered. Need supported OpenAPI/JSON Schema dialect strategy, format/pattern compatibility, full DTO coverage, validation for route/query inputs and create/PATCH differences. |
 | 2 | Complete pagination and stream recovery | Need verified endpoint pagination/completeness contracts, bounded `--all`, reconnect/event replay and gap scenarios. No guessed cursor protocol or automatic write retry. |
 | 2 | Native credential providers and sessions | OS keychains, Windows protected human-session storage, real login/refresh/logout scenarios and authoritative human-principal checkpoint binding. POSIX fallback and environment credentials exist. |
-| 3 | Quantitative acceptance and distribution verification on actual OSes | Total statement coverage 77.6%, CLI 74.6%; the plan does not specify a numerical code-coverage threshold. Its operation/principal/E2E gates remain unmet. Config direct coverage is 75.8%, schema 84.3%; credentials remain 48.6%. Cross-build/package checks are not platform execution/keychain tests. |
+| 3 | Quantitative acceptance and distribution verification on actual OSes | Total statement coverage 77.9%, CLI 74.7%; the plan does not specify a numerical code-coverage threshold. Its operation/principal/E2E gates remain unmet. Config direct coverage is 75.8%, schema 84.3%; credentials remain 48.6%. Cross-build/package checks are not platform execution/keychain tests. |
 | 3 | Release readiness | Complete real E2E and design gates before draft removal/tag/release. No merge/release requested or performed. |
 
 Backend changes cannot be included in the same GitHub PR as this separate CLI repository. Remaining backend work must be delivered in its own repository and consumed here; duplicating backend policy in the CLI does not satisfy acceptance.
 
 Selective field capture now produces update intents that preserve omission/null and observed ETags. Complete projections/semantic imports remain open. Generic Link traversal is implemented, while endpoint pagination/completeness and SDK stream reconnect still remain. Audited delivery completeness: 38.6% (39/101 completed, 33 partial, 29 pending), including separate backend work; see COMPLETENESS.md.
 
-Recovery integrity and resumable pre-write refusals are strengthened; schema snapshot identity does not lock server schema/domain state. Full semantic state comparison across numeric representations, endpoint completeness and authoritative original-write recovery still need acceptance.
+Recovery integrity and resumable pre-write refusals are strengthened; schema snapshot identity does not lock server schema/domain state. Exact bounded JSON number comparison is now shared by diff, unchanged-update observations and reconciliation. Endpoint completeness and authoritative original-write recovery still need acceptance.
+
+The next implementation block is ready to start in the backend repository. Follow [BACKEND_HANDOFF.md](BACKEND_HANDOFF.md) to reconcile canonical contracts before enabling further client behavior. Client readiness to start integration is distinct from release readiness.
