@@ -96,3 +96,17 @@ func TestDependentSchemas(t *testing.T) {
 		}
 	}
 }
+
+func TestPropertyNames(t *testing.T) {
+	s := decode(`{"propertyNames":{"pattern":"^[a-z]+$"}}`)
+	for _, v := range []string{`{}`, `{"name":1}`} {
+		if e := Check(s, decode(v), nil); e != nil {
+			t.Fatal(v, e)
+		}
+	}
+	for _, v := range []string{`{"NAME":1}`, `{"name1":1}`} {
+		if Check(s, decode(v), nil) == nil {
+			t.Fatal(v)
+		}
+	}
+}

@@ -112,7 +112,7 @@ func check(raw, v, doc any, p string, depth int) error {
 		return e
 	}
 	allowed := map[string]bool{}
-	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items minItems maxItems minProperties maxProperties dependentRequired dependentSchemas uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not") {
+	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not") {
 		allowed[k] = true
 	}
 	for k := range s {
@@ -237,6 +237,11 @@ func check(raw, v, doc any, p string, depth int) error {
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
+			if sub, ok := s["propertyNames"]; ok {
+				if e := check(sub, k, doc, p, depth+1); e != nil {
+					return e
+				}
+			}
 			if sub, ok := props[k]; ok {
 				if e := check(sub, obj[k], doc, p+"."+k, depth+1); e != nil {
 					return e
