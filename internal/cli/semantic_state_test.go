@@ -57,3 +57,23 @@ func TestSemanticNumericApplySkipsWriteAndRetainsCheckpoint(t *testing.T) {
 		t.Fatal(c, err, reads, writes)
 	}
 }
+
+func TestResourceDiffRequiresExpectedRevisionEvidence(t *testing.T) {
+	for _, tc := range []struct {
+		etag string
+		code int
+	}{{"", 9}, {"other", 6}, {"rev", 0}} {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != "GET" {
+				t.Error("write attempted")
+			}
+			w.Header().Set("ETag", tc.etag)
+			_, _ = w.Write([]byte(`{"data":{"id":"a","name":"A"}}`))
+		}))
+		code, v := invoke(t, []string{"manifest", "diff", "--file", "-", "--project", "p", "--api-url", s.URL}, `{"schema_version":"2","project_id":"p","resources":[{"key":"a","kind":"Agent","action":"update","resource_id":"a","spec":{"name":"A"},"if_match":"rev"}]}`)
+		s.Close()
+		if code != tc.code {
+			t.Fatal(tc, code, v)
+		}
+	}
+}

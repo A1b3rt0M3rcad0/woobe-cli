@@ -148,7 +148,10 @@ func (a *App) manifestDiff(ctx context.Context, d manifest.Document) ([]map[stri
 		if e != nil {
 			return nil, e
 		}
-		if s.IfMatch != "" && meta["etag"] != "" && s.IfMatch != meta["etag"] {
+		if s.IfMatch != "" && meta["etag"] == "" {
+			return nil, output.New(9, "resource diff cannot verify if_match without an observed ETag")
+		}
+		if s.IfMatch != "" && s.IfMatch != meta["etag"] {
 			return nil, output.New(6, "resource ETag differs from expected revision")
 		}
 		row["observation"] = meta
