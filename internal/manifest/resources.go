@@ -85,6 +85,13 @@ func (d ResourceDocument) Compile() (Document, error) {
 	if d.SchemaVersion != "2" || d.Project == "" || len(d.Resources) == 0 || len(d.Resources) > 1000 {
 		return out, fmt.Errorf("resource manifest requires schema_version 2, project_id and 1 to 1000 resources")
 	}
+	declared := map[string]string{}
+	for _, r := range d.Resources {
+		if _, ok := declared[r.Key]; ok {
+			return out, fmt.Errorf("duplicate resource key")
+		}
+		declared[r.Key] = r.Kind
+	}
 	catalog := map[string]Kind{}
 	for _, k := range Kinds() {
 		catalog[k.Name] = k
@@ -126,6 +133,17 @@ func (d ResourceDocument) Compile() (Document, error) {
 			s.Args = append(s.Args, r.ResourceID)
 		}
 		for i, arg := range s.Args {
+			expected := r.Kind
+			if i < len(k.Parents) {
+				expected = "Agent"
+			} else if r.Kind == "NetworkDraft" {
+				expected = "Network"
+			}
+			if m := resourceReference.FindStringSubmatch(arg); m != nil {
+				if declared[m[1]] != expected || m[2] != "id" {
+					return out, fmt.Errorf("resource ID reference has incompatible kind or field")
+				}
+			}
 			v, e := resourceRefs(arg)
 			if e != nil {
 				return out, e
