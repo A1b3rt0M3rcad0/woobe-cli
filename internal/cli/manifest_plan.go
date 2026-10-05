@@ -33,7 +33,7 @@ func (a *App) manifestPlanCommands(g *cobra.Command) {
 		if e != nil {
 			return e
 		}
-		return a.emit(map[string]any{"manifest_hash": d.Hash(), "workspace_id": d.Workspace, "project_id": d.Project, "operations": plan, "complete": true, "atomic": false})
+		return a.emit(map[string]any{"source_schema_version": d.Version(), "manifest_hash": d.Hash(), "workspace_id": d.Workspace, "project_id": d.Project, "operations": plan, "complete": true, "atomic": false})
 	}})
 	a.manifestDiffCommand(g)
 

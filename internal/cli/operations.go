@@ -167,7 +167,7 @@ func (a *App) discoveryCommands() {
 	}}
 	a.Root.SetHelpCommand(help)
 	a.Root.AddCommand(help)
-	var command, kind string
+	var command, kind, manifestVersion string
 	c := &cobra.Command{Use: "schema", RunE: func(*cobra.Command, []string) error {
 		for _, op := range a.Registry {
 			if op.Command == command {
@@ -179,7 +179,14 @@ func (a *App) discoveryCommands() {
 					if !strings.HasPrefix(command, "manifest ") {
 						return output.New(2, "document schema is available for manifest commands")
 					}
-					schema = manifest.Schema()
+					switch manifestVersion {
+					case "1":
+						schema = manifest.Schema()
+					case "2":
+						schema = manifest.ResourceSchema()
+					default:
+						return output.New(2, "manifest-version must be 1 or 2")
+					}
 				}
 				return output.Write(a.Out, a.Mode, schema, nil, nil)
 			}
@@ -187,6 +194,7 @@ func (a *App) discoveryCommands() {
 		return output.New(2, "unknown operation")
 	}}
 	c.Flags().StringVar(&command, "command", "", "Canonical command path")
+	c.Flags().StringVar(&manifestVersion, "manifest-version", "1", "Document format: 1 steps or 2 resources")
 	c.Flags().StringVar(&kind, "kind", "input", "input, output or document")
 	a.Root.AddCommand(c)
 	a.doctorCommand()

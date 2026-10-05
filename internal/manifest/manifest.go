@@ -121,3 +121,10 @@ func (d Document) Order() ([]Step, error) {
 	}
 	return out, nil
 }
+
+func (d Document) Version() string {
+	if d.SourceVersion != "" {
+		return d.SourceVersion
+	}
+	return d.SchemaVersion
+}

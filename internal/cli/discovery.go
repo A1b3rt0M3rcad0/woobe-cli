@@ -81,6 +81,10 @@ func (a *App) completeDiscovery() {
 				op.Kind = "http"
 			}
 			op.Usage = cmd.UseLine()
+			switch path {
+			case "manifest validate", "manifest plan", "manifest diff", "manifest apply", "manifest reconcile", "manifest compile":
+				op.Body = true
+			}
 			flags := map[string]FlagDescriptor{}
 			add := func(f *pflag.Flag) {
 				if f.Hidden {

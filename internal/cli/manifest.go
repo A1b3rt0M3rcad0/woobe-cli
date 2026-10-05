@@ -65,8 +65,9 @@ func (a *App) manifestCommands() {
 		if e = a.validateManifest(d); e != nil {
 			return e
 		}
-		return a.emit(map[string]any{"valid": true, "manifest_hash": d.Hash(), "authorization": "not_evaluated"})
+		return a.emit(map[string]any{"source_schema_version": d.Version(), "valid": true, "manifest_hash": d.Hash(), "authorization": "not_evaluated"})
 	}})
+	a.manifestCompileCommands(g)
 	a.manifestPlanCommands(g)
 	a.checkpointCommand(g)
 	a.manifestExportCommand(g)
