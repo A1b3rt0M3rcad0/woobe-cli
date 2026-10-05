@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from unified discovery: 230 entries, including 188 HTTP operations. Route advertisement does not grant authority. Permission entries are historical hints. Use `schema --command COMMAND` for invocation/output and `--kind document` for explicit-step manifests.
+Generated from unified discovery: 232 entries, including 188 HTTP operations. Route advertisement does not grant authority. Use `manifest kinds` for v2 resource actions; `schema --command "manifest validate" --kind document --manifest-version 2` describes that document format.
 
 | Command | Kind | HTTP | Availability | Permission hint |
 | --- | --- | --- | --- | --- |
@@ -35,8 +35,10 @@ Generated from unified discovery: 230 entries, including 188 HTTP operations. Ro
 | `instance bootstrap` | `http` | `POST /identity/instance/bootstrap` | `observed` | — |
 | `instance status` | `http` | `GET /identity/instance/status` | `observed` | — |
 | `manifest apply` | `composition` | — | `local` | — |
+| `manifest compile` | `local` | — | `local` | — |
 | `manifest diff` | `composition` | — | `server-dependent` | — |
 | `manifest export` | `http-projection` | — | `observed` | — |
+| `manifest kinds` | `local` | — | `local` | — |
 | `manifest plan` | `local` | — | `local` | — |
 | `manifest reconcile` | `composition` | — | `local` | — |
 | `manifest status` | `local` | — | `local` | — |
