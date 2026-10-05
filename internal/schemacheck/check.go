@@ -218,15 +218,15 @@ func check(raw, v, doc any, p string, depth int) error {
 		if e := bounds(s, "minItems", "maxItems", len(a), p); e != nil {
 			return e
 		}
-		seen := map[string]bool{}
+		seen := []any{}
 		for i, x := range a {
 			if s["uniqueItems"] == true {
-				b, _ := json.Marshal(x)
-				key := string(b)
-				if seen[key] {
-					return fail(p, "duplicate array item")
+				for _, prior := range seen {
+					if equal(prior, x) {
+						return fail(p, "duplicate array item")
+					}
 				}
-				seen[key] = true
+				seen = append(seen, x)
 			}
 			if sub, ok := s["items"]; ok {
 				if e := check(sub, x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1); e != nil {

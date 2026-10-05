@@ -15,3 +15,17 @@ func TestSemanticNumericEquality(t *testing.T) {
 		}
 	}
 }
+
+func TestUniqueNumericItems(t *testing.T) {
+	s := decode(`{"uniqueItems":true}`)
+	for _, v := range []string{`[1,2]`, `[1,"1"]`} {
+		if e := Check(s, decode(v), nil); e != nil {
+			t.Fatal(v, e)
+		}
+	}
+	for _, v := range []string{`[1,1.0]`, `[{"n":1},{"n":1e0}]`} {
+		if Check(s, decode(v), nil) == nil {
+			t.Fatal(v)
+		}
+	}
+}
