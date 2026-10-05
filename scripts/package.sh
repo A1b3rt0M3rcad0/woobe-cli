@@ -13,7 +13,7 @@ for target_os in linux darwin windows; do
     task_dir="$(mktemp -d)"
     executable=woobe
     if [[ "$target_os" == windows ]]; then executable=woobe.exe; fi
-    CGO_ENABLED=0 GOOS="$target_os" GOARCH="$target_arch" go build -trimpath -ldflags="-s -w -X github.com/A1b3rt0M3rcad0/woobe-cli/internal/cli.Version=$version" -o "$task_dir/$executable" ./cmd/woobe
+    CGO_ENABLED=0 GOOS="$target_os" GOARCH="$target_arch" go build -trimpath -ldflags="-s -w -X github.com/A1b3rt0M3rcad0/woobe-cli/internal/cli.Version=$version -X github.com/A1b3rt0M3rcad0/woobe-cli/internal/cli.Commit=$(git rev-parse HEAD)" -o "$task_dir/$executable" ./cmd/woobe
     cp README.md "$task_dir/README.md"
  cp docs/USAGE.md "$task_dir/USAGE.md"
  python3 - "$task_schema" "$task_dir/manifest.schema.json" <<'PYSCHEMA'

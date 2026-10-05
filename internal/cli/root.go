@@ -13,11 +13,13 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
 
 var Version = "dev"
+var Commit = "unknown"
 
 type App struct {
 	Root                                                                                     *cobra.Command
@@ -66,7 +68,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 		return nil
 	}
 	r.AddCommand(&cobra.Command{Use: "version", Args: cobra.NoArgs, RunE: func(*cobra.Command, []string) error {
-		return a.emit(map[string]any{"version": Version, "schema_version": "1"})
+		return a.emit(map[string]any{"version": Version, "commit": Commit, "go_version": runtime.Version(), "os": runtime.GOOS, "arch": runtime.GOARCH, "schema_version": "1"})
 	}})
 	a.contextCommands()
 	a.requestCommands()
