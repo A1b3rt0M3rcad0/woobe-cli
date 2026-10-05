@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"os"
 	"path/filepath"
 )
@@ -38,6 +39,9 @@ func Load(path string) (Config, error) {
 	}
 	if err != nil {
 		return c, err
+	}
+	if err = jsoninput.Validate(b); err != nil {
+		return c, fmt.Errorf("invalid config JSON: %w", err)
 	}
 	if err = json.Unmarshal(b, &c); err != nil {
 		return c, err
