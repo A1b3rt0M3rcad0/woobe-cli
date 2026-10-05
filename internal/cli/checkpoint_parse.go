@@ -74,6 +74,15 @@ func validateCheckpointPlan(cp checkpoint, d manifest.Document) error {
 			}
 		}
 	}
+	for _, step := range d.Steps {
+		if terminalState(cp.Steps[step.ID]) {
+			for _, dep := range step.DependsOn {
+				if !terminalState(cp.Steps[dep]) {
+					return output.New(2, "terminal step has an incomplete checkpoint dependency")
+				}
+			}
+		}
+	}
 	return nil
 }
 

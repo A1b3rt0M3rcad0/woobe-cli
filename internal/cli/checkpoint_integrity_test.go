@@ -49,3 +49,11 @@ func TestTerminalResultPresence(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestCheckpointDependencyStates(t *testing.T) {
+	d := manifest.Document{Steps: []manifest.Step{{ID: "a"}, {ID: "b", DependsOn: []string{"a"}}}}
+	cp := checkpoint{Steps: map[string]string{"a": "unknown", "b": "committed"}, Results: map[string]any{"b": nil}}
+	if validateCheckpointPlan(cp, d) == nil {
+		t.Fatal("missing dependency acceptance")
+	}
+}
