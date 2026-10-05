@@ -28,6 +28,9 @@ func TestAllResourceKindsCompileExplicitActions(t *testing.T) {
 			}
 			if action == "update" {
 				r.ResourceID = "existing"
+				if k.Name == "Project" {
+					r.ResourceID = "p"
+				}
 			}
 			d := ResourceDocument{SchemaVersion: "2", Project: "p", Resources: []Resource{r}}
 			_, e := d.Compile()

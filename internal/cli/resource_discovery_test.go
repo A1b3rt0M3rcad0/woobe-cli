@@ -8,7 +8,7 @@ func TestResourceManifestDiscoveryOffline(t *testing.T) {
 		t.Fatal(v)
 	}
 	code, v = invoke(t, []string{"manifest", "kinds"}, "")
-	if code != 0 || len(v["data"].([]any)) != 6 {
+	if code != 0 || len(v["data"].([]any)) != 13 {
 		t.Fatal(v)
 	}
 	code, v = invoke(t, []string{"manifest", "compile", "--file", "-", "--api-url", "http://127.0.0.1:1"}, `{"schema_version":"2","project_id":"p","resources":[{"key":"a","kind":"Agent","action":"create","spec":{"name":"A"}}]}`)
