@@ -23,6 +23,9 @@ func (a *App) observeUnchanged(ctx context.Context, s manifest.Step) (any, bool,
 	if e != nil {
 		return nil, false, e
 	}
+	if s.IfMatch != "" && meta["etag"] == "" {
+		return nil, false, output.New(9, "skip-unchanged cannot verify if_match without an observed ETag")
+	}
 	if s.IfMatch != "" && meta["etag"] != "" && s.IfMatch != meta["etag"] {
 		return nil, false, output.New(6, "observed resource revision differs from if_match")
 	}
