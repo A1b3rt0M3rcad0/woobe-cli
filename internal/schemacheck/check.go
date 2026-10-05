@@ -22,6 +22,34 @@ func unsupported(p, r string) error { return &Error{Path: p, Rule: r, Unsupporte
 // Check implements a bounded, explicit schema subset. Unknown assertions fail closed.
 func Check(schema, value, document any) error { return check(schema, value, document, "$", 0) }
 func equal(a, b any) bool {
+	if x, y := number(a), number(b); x != nil || y != nil {
+		return x != nil && y != nil && x.Cmp(y) == 0
+	}
+	switch x := a.(type) {
+	case map[string]any:
+		y, ok := b.(map[string]any)
+		if !ok || len(x) != len(y) {
+			return false
+		}
+		for k, v := range x {
+			w, ok := y[k]
+			if !ok || !equal(v, w) {
+				return false
+			}
+		}
+		return true
+	case []any:
+		y, ok := b.([]any)
+		if !ok || len(x) != len(y) {
+			return false
+		}
+		for i, v := range x {
+			if !equal(v, y[i]) {
+				return false
+			}
+		}
+		return true
+	}
 	x, _ := json.Marshal(a)
 	y, _ := json.Marshal(b)
 	return string(x) == string(y)
