@@ -38,3 +38,12 @@ func TestInvalidTypeDeclarations(t *testing.T) {
 		}
 	}
 }
+
+func TestMalformedAssertions(t *testing.T) {
+	for _, s := range []string{`{"required":"name"}`, `{"enum":[]}`, `{"minItems":-1}`, `{"properties":[]}`, `{"uniqueItems":"yes"}`, `{"pattern":4}`, `{"$ref":4}`} {
+		e := Check(decode(s), nil, nil)
+		if x, ok := e.(*Error); !ok || !x.Unsupported {
+			t.Fatal(s, e)
+		}
+	}
+}
