@@ -140,7 +140,9 @@ func (a *App) register(op Operation) {
 			if id == "" {
 				return output.New(2, op.QueryScope+" required")
 			}
-			a.Query = append(a.Query, op.QueryScope+"="+id)
+			if e := a.addScopeQuery(op.QueryScope, id); e != nil {
+				return e
+			}
 		}
 		if (op.Effect == "publication" || op.Effect == "execution" || strings.HasSuffix(op.Command, " revoke") || strings.HasSuffix(op.Command, " cancel")) && !a.Yes && !a.DryRun {
 			return output.New(2, "operation requires --yes")
