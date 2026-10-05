@@ -36,3 +36,20 @@ func TestUnknownConfigFields(t *testing.T) {
 		}
 	}
 }
+
+func TestSaveInvalidVersionPreservesConfig(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "c.json")
+	c := Config{Version: 1}
+	if e := Save(p, c); e != nil {
+		t.Fatal(e)
+	}
+	before, _ := os.ReadFile(p)
+	c.Version = 2
+	if Save(p, c) == nil {
+		t.Fatal("version")
+	}
+	after, _ := os.ReadFile(p)
+	if string(before) != string(after) {
+		t.Fatal("config replaced")
+	}
+}

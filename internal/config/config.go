@@ -58,8 +58,8 @@ func Load(path string) (Config, error) {
 	if err = d.Decode(&c); err != nil {
 		return c, err
 	}
-	if c.Version != 1 {
-		return c, fmt.Errorf("unsupported config version %d", c.Version)
+	if err = Validate(c); err != nil {
+		return c, err
 	}
 	if c.Contexts == nil {
 		c.Contexts = map[string]Context{}
@@ -67,6 +67,9 @@ func Load(path string) (Config, error) {
 	return c, nil
 }
 func Save(path string, c Config) error {
+	if e := Validate(c); e != nil {
+		return e
+	}
 	b, e := json.MarshalIndent(c, "", "  ")
 	if e != nil {
 		return e
@@ -98,4 +101,11 @@ func AtomicWrite(path string, b []byte, mode os.FileMode) error {
 		return closeErr
 	}
 	return os.Rename(name, path)
+}
+
+func Validate(c Config) error {
+	if c.Version != 1 {
+		return fmt.Errorf("unsupported config version %d", c.Version)
+	}
+	return nil
 }
