@@ -236,7 +236,7 @@
       "phase": 2,
       "requirement": "Implementar help JSON e exportação de schemas a partir do registro único, com compatibilidade e efeito das operações.",
       "status": "partial",
-      "evidence": "Cobra-derived discovery includes 240 handlers and 190 HTTP operations. Shared advertised body validation, manifest preflight, opt-in before-write checks and snapshot digest pin are delivered; full schema/DTO/path/query semantics remain partial."
+      "evidence": "Cobra-derived discovery includes 240 handlers and 190 HTTP operations. Shared advertised body validation, manifest preflight, opt-in before-write checks and snapshot digest pin are delivered; full schema/DTO/path/query semantics remain partial. Request-direction validation now rejects supplied readOnly fields and supports required read-only omission through property references/allOf; UUID/date/date-time formats and advertised dialects are checked, with invalid inputs stopped before mutation. Full path/query, arbitrary directional composition and DTO coverage remain partial."
     },
     {
       "id": "3.1",
@@ -607,7 +607,7 @@
       "phase": 8,
       "requirement": "IDs/revisões esperadas e revalidação antes de mutar.",
       "status": "partial",
-      "evidence": "Expected If-Match forwarded, optional --validate-body checks resolved bodies before write attempts, schema digest pin and read-only preflight exist. Full route/query/DTO/domain/revision semantics and real-backend revalidation remain partial."
+      "evidence": "Expected If-Match forwarded, optional --validate-body checks resolved bodies before write attempts, schema digest pin and read-only preflight exist. Full route/query/DTO/domain/revision semantics and real-backend revalidation remain partial. Request-direction validation now rejects supplied readOnly fields and supports required read-only omission through property references/allOf; UUID/date/date-time formats and advertised dialects are checked, with invalid inputs stopped before mutation. Full path/query, arbitrary directional composition and DTO coverage remain partial."
     },
     {
       "id": "8.5",

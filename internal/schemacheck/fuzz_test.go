@@ -8,7 +8,7 @@ import (
 )
 
 func FuzzSchemaCheck(f *testing.F) {
-	for _, seed := range []string{`true`, `{"type":"object"}`, `{"allOf":[{},false]}`, `{"$ref":"#"}`, `{"properties":{"x":{"type":"integer"}}}`, `{"enum":[1,1.0]}`} {
+	for _, seed := range []string{`true`, `{"type":"object"}`, `{"allOf":[{},false]}`, `{"$ref":"#"}`, `{"properties":{"x":{"type":"integer"}}}`, `{"enum":[1,1.0]}`, `{"format":"uuid"}`, `{"format":"date-time"}`, `{"required":["id"],"properties":{"id":{"readOnly":true}}}`, `{"not":{"$ref":"#"}}`} {
 		f.Add([]byte(seed), []byte(`{"x":1}`))
 	}
 	f.Fuzz(func(t *testing.T, schema, value []byte) {
@@ -26,5 +26,6 @@ func FuzzSchemaCheck(f *testing.F) {
 		}
 		s, v := read(schema), read(value)
 		_ = Check(s, v, s)
+		_ = CheckRequest(s, v, s)
 	})
 }

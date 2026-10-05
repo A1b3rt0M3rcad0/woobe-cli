@@ -21,7 +21,7 @@ func (a *App) validateInputCommand() {
 		if e = validateBodySchema(doc, def, b); e != nil {
 			return e
 		}
-		return a.emit(map[string]any{"valid": true, "operation": op.Command, "source": "server_openapi", "schema_sha256": schemaDigest(doc), "validation": "supported_schema_subset", "authorization": "not_evaluated", "executed": false})
+		return a.emit(map[string]any{"valid": true, "operation": op.Command, "source": "server_openapi", "schema_sha256": schemaDigest(doc), "validation": "supported_schema_subset", "validation_direction": "request", "path_query_validation": "not_evaluated", "authorization": "not_evaluated", "executed": false})
 	}}
 	c.Flags().StringVar(&command, "command", "", "Canonical HTTP command")
 	_ = c.MarkFlagRequired("command")

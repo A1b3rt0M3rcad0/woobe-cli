@@ -41,6 +41,17 @@ func stringList(v any, p, k string) error {
 	return nil
 }
 func declarations(s map[string]any, p string) error {
+	if v, ok := s["$schema"]; ok {
+		if v != "https://json-schema.org/draft/2020-12/schema" && v != "https://spec.openapis.org/oas/3.1/dialect/base" {
+			return unsupported(p, "unsupported schema dialect")
+		}
+	}
+	if v, ok := s["format"]; ok {
+		name, ok := v.(string)
+		if !ok || !supportedFormat(name) {
+			return unsupported(p, "unsupported format declaration")
+		}
+	}
 	if v, ok := s["type"]; ok {
 		if e := validType(v, p); e != nil {
 			return e
@@ -151,7 +162,7 @@ func schemaHeader(s map[string]any, p string) error {
 		return e
 	}
 	allowed := map[string]bool{}
-	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items prefixItems contains minContains maxContains minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not if then else") {
+	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type format nullable required properties additionalProperties items prefixItems contains minContains maxContains minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not if then else") {
 		allowed[k] = true
 	}
 	for k := range s {

@@ -26,3 +26,7 @@ The pagination/backend continuation is `8ab9d13953c1cd77462af85a3a3a957395141edc
 Native credential providers and sessions, full declarative observe/plan/apply reconciliation, complete input schema/dialect/route/query coverage, stream reconnect/replay/gaps, complete semantic export/import and protected manifest secret references remain. Pagination is implemented for all four reviewed body-paginated administrative routes, but full semantic export remains partial and unknown endpoint protocols are not inferred.
 
 The [101-item audit](COMPLETENESS.md) now includes the separately delivered backend evidence. Its percentage measures delivered roadmap items, not effort or production readiness. No full phase acceptance is asserted merely from individual tests.
+
+## Request validation continuation — 2026-10-05
+
+Shared request-body validation now enforces readOnly/writeOnly request direction, validates UUID/date/date-time formats and refuses unsupported advertised OpenAPI/JSON Schema dialects. Regressions exercise validate-input, opt-in HTTP writes, manifest preflight/apply and checkpoint evidence. Native package smoke also checks valid/invalid UUID and timestamps, read-only refusal and write counts. Path/query and full DTO/dialect/composition coverage remain partial; no roadmap item is promoted solely for this narrower delivery.

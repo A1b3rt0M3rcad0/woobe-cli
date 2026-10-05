@@ -70,11 +70,25 @@ def smoke(root, commit):
         # each native OS; real Woobe policy remains the separate backend gate.
         class Pages(http.server.BaseHTTPRequestHandler):
             requests = []
+            validation_reads = 0
+            writes = 0
 
             def do_GET(self):
                 from urllib.parse import urlparse, parse_qs
                 route = urlparse(self.path)
                 query = parse_qs(route.query)
+                if route.path == '/openapi.json':
+                    type(self).validation_reads += 1
+                    schema = {'openapi': '3.1.0', 'paths': {'/ai/agents': {'post': {'requestBody': {'content': {'application/json': {'schema': {
+                        'type': 'object', 'required': ['id', 'model_id', 'created_at'], 'properties': {
+                            'id': {'type': 'string', 'readOnly': True},
+                            'model_id': {'type': 'string', 'format': 'uuid'},
+                            'created_at': {'type': 'string', 'format': 'date-time'}}}}}}}}}}
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps(schema).encode())
+                    return
                 self.requests.append(query)
                 if route.path != '/runtime/agents/a/sessions' or query.get('project_id') != ['p'] or query.get('limit') != ['1']:
                     self.send_error(400)
@@ -85,6 +99,17 @@ def smoke(root, commit):
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps(payload).encode())
+
+            def do_POST(self):
+                type(self).writes += 1
+                if self.path != '/ai/agents':
+                    self.send_error(400)
+                    return
+                self.rfile.read(int(self.headers.get('Content-Length', '0')))
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(b'{"id":"a"}')
 
             def log_message(self, *_):
                 pass
@@ -100,12 +125,25 @@ def smoke(root, commit):
             partial = invoke(['runtime', 'agent', 'sessions', 'a', '--project', 'p', '--api-url', origin, '--limit', '1'])
             if partial['meta']['complete'] is not False or partial['meta']['collection_complete'] != 'partial':
                 raise ValueError('single page incorrectly claims collection completeness')
+            valid_body = {'model_id': '6ba7b810-9dad-11d1-80b4-00c04fd430c8', 'created_at': '2026-10-05T20:40:46-03:00'}
+            valid = invoke(['validate-input', '--command', 'project agent create', '--api-url', origin, '--file', '-'], json.dumps(valid_body))
+            if valid['data']['validation_direction'] != 'request' or valid['data']['executed'] is not False:
+                raise ValueError('packaged input validation did not report request direction')
+            for invalid in [dict(valid_body, model_id='invalid'), dict(valid_body, id='server'), dict(valid_body, created_at='2026-02-29T00:00:00Z')]:
+                denied = invoke(['project', 'agent', 'create', '--validate-body', '--api-url', origin, '--file', '-'], json.dumps(invalid), code=2)
+                if denied['error']['write_outcome'] != 'not_attempted':
+                    raise ValueError('invalid body was not refused before mutation')
+            if Pages.writes != 0:
+                raise ValueError('invalid request body caused a mutation')
+            invoke(['project', 'agent', 'create', '--validate-body', '--api-url', origin, '--file', '-'], json.dumps(valid_body))
+            if Pages.writes != 1 or Pages.validation_reads != 5:
+                raise ValueError('packaged request validation/write counts differ')
         finally:
             server.shutdown()
             server.server_close()
             thread.join(timeout=5)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
-            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection'],
+            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write'],
             'backend_acceptance': 'not_evaluated', 'credential_provider_acceptance': 'not_evaluated'}
 
 
