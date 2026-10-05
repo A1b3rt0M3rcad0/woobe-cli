@@ -114,5 +114,16 @@ func declarations(s map[string]any, p string) error {
 			return unsupported(p, "invalid dependentSchemas")
 		}
 	}
+	if v, ok := s["patternProperties"]; ok {
+		m, ok := v.(map[string]any)
+		if !ok {
+			return unsupported(p, "invalid patternProperties")
+		}
+		for pattern := range m {
+			if _, e := regexp.Compile(pattern); e != nil {
+				return unsupported(p, "pattern incompatible with RE2")
+			}
+		}
+	}
 	return nil
 }

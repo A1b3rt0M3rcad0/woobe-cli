@@ -110,3 +110,17 @@ func TestPropertyNames(t *testing.T) {
 		}
 	}
 }
+
+func TestPatternProperties(t *testing.T) {
+	s := decode(`{"patternProperties":{"^x":{"type":"integer"},"z$":{"minimum":2}},"additionalProperties":false}`)
+	for _, v := range []string{`{"x":1}`, `{"xz":2}`} {
+		if e := Check(s, decode(v), nil); e != nil {
+			t.Fatal(v, e)
+		}
+	}
+	for _, v := range []string{`{"x":"bad"}`, `{"other":2}`, `{"xz":1}`} {
+		if Check(s, decode(v), nil) == nil {
+			t.Fatal(v)
+		}
+	}
+}

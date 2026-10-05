@@ -112,7 +112,7 @@ func check(raw, v, doc any, p string, depth int) error {
 		return e
 	}
 	allowed := map[string]bool{}
-	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not") {
+	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not") {
 		allowed[k] = true
 	}
 	for k := range s {
@@ -242,11 +242,24 @@ func check(raw, v, doc any, p string, depth int) error {
 					return e
 				}
 			}
+			matched := false
 			if sub, ok := props[k]; ok {
+				matched = true
 				if e := check(sub, obj[k], doc, p+"."+k, depth+1); e != nil {
 					return e
 				}
-			} else if sub, ok := s["additionalProperties"]; ok {
+			}
+			if patterns, ok := s["patternProperties"].(map[string]any); ok {
+				for pattern, sub := range patterns {
+					if regexp.MustCompile(pattern).MatchString(k) {
+						matched = true
+						if e := check(sub, obj[k], doc, p+"."+k, depth+1); e != nil {
+							return e
+						}
+					}
+				}
+			}
+			if sub, ok := s["additionalProperties"]; ok && !matched {
 				if e := check(sub, obj[k], doc, p+"."+k, depth+1); e != nil {
 					return e
 				}
