@@ -171,3 +171,24 @@ Offline compilation emits a v1 execution document and hash. Both formats reuse t
 `--skip-unchanged` performs an authorized GET for compatible update targets, comparing only supplied fields. Matching state is checkpointed as `unchanged`, making results available to dependent resources; resume skips that observation just as it skips completed writes. It is a recorded observation, not continuous drift detection. Changed state proceeds to the ordinary PATCH/PUT; server-side revision enforcement remains authoritative. An explicit `if_match` requires an observed matching ETag before this shortcut. Missing compatible getters (including NetworkDraft) return exit 9; default apply remains available without the option. Create intents are always explicit creations and have no name-based existence check.
 
 Packages contain both `manifest.schema.json` (steps v1) and `resources.schema.json` (resources v2). Full resource coverage, semantic upsert/existence reconciliation, complete export/import and secret references remain open.
+
+## Captura seletiva e paginação anunciada
+
+```sh
+woobe manifest capture --kind Agent --id AGENT --project PROJECT --field name --field description --destination update.json
+woobe manifest capture --kind AgentContract --id CONTRACT --parent agent=AGENT --project PROJECT --field name --destination contract-update.json
+woobe manifest apply --file update.json --project PROJECT --checkpoint update.checkpoint.json --yes
+woobe request-pages /ai/agents --query project_id=PROJECT --max-pages 20
+```
+
+`capture` exige um tipo com update/get compatíveis, Project explícito e campos de primeiro nível escolhidos. Somente esses campos entram em `spec`; nulos explícitos são preservados. Identidade/contexto, segredos, campos ausentes/inacessíveis e projeções de outro ID/Project são recusados. O ETag observado entra em `if_match` quando disponível, mas a execução da condição continua sendo responsabilidade do servidor. O arquivo de destino contém um manifesto v2 bruto; stdout também informa seleção/proveniência. Isso permite editar e reaplicar a configuração escolhida; não promete exportação completa nem validação integral dos DTOs. Tool e NetworkDraft não possuem getter compatível no catálogo atual; tipos imutáveis não têm capture.
+
+O catálogo v2 agora contém 13 tipos: Agent, Network, AgentPrompt, AgentContract, AgentModelConfig, NetworkDraft, Project, Tool, KnowledgeCollection, KnowledgeDocument, Skill, SkillVersion e ChatSurface. Project aceita apenas update e o ID deve ser o Project do documento. SkillVersion exige parent `skill` e referências de IDs do tipo Skill. As demais ações e campos seguem `manifest kinds` e o schema distribuído; não há emissão declarativa de credenciais ou categorias propostas.
+
+`request-pages` usa somente GET e segue `Link: <...>; rel="next"`. Limites: 1–100 páginas e 64 MiB acumulados. Origem, rota e filtros iniciais terminados em `_id` devem permanecer iguais; ciclos, múltiplos next e destinos externos são recusados. Páginas são mantidas em seus envelopes, com segredos mascarados na saída. `traversal_complete` significa somente que não há próximo link anunciado a partir da página selecionada; `collection_complete:"not_verified"` impede afirmar uma enumeração total ou inferir protocolos de cursor. Falhas após páginas recebidas preservam os dados com exit 10; interrupção/deadline preservam 130/8.
+
+Falhas de apply agora incluem checkpoint, contagens por estado, etapa interrompida e `checkpoint_saved`. A ausência de persistência é explícita; uma resposta de sucesso não autoriza repetir uma criação. Binários empacotados incluem a revisão fonte em `version`, junto de compilador/OS/arquitetura.
+
+## Medida de completude
+
+`python3 scripts/completeness.py` valida a correspondência com todas as 101 entregas do §18 e verifica o relatório gerado. `docs/COMPLETENESS.md` documenta estado/evidência por item e a fórmula. Esse percentual inclui backend e E2E; não deriva de commits, número de comandos ou cobertura de código.

@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from unified discovery: 232 entries, including 188 HTTP operations. Route advertisement does not grant authority. Use `manifest kinds` for v2 resource actions; `schema --command "manifest validate" --kind document --manifest-version 2` describes that document format.
+Generated from discovery: 234 executable entries, including 188 HTTP operations. Route advertisement does not grant authority. Use `manifest kinds` for 13 declared resource kinds and `COMPLETENESS.md` for roadmap delivery evidence.
 
 | Command | Kind | HTTP | Availability | Permission hint |
 | --- | --- | --- | --- | --- |
@@ -35,6 +35,7 @@ Generated from unified discovery: 232 entries, including 188 HTTP operations. Ro
 | `instance bootstrap` | `http` | `POST /identity/instance/bootstrap` | `observed` | — |
 | `instance status` | `http` | `GET /identity/instance/status` | `observed` | — |
 | `manifest apply` | `composition` | — | `local` | — |
+| `manifest capture` | `http-projection` | — | `observed` | — |
 | `manifest compile` | `local` | — | `local` | — |
 | `manifest diff` | `composition` | — | `server-dependent` | — |
 | `manifest export` | `http-projection` | — | `observed` | — |
@@ -197,6 +198,7 @@ Generated from unified discovery: 232 entries, including 188 HTTP operations. Ro
 | `project usage daily` | `http` | `GET /metering/projects/{project_id}/daily` | `observed` | `usage:read` |
 | `project usage summary` | `http` | `GET /metering/projects/{project_id}/usage` | `observed` | `usage:read` |
 | `request` | `generic-http` | — | `server-dependent` | — |
+| `request-pages` | `generic-http` | — | `server-dependent` | — |
 | `runtime run cancel` | `http` | `POST /runtime/runs/{run_id}/cancel` | `observed` | — |
 | `runtime run get` | `http` | `GET /runtime/runs/{run_id}` | `observed` | — |
 | `runtime run invocations` | `http` | `GET /runtime/runs/{run_id}/model-invocations` | `observed` | — |
