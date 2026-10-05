@@ -47,3 +47,10 @@ func TestMalformedAssertions(t *testing.T) {
 		}
 	}
 }
+
+func TestUnsupportedInactiveProperty(t *testing.T) {
+	e := Check(decode(`{"type":"object","properties":{"absent":{"format":"email"}}}`), decode(`{}`), nil)
+	if x, ok := e.(*Error); !ok || !x.Unsupported {
+		t.Fatal(e)
+	}
+}

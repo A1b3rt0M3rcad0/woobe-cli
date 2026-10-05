@@ -20,7 +20,12 @@ func fail(p, r string) error        { return &Error{Path: p, Rule: r} }
 func unsupported(p, r string) error { return &Error{Path: p, Rule: r, Unsupported: true} }
 
 // Check implements a bounded, explicit schema subset. Unknown assertions fail closed.
-func Check(schema, value, document any) error { return check(schema, value, document, "$", 0) }
+func Check(schema, value, document any) error {
+	if e := inspect(schema, document, "$", 0, map[string]bool{}); e != nil {
+		return e
+	}
+	return check(schema, value, document, "$", 0)
+}
 func equal(a, b any) bool {
 	if x, y := number(a), number(b); x != nil || y != nil {
 		return x != nil && y != nil && x.Cmp(y) == 0
