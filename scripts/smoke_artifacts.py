@@ -5,6 +5,8 @@ import json
 import os
 import pathlib
 import platform
+import http.server
+import threading
 import subprocess
 import tarfile
 import tempfile
@@ -64,8 +66,46 @@ def smoke(root, commit):
         if validation['valid'] is not True or validation['source_schema_version'] != '2' or len(validation['manifest_hash']) != 64:
             raise ValueError('local manifest validation has incorrect semantics')
         invoke(['manifest', 'validate', '--file', '-'], '{', code=2)
+        # A loopback fixture verifies the packaged client's body pagination on
+        # each native OS; real Woobe policy remains the separate backend gate.
+        class Pages(http.server.BaseHTTPRequestHandler):
+            requests = []
+
+            def do_GET(self):
+                from urllib.parse import urlparse, parse_qs
+                route = urlparse(self.path)
+                query = parse_qs(route.query)
+                self.requests.append(query)
+                if route.path != '/runtime/agents/a/sessions' or query.get('project_id') != ['p'] or query.get('limit') != ['1']:
+                    self.send_error(400)
+                    return
+                terminal = query.get('cursor') == ['first']
+                payload = {'success': True, 'data': {'items': [{'id': 'second' if terminal else 'first'}], 'has_next': not terminal, 'next_cursor': None if terminal else 'first'}}
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(payload).encode())
+
+            def log_message(self, *_):
+                pass
+
+        server = http.server.HTTPServer(('127.0.0.1', 0), Pages)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            origin = f'http://127.0.0.1:{server.server_port}'
+            pages = invoke(['runtime', 'agent', 'sessions', 'a', '--project', 'p', '--api-url', origin, '--limit', '1', '--all'])
+            if pages['data']['page_count'] != 2 or pages['meta']['collection_complete'] != 'verified' or pages['meta']['complete'] is not True or len(Pages.requests) != 2:
+                raise ValueError('packaged pagination failed to consume both pages')
+            partial = invoke(['runtime', 'agent', 'sessions', 'a', '--project', 'p', '--api-url', origin, '--limit', '1'])
+            if partial['meta']['complete'] is not False or partial['meta']['collection_complete'] != 'partial':
+                raise ValueError('single page incorrectly claims collection completeness')
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
-            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input'],
+            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection'],
             'backend_acceptance': 'not_evaluated', 'credential_provider_acceptance': 'not_evaluated'}
 
 

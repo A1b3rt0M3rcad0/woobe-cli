@@ -1,68 +1,26 @@
 # Implementation status
 
-Date: 2026-10-05. The implementation contains 143 commits above the initial master across an ordered PR stack: `feat/go-control-plane-cli` (foundation/context integrity), `feat/cli-schema-validation` (bounded contract validation), then `docs/cli-migration-acceptance` (migration and final validation evidence), followed by `feat/cli-preflight-recovery` (30 recovery/preflight/transport commits). This is **not completion of the full design**. The latest user instruction authorizes multiple PRs; no merge or release is claimed.
+Updated 2026-10-05 (America/Sao_Paulo). The canonical Go client is in `A1b3rt0M3rcad0/woobe-cli`; implementation PRs #1–#7 are merged at `a9c6ace053ea1f3e57abbb5d372f77010211ad56`. This continuation is on `feat/cli-pagination-contracts`. No new PR, merge, tag or release is claimed.
+
+## Backend acceptance
+
+[Woobe PR #177](https://github.com/A1b3rt0M3rcad0/woobe/pull/177) at `77c53832f0e5b35488d1574b3cf62777486f5189` is **draft and unmerged**, awaiting user approval. Seven backend workflows passed on that SHA. Required tests compile the pinned Go client and run API, workers, PostgreSQL, Redis, RabbitMQ and MongoDB with a deterministic model provider.
+
+Verified scenarios include Project/provider/Agent/Network configuration, staging and production publication, Agent and Network rollback, runtime execution with separate keys, category lifecycle, revision-fixed grants, stale ETags, constrained authority, administrative replay, key rotation and old-key refusal. This evidence replaces the older claim that backend acceptance was entirely unavailable. It does not imply approval, merged availability or complete acceptance of every roadmap phase.
 
 ## Delivered client behavior
 
-- Go 1.22 language minimum; Go 1.27.1 toolchain/CI; Cobra v1.8.1; `woobe-sdk-go` v0.1.0 resolves the inspected commit `5a78817a64dc5dcb15aa1d38ec54d4c289f7f56c`.
-- 188 registry-backed API operations: 171 observed in the inspected master, 5 branch-dependent Control Key routes, 12 proposed extension contracts. Unified discovery covers all 238 executable handlers, including the 188 HTTP operations.
-- Workspace membership/invites; Project/access/environment keys; Agent prompts/contracts/model configs; Agent release lifecycle/tests; multiple Networks, drafts/promotions/activations/environments; HTTP/MCP Tools; Knowledge/Documents/snapshots; providers/models; Skills; ChatSurfaces/keys; Runs/traces/usage.
-- `request` sends only origin-relative paths, forbids redirects and never automatically retries a mutation.
-- Explicit parent identifiers: either positional IDs in route order, or flags such as `--agent`, `--release`, `--network`. Help lists route order. `agent`, `network` and `control-key` aliases forward to canonical handlers.
-- JSON envelopes, documented exit codes, redacted administrative output, JSONL semantic Runtime v2 events. `table` renders sorted tabular columns/fields with administrative secret redaction.
-- Atomic local config; explicit administrative and runtime credential references; private files on POSIX; origin-scoped cookie persistence with CSRF. POSIX credential storage is a fallback, **not OS keychain integration**. Windows private-file credential import/read is intentionally unsupported; environment credentials remain available.
-- Credential issuance reserves an exclusive 0600 destination before requesting the write. The complete issuance response goes into that file, ordinary output is redacted. A failed/uncertain issuance leaves the destination for reconciliation; it never silently emits a second key.
-- Document upload uses a multipart pipe rather than buffering the document.
-- Configuration manifests support dependency order, exact `${steps.<id>.<field>}` references, persisted redacted results and checkpoints. Publication, execution, key issuance and deletion require separate commands.
-- A completed checkpoint skips committed steps. Unknown/in-flight writes block resume until explicit-ID authorized-read reconciliation; checkpoint locking prevents concurrent apply/reconcile. `manifest status` inspects progress offline; recovery binds to the selected key fingerprint. Legacy checkpoints with different canonical hashes or without a required key fingerprint are refused, not silently migrated. This is client checkpointing, not server idempotency or transactional apply.
-- `help --output json` provides operation metadata. `schema` describes the local transport contract and **does not claim exact domain field validation**. `server-schema --command ...` reads the server's OpenAPI operation and components when available.
-- CI definition: formatting, module verification, vet, race tests, native build and six cross-build targets. Tag workflow builds six archives with usage and manifest schema, verifies archive contents/checksums, and produces `artifacts.json`; no release/tag is created by this change.
+- Go 1.22 language minimum, Go 1.27.1 toolchain and pinned runtime SDK; 240 executable handlers including 190 HTTP operations.
+- Explicit Workspace/Project contexts and separate administrative/runtime credential selection; cookie/CSRF sessions and POSIX credential fallback. Native protected providers and Windows protected sessions remain open.
+- Registry-derived help, flags and invocation schemas; server OpenAPI discovery and bounded request-body validation, read-only manifest preflight and opt-in validation before writes.
+- Workspace/Project administration; Agent/Network configuration and release lifecycle; Tools HTTP/MCP, Knowledge, providers/models, Skills, ChatSurfaces, key lifecycle, runtime and diagnostics.
+- No automatic mutation retry; strong preconditions and idempotency headers are forwarded where supported. Secret issuance requires an exclusive private destination; ordinary outputs are redacted.
+- Versioned manifests, typed dependencies, selective capture, exact numeric state comparisons, locked checkpoints, partial reports and explicit-ID reconciliation. A GET observation does not attribute the original uncertain write.
+- Reviewed `--all` pagination for category list/history, authority audit and Agent sessions. Three body protocols preserve all filters; bounds cover pages, aggregate bytes and total traversal deadline. Single-page and partial output report collection completeness explicitly. See [PAGINATION.md](PAGINATION.md).
+- Six packaged OS/architecture targets; CI executes native packages on Linux/macOS/Windows. Native smoke now exercises body pagination and partial-collection metadata against loopback fixtures; live backend acceptance is separate.
 
-Additional delivery: strict bounded duplicate-free JSON; secret-free manifest bodies, canonical plan hashes, reference-addressable IDs and preserved large integers; malformed successful write responses retain uncertainty and request IDs; HEAD support and mutation-only header separation; zero-network proposed dry-runs; authoritative input validation; partial identity/instance/route diagnostics.
+## Remaining work
 
-## Full-plan requirements still open
+Native credential providers and sessions, full declarative observe/plan/apply reconciliation, complete input schema/dialect/route/query coverage, stream reconnect/replay/gaps, complete semantic export/import and protected manifest secret references remain. Pagination is implemented for all four reviewed body-paginated administrative routes, but full semantic export remains partial and unknown endpoint protocols are not inferred.
 
-| Requirement | Current evidence / remaining work |
-| --- | --- |
-| Control Key acceptance in current master | Design pins a divergent backend feature branch. Five client operations exist, but current-master integration is unverified. |
-| Authority categories, materialized grants, revision history and delegation | Twelve proposed operations require exact route/method advertisement in server OpenAPI; absent contracts return exit 9 before writing. Advertisement does not grant authority. Generic authorized `request` can consume an independently implemented contract. Locate and integrate the canonical backend implementation. |
-| Effective authority, access checks and capabilities | Require server contracts. Permission annotations are historical catalog hints, not live authority or a complete per-route policy map. |
-| Human viewer enforcement and delegation matrix | Server responsibility; local HTTP fixtures cannot prove tenancy, principal policy or permission ceilings. |
-| Runtime key constraints and production negative tests | SDK adapter exists; real Agent/Network authorization, environment and target tests remain. |
-| Full resource-kind declarative format from design | Both explicit steps v1 and resource intents v2 are supported. V2 compiles thirteen kinds with explicit create/update, typed parent/target references and dependencies. Opt-in authorized reads checkpoint unchanged compatible updates. Remote diff compares supplied top-level update fields through compatible authorized GETs and checks observed ETags. Creation existence and unresolved dependencies remain unevaluated. Full semantic reconciliation, generic canonical-get projections and `manifest export` are available but explicitly partial/non-apply-ready. Semantic export/import and completeness tracking remain. |
-| Automatic reconciliation of uncertain writes | Explicit-ID authorized-read reconciliation checks nonempty supplied expected fields and persists evidence. It proves observed state, not attribution of the lost write; automatic attribution and server idempotency remain. |
-| All discovery from one registry | Delivered for all 238 executable handlers and their flags/input/output descriptors. Domain DTO validation remains server-derived. |
-| Canonical field-level schemas and constraints | Server-schema offers authoritative discovery when enabled; `validate-input` reads the authoritative request-body schema and checks an explicit bounded subset, including local references and composition. Unsupported assertions/external references return exit 9; full DTO/schema semantics and automatic validation before every write remain. |
-| Pagination and long streams | Manual repeatable query parameters supported; complete endpoint-specific pagination and SDK reconnect/gap scenarios remain. Reconnect is disabled rather than accepting unverified replay behavior. |
-| Login/refresh/logout E2E | Cookie/CSRF persistence tested with fixtures, not a deployed Woobe installation. No automatic refresh/retry path. |
-| OS credential protection | Native keychains and Windows protected session storage remain. |
-| Real Woobe E2E and final coverage gates | No deployment or real instance credential supplied. Race tests/cross-builds are client evidence only. |
-| Supported production toolchain | Go 1.27.1 pinned; local vet/race tests and six cross-builds passed. CI uses the same compiler. |
-
-The design includes changes in `woobe` as well as `woobe-cli`. A GitHub PR belongs to one repository; this CLI PR cannot integrate backend changes into a different repository. Do not import the Python server or duplicate authority enforcement inside the CLI to make that dependency disappear.
-
-## Publication state
-
-One branch, `feat/go-control-plane-cli`, and one draft PR: https://github.com/A1b3rt0M3rcad0/woobe-cli/pull/1. The minimal master base was initialized after user authorization. The previous 37-commit head passed all seven CI jobs (run 37243940695). The 30-commit continuation is validated on the same PR. Follow-up work stays in this PR. No merge, tag or release. Keep draft until full-plan acceptance.
-
-Resource continuation: schema v2, kinds/compile discovery, explicit identity and typed dependencies, unchanged-update observations and both packaged schemas. No implicit upsert or complete export/import is claimed.
-
-Latest continuation: 13 typed resource kinds, explicit field capture/update round trips, bounded Link pagination, source revision in binaries and structured partial apply evidence. Full-plan delivery assessment is 38/101 (37.6%), with 33 partial and 30 pending items; see COMPLETENESS.md for all evidence and unverified phase acceptance.
-
-
-Latest 30-commit continuation: strict bounded config, explicit context clearing/runtime attachments, Workspace override inheritance fixes and named show; expanded body-schema subset with inactive-branch inspection, exact numeric equality, recursive local pointers and bounded evaluator; read-only HTTP acceptance fixtures, fuzzing and Python-to-Go migration guide. Local validation: 122 test functions plus subtests, race/vet/module checks, 76.0% total statement coverage (CLI 71.8%, config 75.8%, schema 84.3%). Cross-build is not execution on each OS. Real backend phase acceptance remains 0/10; migration guide delivery raises the full-plan count to 39/101 (38.6%).
-
-
-Latest continuation adds 30 commits without changing prior PR heads: bounded checkpoint reads/saves, exact returned-number references, checkpoint plan/result/dependency integrity, consistent apply previews, resumable not_attempted outcomes and structured causes; shared body validation with bounded OpenAPI references/media/optional-body rules; opt-in --validate-body before writes, read-only manifest preflight, deferred/strict completeness, schema digest pins; ambiguous response/path/ID/query refusal and runtime status mapping. Administrative and SDK writes use fresh HTTP/1 connections with transport replay disabled; read connections remain pooled. Caller-supplied replacement HTTP transports are outside this default guarantee.
-
-Final local validation: 151 test functions plus subtests, race/vet/module checks, native build and discovery; 77.6% total coverage (CLI 74.6%, controlplane 88.1%). Full-plan delivery remains 39/101 (38.6%), 33 partial and 29 pending: this continuation improves partial requirements without claiming their complete backend/schema/E2E acceptance. No backend changes or real-server acceptance are claimed.
-
-## Backend handoff checkpoint
-
-This continuation adds 7 commits in two ordered PRs: exact bounded semantic state comparisons and revision evidence, followed by a backend integration handoff. Equivalent decimal representations no longer cause redundant update writes or reject matching reconciliation observations; omitted fields, null, nested object membership, array order and large integer precision remain distinct. Diff with expected revision now fails closed if ETag is absent.
-
-Local validation: 157 test functions plus subtests, race suite, vet and module verification; 77.9% total statement coverage, CLI 74.7%, JSON input 90.2%. Full-plan delivery remains 39/101 (38.6%), with 33 partial and 29 pending. No real-server acceptance is claimed. [BACKEND_HANDOFF.md](BACKEND_HANDOFF.md) defines the next block in `woobe`; the client is ready to begin that integration, while full acceptance and release remain open.
-
-## CI and master integration — 2026-10-05
-
-PRs #1–#6 are merged into master, preserving their ordered history. The CI continuation adds stored six-target packages, exact source/checksum/content checks, three native packaged-executable smoke jobs and an aggregate success gate. README now matches the audited 39/101 (38.6%) count; make check also runs that audit. Backend acceptance remains 0/10. Native CLI smoke does not certify protected credential providers or real-server policies; Actions development artifacts do not constitute a production release. See CI.md and the merged PR for exact run evidence.
+The [101-item audit](COMPLETENESS.md) now includes the separately delivered backend evidence. Its percentage measures delivered roadmap items, not effort or production readiness. No full phase acceptance is asserted merely from individual tests.

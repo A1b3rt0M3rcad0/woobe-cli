@@ -6,7 +6,7 @@ O workflow `CLI` roda em PRs, pushes na master e nas branches `feat/**`/`docs/**
 | --- | --- |
 | `test` | gofmt, auditoria de 101 requisitos, módulos, vet, suíte Go com race/coverage, fuzz de schema por 10 segundos com dois workers, build e discovery. |
 | `package` | Seis arquivos Linux/macOS/Windows × amd64/arm64, schemas v1/v2, SHA256SUMS e artifacts.json. Conteúdo, alvos, nomes e SHA de origem devem coincidir. |
-| `native-smoke` (três runners) | Baixar os pacotes do mesmo run e executar o alvo correspondente ao host; verificar versão/commit/OS/arch, discovery, schemas, manifest local válido e recusa de JSON inválido. |
+| `native-smoke` (três runners) | Baixar os pacotes do mesmo run e executar o alvo correspondente ao host; verificar versão/commit/OS/arch, discovery, schemas, manifest local válido, recusa de JSON inválido, duas páginas por cursor e metadados de coleção parcial em fixture HTTP loopback. |
 | `ci` | Todos os três grupos anteriores devem terminar em success. Failure, cancelled ou skipped impedem o sucesso deste job agregador. |
 
 Os seis jobs concretos são `test`, `package`, três instâncias de `native-smoke` e `ci`. Empacotamento substitui a matriz anterior que apenas compilava seis executáveis. O workflow mantém permissions `contents: read`, timeouts e cancelamento de execuções anteriores do mesmo workflow/event/ref.
@@ -30,4 +30,4 @@ python3 scripts/verify_artifacts.py --commit "$(git rev-parse HEAD)"
 python3 scripts/smoke_artifacts.py --commit "$(git rev-parse HEAD)" --report native-smoke.json
 ```
 
-O smoke exige um host Linux, macOS ou Windows em amd64/arm64 e executa somente seu próprio alvo. A matriz hospedada executa três combinações concretas de OS/arquitetura, que constam nos relatórios; ela não afirma execução nativa de todos os seis alvos. Não há validação de providers de keychain, sessão protegida Windows, login real, permissões do servidor ou runtime remoto. Esses aceites continuam no planejamento do backend.
+O smoke exige um host Linux, macOS ou Windows em amd64/arm64 e executa somente seu próprio alvo. A matriz hospedada executa três combinações concretas de OS/arquitetura, que constam nos relatórios; ela não afirma execução nativa de todos os seis alvos. Não há validação de providers de keychain, sessão protegida Windows, login real, permissões do servidor ou runtime remoto. A evidência de backend está no PR #177; providers nativos e a matriz completa permanecem no planejamento.
