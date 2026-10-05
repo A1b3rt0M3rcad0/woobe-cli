@@ -61,7 +61,7 @@ def smoke(root, commit):
                 raise ValueError('packaged manifest schema has incorrect identity')
         body = json.dumps({'schema_version': '2', 'project_id': 'p', 'resources': [{'key': 'a', 'kind': 'Agent', 'action': 'update', 'resource_id': 'a', 'spec': {'name': 'Smoke'}}]})
         validation = invoke(['manifest', 'validate', '--file', '-', '--project', 'p'], body)['data']
-        if validation['valid'] is not True or validation['authorization'] != 'not_evaluated':
+        if validation['valid'] is not True or validation['source_schema_version'] != '2' or len(validation['manifest_hash']) != 64:
             raise ValueError('local manifest validation has incorrect semantics')
         invoke(['manifest', 'validate', '--file', '-'], '{', code=2)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
