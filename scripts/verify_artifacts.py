@@ -15,11 +15,14 @@ for artifact in manifest['artifacts']:
         with zipfile.ZipFile(path) as archive:
             names = set(archive.namelist())
             schema = json.loads(archive.read('manifest.schema.json'))
+            resources = json.loads(archive.read('resources.schema.json'))
     else:
         with tarfile.open(path) as archive:
             names = set(archive.getnames())
             schema = json.load(archive.extractfile('manifest.schema.json'))
+            resources = json.load(archive.extractfile('resources.schema.json'))
     executable = 'woobe.exe' if artifact['os'] == 'windows' else 'woobe'
-    assert names == {executable, 'README.md', 'USAGE.md', 'manifest.schema.json'}
+    assert names == {executable, 'README.md', 'USAGE.md', 'manifest.schema.json', 'resources.schema.json'}
     assert schema['$id'] == 'urn:woobe:manifest:steps:1'
+    assert resources['$id'] == 'urn:woobe:manifest:resources:2'
 print('Verified six archives, schemas and checksum metadata')

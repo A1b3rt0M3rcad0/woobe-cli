@@ -4,8 +4,10 @@ version="${1:?version required}"
 [[ "$version" =~ ^v?[0-9][A-Za-z0-9._-]*$ ]] || { echo "invalid version" >&2; exit 2; }
 mkdir -p dist
 task_schema="$(mktemp)"
-trap 'rm -f "$task_schema"; if [[ -n "${task_dir:-}" ]]; then rm -rf "$task_dir"; fi' EXIT
+task_resources="$(mktemp)"
+trap 'rm -f "$task_schema" "$task_resources"; if [[ -n "${task_dir:-}" ]]; then rm -rf "$task_dir"; fi' EXIT
 go run ./cmd/woobe schema --command "manifest validate" --kind document > "$task_schema"
+go run ./cmd/woobe schema --command "manifest validate" --kind document --manifest-version 2 > "$task_resources"
 for target_os in linux darwin windows; do
   for target_arch in amd64 arm64; do
     task_dir="$(mktemp -d)"
@@ -19,12 +21,17 @@ import json,sys
 with open(sys.argv[1]) as f: schema=json.load(f)["data"]
 with open(sys.argv[2],"w") as f: json.dump(schema,f,indent=2);f.write("\n")
 PYSCHEMA
+    python3 - "$task_resources" "$task_dir/resources.schema.json" <<'PYRESOURCE'
+import json,sys
+with open(sys.argv[1]) as f: schema=json.load(f)["data"]
+with open(sys.argv[2],"w") as f: json.dump(schema,f,indent=2);f.write("\n")
+PYRESOURCE
     archive="woobe_${version}_${target_os}_${target_arch}"
     if [[ "$target_os" == windows ]]; then
       task_archive="$(pwd)/dist/$archive.zip"
-      (cd "$task_dir" && zip -q "$task_archive" "$executable" README.md USAGE.md manifest.schema.json)
+      (cd "$task_dir" && zip -q "$task_archive" "$executable" README.md USAGE.md manifest.schema.json resources.schema.json)
     else
-      tar -czf "dist/$archive.tar.gz" -C "$task_dir" "$executable" README.md USAGE.md manifest.schema.json
+      tar -czf "dist/$archive.tar.gz" -C "$task_dir" "$executable" README.md USAGE.md manifest.schema.json resources.schema.json
     fi
     rm -rf "$task_dir"
   done
