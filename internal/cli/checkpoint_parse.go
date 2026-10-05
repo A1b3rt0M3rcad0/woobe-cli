@@ -67,5 +67,16 @@ func validateCheckpointPlan(cp checkpoint, d manifest.Document) error {
 			return output.New(2, "checkpoint reconciliation has no matching reconciled step")
 		}
 	}
+	for id, state := range cp.Steps {
+		if terminalState(state) {
+			if _, ok := cp.Results[id]; !ok {
+				return output.New(2, "terminal checkpoint step has no saved result")
+			}
+		}
+	}
 	return nil
+}
+
+func terminalState(state string) bool {
+	return state == "committed" || state == "reconciled" || state == "unchanged"
 }

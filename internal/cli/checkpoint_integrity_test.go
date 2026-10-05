@@ -37,3 +37,15 @@ func TestCheckpointEvidenceOwnership(t *testing.T) {
 		}
 	}
 }
+
+func TestTerminalResultPresence(t *testing.T) {
+	d := manifest.Document{Steps: []manifest.Step{{ID: "a"}}}
+	cp := checkpoint{Steps: map[string]string{"a": "committed"}}
+	if validateCheckpointPlan(cp, d) == nil {
+		t.Fatal("missing result")
+	}
+	cp.Results = map[string]any{"a": nil}
+	if e := validateCheckpointPlan(cp, d); e != nil {
+		t.Fatal(e)
+	}
+}
