@@ -65,3 +65,14 @@ func TestShowNamedContext(t *testing.T) {
 		t.Fatal(a.Project)
 	}
 }
+
+func TestUnsetWorkspaceClearsProject(t *testing.T) {
+	a := contextApp(t)
+	if code := a.Execute(context.Background(), []string{"context", "unset", "dev", "workspace"}); code != 0 {
+		t.Fatal(code)
+	}
+	c, e := config.Load(a.ConfigPath)
+	if e != nil || c.Contexts["dev"].Workspace != "" || c.Contexts["dev"].Project != "" {
+		t.Fatal(c, e)
+	}
+}

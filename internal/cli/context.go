@@ -4,6 +4,7 @@ import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/config"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
+	"strings"
 )
 
 func (a *App) contextCommands() {
@@ -83,6 +84,36 @@ func (a *App) contextCommands() {
 		}}
 		g.AddCommand(cmd)
 	}
+	g.AddCommand(&cobra.Command{Use: "unset <context> <field>...", Args: cobra.MinimumNArgs(2), RunE: func(_ *cobra.Command, args []string) error {
+		c, e := config.Load(a.ConfigPath)
+		if e != nil {
+			return e
+		}
+		v, ok := c.Contexts[args[0]]
+		if !ok {
+			return output.New(2, "unknown context")
+		}
+		for _, field := range args[1:] {
+			switch field {
+			case "workspace":
+				v.Workspace = ""
+				v.Project = ""
+			case "project":
+				v.Project = ""
+			case "credential":
+				v.Credential = ""
+			case "runtime-credential":
+				v.RuntimeCredential = ""
+			default:
+				return output.New(2, "unsupported context field")
+			}
+		}
+		c.Contexts[args[0]] = v
+		if e = config.Save(a.ConfigPath, c); e != nil {
+			return e
+		}
+		return a.emit(map[string]any{"context": args[0], "unset": strings.Join(args[1:], ",")})
+	}})
 	cr := &cobra.Command{Use: "credential"}
 	g.AddCommand(cr)
 	for _, action := range []string{"attach", "detach"} {
