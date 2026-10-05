@@ -32,7 +32,7 @@ func inspect(raw, doc any, p string, depth int, refs map[string]bool) error {
 			}
 		}
 	}
-	for _, k := range []string{"items", "additionalProperties", "propertyNames", "not"} {
+	for _, k := range []string{"items", "additionalProperties", "propertyNames", "not", "if", "then", "else"} {
 		if sub, ok := s[k]; ok {
 			if e := inspect(sub, doc, p, depth+1, refs); e != nil {
 				return e

@@ -112,7 +112,7 @@ func check(raw, v, doc any, p string, depth int) error {
 		return e
 	}
 	allowed := map[string]bool{}
-	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not") {
+	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not if then else") {
 		allowed[k] = true
 	}
 	for k := range s {
@@ -157,6 +157,21 @@ func check(raw, v, doc any, p string, depth int) error {
 		}
 		if e == nil {
 			return fail(p, "not mismatch")
+		}
+	}
+	if cond, ok := s["if"]; ok {
+		e := check(cond, v, doc, p, depth+1)
+		if x, ok := e.(*Error); ok && x.Unsupported {
+			return e
+		}
+		branch := "else"
+		if e == nil {
+			branch = "then"
+		}
+		if sub, ok := s[branch]; ok {
+			if e := check(sub, v, doc, p, depth+1); e != nil {
+				return e
+			}
 		}
 	}
 	if v == nil && s["nullable"] == true {

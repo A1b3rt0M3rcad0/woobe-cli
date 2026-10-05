@@ -124,3 +124,17 @@ func TestPatternProperties(t *testing.T) {
 		}
 	}
 }
+
+func TestConditionals(t *testing.T) {
+	s := decode(`{"if":{"required":["flag"]},"then":{"required":["yes"]},"else":{"required":["no"]}}`)
+	for _, v := range []string{`{"flag":null,"yes":1}`, `{"no":1}`} {
+		if e := Check(s, decode(v), nil); e != nil {
+			t.Fatal(v, e)
+		}
+	}
+	for _, v := range []string{`{}`, `{"flag":1}`, `{"yes":1}`} {
+		if Check(s, decode(v), nil) == nil {
+			t.Fatal(v)
+		}
+	}
+}
