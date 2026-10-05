@@ -55,3 +55,10 @@ Os códigos de saída são tipados, conforme [USAGE.md](USAGE.md). Não trate to
 Checkpoints de manifestos não existiam neste protótipo. No cliente Go, não remova um checkpoint incerto para repetir o apply: use status e reconciliação explícita. Arquivos com identidade antiga/incompatível são recusados; este guia não declara migração automática de checkpoints.
 
 Finalize a migração verificando discovery local, contexto resolvido e leituras autorizadas na instalação de teste. O aceite final exige o fluxo real de configuração/publicação/runtime e matriz de autorização; fixtures de cliente e cross-builds não comprovam esses comportamentos do servidor.
+
+
+## Continuação: validação e checkpoints
+
+Scripts podem optar por `--validate-body` em comandos HTTP canônicos ou apply. O flag acrescenta uma leitura OpenAPI antes da escrita; não deve ser adicionado a request genérico, upload multipart ou runtime SDK. `manifest preflight` fornece evidências somente de bodies; leia a completude e use `--require-complete` quando uma validação incompleta precisa bloquear o pipeline.
+
+Checkpoints existentes preservam o hash do plano. Arquivos com IDs/resultados fora do plano, passos terminais sem resultado ou dependências incompletas são recusados. Não corrija isso apagando um checkpoint incerto e repetindo a criação: reconcilie primeiro o que o servidor efetivamente aceitou. O novo estado `not_attempted` identifica uma escrita que não foi enviada; apply pode repetir esse passo depois de corrigir o pré-requisito, preservando os já concluídos.

@@ -202,3 +202,24 @@ Config v1 is bounded to 1 MiB, rejects unknown/duplicate fields, dangling active
 The explicit `validate-input` subset additionally supports min/maxProperties, dependentRequired, dependentSchemas, propertyNames, RE2 patternProperties, if/then/else, prefixItems and contains with min/maxContains. Numeric enum/const and uniqueness use exact mathematical equality; nullable alters type acceptance without bypassing enum/composition constraints. Local JSON pointers support escaped property names, URI fragment decoding and array indices. Schema inspection includes inactive properties/branches; an unsupported rule there returns exit 9 rather than valid=true.
 
 Limits: schema depth 64, input depth 128, shared work budget 100,000 nodes/evaluations, numeric representation at most 4,096 characters and exponent magnitude at most 4,096. Inputs exceeding evaluator bounds return exit 9. Format, external references/anchors, schema resource IDs, unevaluated-property/item semantics and unsupported assertion dialects remain outside the subset. readOnly/writeOnly and documentation keywords are annotations here, not request-direction policy. Server authorization, domain validation and create/PATCH rules remain authoritative. No automatic schema probe is added to writes.
+
+## Body preflight, opt-in write validation and recovery integrity
+
+```bash
+woobe manifest preflight --file project.json --project PROJECT
+woobe manifest preflight --file project.json --project PROJECT --require-complete
+woobe project agent create --file agent.json --validate-body
+woobe manifest apply --file project.json --project PROJECT --checkpoint apply.json --yes --validate-body
+```
+
+`manifest preflight` reads one OpenAPI snapshot and checks each configuration body against its advertised operation. It never executes the manifest. Body values depending on returned step fields are deferred; operation availability and supported schema declarations are still inspected. `data.complete` and `meta.complete` are false when any body is deferred or fails. `--require-complete` returns exit 9 for deferrals or a dry-run without evaluation. Invalid inputs return exit 2, unsupported contracts exit 9, with per-step evidence. Path/query schemas, authorization, resource existence and domain rules are not evaluated by body preflight.
+
+`--validate-body` is optional and available for canonical JSON HTTP mutations and manifest apply. The default write path preserves its previous behavior. Generic request, multipart upload, SDK runtime, reads and unrelated local commands reject this flag rather than ignoring it. Validation failure marks the selected write `not_attempted`. Secret emission reserves its destination only after validation succeeds. Dry-run never fetches a schema or sends a write.
+
+For manifest apply, one OpenAPI snapshot is fetched after local/context/checkpoint checks. Each pending body's references are resolved, then validation runs before unchanged-state observation or `in_flight` checkpointing. A failure records a resumable `not_attempted` state with a structured cause and partial report (exit 10), preserving earlier committed steps. Unknown/in-flight HTTP attempts still block resume until explicit reconciliation. Validation of a future dependent body cannot be guaranteed before its required values exist.
+
+Validation reports include `schema_sha256`: SHA-256 of the parsed OpenAPI document serialized as sorted-key JSON with preserved numbers. Supply that digest with `--schema-sha256 DIGEST` to `validate-input`, manifest preflight, or a write/apply using `--validate-body`. A different snapshot returns exit 6 before the selected write. This identifies a client snapshot; it is not a server revision lock and does not freeze the server between discovery and mutation. The explicit supported subset and all documented schema limits still apply.
+
+Checkpoint reads are bounded to 32 MiB. Resume/reconcile validates step IDs, result ownership, reconciliation state, saved results for terminal steps and completed dependencies against the same manifest. Returned numbers are preserved exactly through checkpointing and body references. Corrupt/incompatible checkpoints are refused; status remains an offline inspection tool. `not_attempted` can be retried by apply after correcting the prerequisite without replaying committed steps.
+
+HTTP responses reject duplicate fields/nesting ambiguity. Canonical resource IDs must be unambiguous single segments; decoded path traversal, separators, nested escapes and control characters are refused. A canonical scope query must occur once and match the selected Workspace/Project. Generic authorized HTTP still delegates resource authorization to the server.
