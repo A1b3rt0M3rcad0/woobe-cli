@@ -25,6 +25,9 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 		if d.Workspace != "" && d.Workspace != v.Workspace || d.Project != "" && d.Project != v.Project {
 			return output.New(6, "manifest scope must match selected context")
 		}
+		if a.DryRun {
+			return a.emit(map[string]any{"manifest_hash": d.Hash(), "complete": false, "body_validation": "not_evaluated_dry_run", "executed": false, "schema_fetched": false})
+		}
 		doc, e := a.loadServerSchema(cmd.Context())
 		if e != nil {
 			return e
