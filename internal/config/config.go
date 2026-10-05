@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
 type Context struct {
@@ -110,6 +111,11 @@ func Validate(c Config) error {
 	if c.Current != "" {
 		if _, ok := c.Contexts[c.Current]; !ok {
 			return fmt.Errorf("active context does not exist")
+		}
+	}
+	for name := range c.Contexts {
+		if !regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,100}$`).MatchString(name) {
+			return fmt.Errorf("invalid context name")
 		}
 	}
 	return nil

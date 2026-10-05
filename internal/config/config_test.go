@@ -63,3 +63,11 @@ func TestDanglingActiveContext(t *testing.T) {
 		t.Fatal(c, e)
 	}
 }
+
+func TestContextNames(t *testing.T) {
+	for _, name := range []string{"", "../dev", "has space"} {
+		if Validate(Config{Version: 1, Contexts: map[string]Context{name: {APIURL: "http://localhost"}}}) == nil {
+			t.Fatal(name)
+		}
+	}
+}
