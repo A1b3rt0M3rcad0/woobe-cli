@@ -68,7 +68,7 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 			}
 			rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "valid", "write_executed": false})
 		}
-		data := map[string]any{"manifest_hash": d.Hash(), "operations": rows, "complete": complete, "authorization": "not_evaluated", "path_query_validation": "not_evaluated", "executed": false}
+		data := map[string]any{"manifest_hash": d.Hash(), "schema_sha256": schemaDigest(doc), "operations": rows, "complete": complete, "authorization": "not_evaluated", "path_query_validation": "not_evaluated", "executed": false}
 		if requireComplete && !complete && failure == nil {
 			failure = output.New(9, "dependency body schemas require execution results before complete validation")
 		}

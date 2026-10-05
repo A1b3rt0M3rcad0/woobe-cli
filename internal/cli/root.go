@@ -22,6 +22,7 @@ var Version = "dev"
 var Commit = "unknown"
 
 type App struct {
+	SchemaSHA                                                                                string
 	Root                                                                                     *cobra.Command
 	In                                                                                       io.Reader
 	Out, Err                                                                                 io.Writer
@@ -53,6 +54,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.DurationVar(&a.Timeout, "timeout", 30*time.Second, "HTTP deadline")
 	f.BoolVar(&a.Yes, "yes", false, "Accept the specified destructive operation")
 	f.BoolVar(&a.NoInput, "no-input", false, "Deterministic execution (always enabled)")
+	f.StringVar(&a.SchemaSHA, "schema-sha256", "", "Expected advertised OpenAPI snapshot SHA-256 when validating bodies")
 	f.BoolVar(&a.ValidateBody, "validate-body", false, "Validate the advertised request-body schema before a canonical write")
 	f.BoolVar(&a.DryRun, "dry-run", false, "Render the request without executing")
 	f.StringVar(&a.File, "file", "", "JSON input file, or - for stdin")
@@ -61,6 +63,15 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.StringVar(&a.IdempotencyKey, "idempotency-key", "", "Key, only when supported by server")
 	f.StringVar(&a.SecretFile, "secret-file", "", "Exclusive private destination for issued secret")
 	r.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		path := strings.TrimPrefix(cmd.CommandPath(), "woobe ")
+		if a.SchemaSHA != "" {
+			if len(a.SchemaSHA) != 64 || strings.Trim(a.SchemaSHA, "0123456789abcdef") != "" {
+				return output.New(2, "schema-sha256 must be 64 lowercase hexadecimal characters")
+			}
+			if !a.ValidateBody && path != "manifest preflight" && path != "validate-input" {
+				return output.New(2, "schema-sha256 requires body validation")
+			}
+		}
 		if a.ValidateBody {
 			path := strings.TrimPrefix(cmd.CommandPath(), "woobe ")
 			op, ok := a.operation(path)

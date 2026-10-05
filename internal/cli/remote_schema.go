@@ -2,6 +2,9 @@ package cli
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
 	"strings"
@@ -51,6 +54,9 @@ func (a *App) loadServerSchema(ctx context.Context) (map[string]any, error) {
 	if !ok {
 		return nil, output.New(9, "invalid server OpenAPI")
 	}
+	if a.SchemaSHA != "" && a.SchemaSHA != schemaDigest(doc) {
+		return nil, output.New(6, "advertised schema snapshot differs from expected SHA-256")
+	}
 	return doc, nil
 }
 func operationDefinition(doc map[string]any, op Operation) (map[string]any, error) {
@@ -61,4 +67,9 @@ func operationDefinition(doc map[string]any, op Operation) (map[string]any, erro
 		return nil, output.New(9, "operation not advertised by server")
 	}
 	return def, nil
+}
+
+func schemaDigest(doc map[string]any) string {
+	b, _ := json.Marshal(doc)
+	return fmt.Sprintf("%x", sha256.Sum256(b))
 }
