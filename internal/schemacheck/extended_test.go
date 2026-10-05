@@ -138,3 +138,17 @@ func TestConditionals(t *testing.T) {
 		}
 	}
 }
+
+func TestPrefixItems(t *testing.T) {
+	s := decode(`{"prefixItems":[{"type":"string"},{"type":"integer"}],"items":false}`)
+	for _, v := range []string{`[]`, `["x"]`, `["x",1]`} {
+		if e := Check(s, decode(v), nil); e != nil {
+			t.Fatal(v, e)
+		}
+	}
+	for _, v := range []string{`[1]`, `["x","y"]`, `["x",1,2]`} {
+		if Check(s, decode(v), nil) == nil {
+			t.Fatal(v)
+		}
+	}
+}

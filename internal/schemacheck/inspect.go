@@ -39,7 +39,7 @@ func inspect(raw, doc any, p string, depth int, refs map[string]bool) error {
 			}
 		}
 	}
-	for _, k := range []string{"allOf", "anyOf", "oneOf"} {
+	for _, k := range []string{"allOf", "anyOf", "oneOf", "prefixItems"} {
 		if a, ok := s[k].([]any); ok {
 			for _, sub := range a {
 				if e := inspect(sub, doc, p, depth+1, refs); e != nil {

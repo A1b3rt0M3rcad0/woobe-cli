@@ -125,5 +125,11 @@ func declarations(s map[string]any, p string) error {
 			}
 		}
 	}
+	if v, ok := s["prefixItems"]; ok {
+		a, ok := v.([]any)
+		if !ok || len(a) == 0 {
+			return unsupported(p, "invalid prefixItems")
+		}
+	}
 	return nil
 }

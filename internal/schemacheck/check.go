@@ -112,7 +112,7 @@ func check(raw, v, doc any, p string, depth int) error {
 		return e
 	}
 	allowed := map[string]bool{}
-	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not if then else") {
+	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items prefixItems minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not if then else") {
 		allowed[k] = true
 	}
 	for k := range s {
@@ -294,6 +294,13 @@ func check(raw, v, doc any, p string, depth int) error {
 					}
 				}
 				seen = append(seen, x)
+			}
+			prefix, _ := s["prefixItems"].([]any)
+			if i < len(prefix) {
+				if e := check(prefix[i], x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1); e != nil {
+					return e
+				}
+				continue
 			}
 			if sub, ok := s["items"]; ok {
 				if e := check(sub, x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1); e != nil {
