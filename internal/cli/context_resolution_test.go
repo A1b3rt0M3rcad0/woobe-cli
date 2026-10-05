@@ -50,3 +50,18 @@ func TestExplicitEmptyFlagsOverrideEnvironment(t *testing.T) {
 		t.Fatal(v, e)
 	}
 }
+
+func TestShowNamedContext(t *testing.T) {
+	a := contextApp(t)
+	c, _ := config.Load(a.ConfigPath)
+	c.Contexts["other"] = config.Context{APIURL: "http://other", Project: "p2"}
+	if e := config.Save(a.ConfigPath, c); e != nil {
+		t.Fatal(e)
+	}
+	if code := a.Execute(context.Background(), []string{"context", "show", "other"}); code != 0 {
+		t.Fatal(code)
+	}
+	if a.Project != "p2" {
+		t.Fatal(a.Project)
+	}
+}

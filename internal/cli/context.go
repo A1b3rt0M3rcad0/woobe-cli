@@ -30,6 +30,9 @@ func (a *App) contextCommands() {
 			case "list":
 				return a.emit(c)
 			case "show":
+				if len(args) == 1 {
+					a.ContextName = name
+				}
 				v, e := a.resolve()
 				if e != nil {
 					return e
