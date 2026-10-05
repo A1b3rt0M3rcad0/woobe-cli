@@ -71,4 +71,5 @@ func (a *App) manifestCommands() {
 	a.manifestPlanCommands(g)
 	a.checkpointCommand(g)
 	a.manifestExportCommand(g)
+	a.manifestCaptureCommand(g)
 }
