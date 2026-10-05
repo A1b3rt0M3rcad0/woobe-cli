@@ -250,7 +250,13 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 		return a.emitManifestPartial(partial)
 	}
 	if partial, ok := e.(*partialPages); ok {
-		_ = output.Write(a.Out, a.Mode, output.Redact(partial.Data), nil, &output.Error{Code: partial.Code, Message: partial.Message})
+		cause := partial.Cause
+		failure := &output.Error{Code: partial.Code, Message: partial.Message}
+		if cause != nil {
+			failure.Status = cause.Status
+			failure.RequestID = cause.RequestID
+		}
+		_ = output.WriteWithMeta(a.Out, a.Mode, output.Redact(partial.Data), nil, failure, partial.Meta)
 		return partial.Code
 	}
 	if partial, ok := e.(*diagnosticPartial); ok {

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/controlplane"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/manifest"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
@@ -10,22 +11,23 @@ import (
 )
 
 type Operation struct {
-	Kind             string           `json:"kind"`
-	Usage            string           `json:"usage"`
-	Flags            []FlagDescriptor `json:"flags"`
-	Command          string           `json:"command"`
-	ID               string           `json:"operation_id"`
-	Method           string           `json:"method"`
-	Path             string           `json:"path"`
-	Scope            string           `json:"scope"`
-	PermissionSource string           `json:"permission_source"`
-	Permission       string           `json:"permission,omitempty"`
-	Effect           string           `json:"effect"`
-	Status           string           `json:"availability"`
-	Body             bool             `json:"body_required"`
-	Secret           bool             `json:"secret_emission"`
-	Params           []string         `json:"path_parameters"`
-	QueryScope       string           `json:"query_scope,omitempty"`
+	Pagination       controlplane.PaginationContract `json:"pagination,omitempty"`
+	Kind             string                          `json:"kind"`
+	Usage            string                          `json:"usage"`
+	Flags            []FlagDescriptor                `json:"flags"`
+	Command          string                          `json:"command"`
+	ID               string                          `json:"operation_id"`
+	Method           string                          `json:"method"`
+	Path             string                          `json:"path"`
+	Scope            string                          `json:"scope"`
+	PermissionSource string                          `json:"permission_source"`
+	Permission       string                          `json:"permission,omitempty"`
+	Effect           string                          `json:"effect"`
+	Status           string                          `json:"availability"`
+	Body             bool                            `json:"body_required"`
+	Secret           bool                            `json:"secret_emission"`
+	Params           []string                        `json:"path_parameters"`
+	QueryScope       string                          `json:"query_scope,omitempty"`
 }
 
 var placeholders = regexp.MustCompile(`\{([^}]+)\}`)
@@ -49,6 +51,9 @@ func (a *App) group(path string) *cobra.Command {
 	return cur
 }
 func (a *App) register(op Operation) {
+	if op.Method == "GET" {
+		op.Pagination = paginationForPath(op.Path)
+	}
 	op.PermissionSource = "historical_catalog_hint_not_effective_authority"
 	if op.Permission == "" {
 		op.Permission = permissionHint(op)
@@ -78,6 +83,7 @@ func (a *App) register(op Operation) {
 		use += " <" + p + ">"
 	}
 	paramValues := map[string]*string{}
+	pageOptions := paginationOptions{}
 	cmd := &cobra.Command{Use: use, Short: op.Method + " " + op.Path, Args: func(_ *cobra.Command, args []string) error {
 		count := 0
 		for _, p := range op.Params {
@@ -95,6 +101,21 @@ func (a *App) register(op Operation) {
 				err = notAttempted(err)
 			}
 		}()
+		if op.Pagination != "" {
+			if a.File != "" {
+				return output.New(2, "paginated reads do not accept --file")
+			}
+			if e := pageOptions.validate(cmd, op.Pagination); e != nil {
+				return e
+			}
+			q, e := a.query()
+			if e != nil {
+				return e
+			}
+			if e = pageOptions.query(q, op.Pagination); e != nil {
+				return e
+			}
+		}
 		if op.Status == "proposed" && !a.DryRun {
 			if e := a.requireAdvertised(cmd.Context(), op); e != nil {
 				return e
@@ -156,8 +177,14 @@ func (a *App) register(op Operation) {
 				return notAttempted(e)
 			}
 		}
+		if op.Pagination != "" {
+			return a.paginatedCall(cmd, path, pageOptions, op.Pagination)
+		}
 		return a.call(cmd, op.Method, path, b, op.Secret)
 	}}
+	if op.Pagination != "" {
+		pageOptions.flags(cmd, op.Pagination)
+	}
 	for _, p := range op.Params {
 		flag := strings.ReplaceAll(strings.TrimSuffix(p, "_id"), "_", "-")
 		if cmd.Flags().Lookup(flag) == nil {
