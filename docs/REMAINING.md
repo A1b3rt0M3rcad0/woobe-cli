@@ -12,8 +12,8 @@ The latest continuation is reviewed in an ordered CLI PR stack: foundation/conte
 | 2 | Complete schema semantics and write-time validation | Current bounded subset rejects unsupported rules. Opt-in write-body validation, pinned snapshots and body-only manifest preflight are delivered. Need supported OpenAPI/JSON Schema dialect strategy, format/pattern compatibility, full DTO coverage, validation for route/query inputs and create/PATCH differences. |
 | 2 | Complete pagination and stream recovery | Need verified endpoint pagination/completeness contracts, bounded `--all`, reconnect/event replay and gap scenarios. No guessed cursor protocol or automatic write retry. |
 | 2 | Native credential providers and sessions | OS keychains, Windows protected human-session storage, real login/refresh/logout scenarios and authoritative human-principal checkpoint binding. POSIX fallback and environment credentials exist. |
-| 3 | Quantitative acceptance and distribution verification on actual OSes | Total statement coverage 77.9%, CLI 74.7%; the plan does not specify a numerical code-coverage threshold. Its operation/principal/E2E gates remain unmet. Config direct coverage is 75.8%, schema 84.3%; credentials remain 48.6%. Cross-build/package checks are not platform execution/keychain tests. |
-| 3 | Release readiness | Complete real E2E and design gates before draft removal/tag/release. No merge/release requested or performed. |
+| 3 | Quantitative acceptance and distribution verification on actual OSes | Total statement coverage 77.9%, CLI 74.7%; the plan does not specify a numerical code-coverage threshold. Its operation/principal/E2E gates remain unmet. Config direct coverage is 75.8%, schema 84.3%; credentials remain 48.6%. CI now executes packaged binary smoke on three native OSes; this does not verify keychain/session providers or native execution of all six targets. |
+| 3 | Release readiness | Complete real E2E and design gates before draft removal/tag/release. Client PRs are merged into master; no tagged production release is delivered. |
 
 Backend changes cannot be included in the same GitHub PR as this separate CLI repository. Remaining backend work must be delivered in its own repository and consumed here; duplicating backend policy in the CLI does not satisfy acceptance.
 
@@ -22,3 +22,5 @@ Selective field capture now produces update intents that preserve omission/null 
 Recovery integrity and resumable pre-write refusals are strengthened; schema snapshot identity does not lock server schema/domain state. Exact bounded JSON number comparison is now shared by diff, unchanged-update observations and reconciliation. Endpoint completeness and authoritative original-write recovery still need acceptance.
 
 The next implementation block is ready to start in the backend repository. Follow [BACKEND_HANDOFF.md](BACKEND_HANDOFF.md) to reconcile canonical contracts before enabling further client behavior. Client readiness to start integration is distinct from release readiness.
+
+All six implementation PRs (#1–#6) were integrated into master on 2026-10-05. The CI distribution continuation records native smoke and remote artifacts in Actions. Merging the client implementation does not satisfy the separate server acceptance gates.

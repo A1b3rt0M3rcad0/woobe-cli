@@ -14,8 +14,10 @@ Unified discovery exposes 238 executable handlers including 188 HTTP operations,
 
 Validation: `make check`. Distribution: `bash scripts/package.sh VERSION`.
 
-Full-plan delivery completeness: **37.6% (38/101 deliveries)**; partial items receive no credit. See [audited assessment](docs/COMPLETENESS.md) for evidence and real-server acceptance limits.
+Full-plan delivery completeness: **38.6% (39/101 deliveries)**; partial items receive no credit. See [audited assessment](docs/COMPLETENESS.md) for evidence and real-server acceptance limits.
 
 Migration from the inspected Python prototype: [docs/MIGRATION.md](docs/MIGRATION.md). Context integrity and bounded schema validation are documented in [docs/USAGE.md](docs/USAGE.md).
 
 Canonical HTTP writes and manifest apply can opt into `--validate-body`; `manifest preflight` produces read-only body validation evidence. See [docs/USAGE.md](docs/USAGE.md) for deferred validation, schema digest pins and recovery states.
+
+CI packages six Linux/macOS/Windows amd64/arm64 targets, verifies their source SHA/checksums/schemas and exercises packaged executables on three native runner OSes. Distribution archives and verification reports are stored in Actions artifacts; these development builds are not tagged releases. See [CI contract](docs/CI.md).
