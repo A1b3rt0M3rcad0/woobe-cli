@@ -23,7 +23,7 @@ func inspect(raw, doc any, p string, depth int, refs map[string]bool) error {
 			return e
 		}
 	}
-	for _, k := range []string{"properties"} {
+	for _, k := range []string{"properties", "dependentSchemas"} {
 		if m, ok := s[k].(map[string]any); ok {
 			for name, sub := range m {
 				if e := inspect(sub, doc, p+"."+name, depth+1, refs); e != nil {

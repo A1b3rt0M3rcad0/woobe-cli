@@ -82,3 +82,17 @@ func TestDependentRequired(t *testing.T) {
 		}
 	}
 }
+
+func TestDependentSchemas(t *testing.T) {
+	s := decode(`{"dependentSchemas":{"card":{"required":["billing"]}}}`)
+	for _, v := range []string{`{}`, `{"card":1,"billing":"B"}`} {
+		if e := Check(s, decode(v), nil); e != nil {
+			t.Fatal(v, e)
+		}
+	}
+	for _, v := range []string{`{"card":1}`} {
+		if Check(s, decode(v), nil) == nil {
+			t.Fatal(v)
+		}
+	}
+}

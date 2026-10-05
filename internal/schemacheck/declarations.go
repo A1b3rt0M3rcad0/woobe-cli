@@ -109,5 +109,10 @@ func declarations(s map[string]any, p string) error {
 			}
 		}
 	}
+	if v, ok := s["dependentSchemas"]; ok {
+		if _, ok := v.(map[string]any); !ok {
+			return unsupported(p, "invalid dependentSchemas")
+		}
+	}
 	return nil
 }
