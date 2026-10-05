@@ -1,6 +1,6 @@
 # Completude do planejamento integral
 
-**37.6% — 38/101 entregas concluídas; 33 parciais e 30 pendentes.**
+**38.6% — 39/101 entregas concluídas; 33 parciais e 29 pendentes.**
 
 Base: todas as 101 entregas das fases 0–9 do §18 de PLAN.md, com peso igual. Concluída=1; parcial=0; pendente=0. A classificação é uma avaliação de engenharia com evidência por item, não estimativa de esforço, cobertura de código ou certificação de produção.
 
@@ -17,7 +17,7 @@ O denominador inclui backend, CLI, documentação e distribuição. Concluída s
 | 6 | 6 | 4 | 0 | 6/10 |
 | 7 | 7 | 3 | 0 | 7/10 |
 | 8 | 6 | 2 | 2 | 6/10 |
-| 9 | 3 | 4 | 3 | 3/10 |
+| 9 | 4 | 4 | 2 | 4/10 |
 
 ## Avaliação item a item
 
@@ -48,13 +48,13 @@ O denominador inclui backend, CLI, documentação e distribuição. Concluída s
 | 2.2 | Disponibilizar introspecção própria e preflight sem mutação. | parcial | server-schema, doctor and validate-input perform reads; self authority/preflight contracts remain absent. |
 | 2.3 | Implementar a entrada `cmd/woobe` e a árvore Cobra, com divisão em `internal/cli`, application, controlplane, identity, runtime, contracts, config e output. | parcial | Cobra/controlplane/identity/config/output exist; application/contracts/runtime boundaries are not fully split as proposed. |
 | 2.4 | Implementar transporte Go, cancelamento, erros tipados, adapters de credenciais e injeção de stdin/stdout/stderr. | concluída | internal/controlplane, credentials, output and root support cancellation/typed errors and injected IO; client tests pass. |
-| 2.5 | Implementar contextos locais e resolução determinística. | concluída | internal/config and context.go implement explicit flag/env/context resolution. |
+| 2.5 | Implementar contextos locais e resolução determinística. | concluída | Context precedence, named show, explicit empty overrides, Workspace/Project inheritance, strict bounded config and administrative/runtime attachment covered by config and CLI tests; server remains scope authority. |
 | 2.6 | Implementar login/refresh/logout de sessão com cookies e CSRF. | parcial | Cookie/CSRF fixtures exist; Windows session storage and real login E2E remain. |
 | 2.7 | Implementar importação e referências protegidas de Control/Runtime Keys. | parcial | POSIX credential references/environment fallback exist; native keychains/Windows protection remain. |
 | 2.8 | Implementar JSON, tabela, stderr e códigos de saída. | concluída | internal/output and root implement JSON/table and typed exit/stream error behavior, verified in tests. |
 | 2.9 | Portar para Go os comportamentos compatíveis de request/control-key, sem dependência de execução do protótipo Python. | parcial | Go request/control-key handlers exist; branch-dependent Control Key server compatibility is unverified. |
 | 2.10 | Implementar doctor/version/help e validação de capacidades. | concluída | doctor/version/help and advertised-route diagnostics are implemented with fixtures. |
-| 2.11 | Implementar help JSON e exportação de schemas a partir do registro único, com compatibilidade e efeito das operações. | parcial | All handlers/flags have local schemas; complete domain/dialect/compatibility schemas remain. |
+| 2.11 | Implementar help JSON e exportação de schemas a partir do registro único, com compatibilidade e efeito das operações. | parcial | Single Cobra-derived discovery includes 237 handlers and 188 HTTP operations. Advertised body validation checks explicit bounded schema subset; full dialect/DTO semantics remain partial. |
 | 3.1 | Workspace list/get/create/update. | concluída | workspace.go provides observed CRUD handlers and operation discovery. |
 | 3.2 | Membros e convites suportados, com limites de papel. | parcial | Member/invite handlers exist; server role ceilings are unverified. |
 | 3.3 | Project list/get/create/update/overview. | concluída | project.go provides observed CRUD/overview handlers. |
@@ -116,11 +116,11 @@ O denominador inclui backend, CLI, documentação e distribuição. Concluída s
 | 8.10 | Não usar export incompleto como PATCH destrutivo. | concluída | Projection documents are not accepted as manifests; capture selects explicit readable fields and tests preserve omissions/null. |
 | 9.1 | Build do executável Go `woobe` e versão semântica com revisão identificável. | concluída | Go build/version exposes source commit, compiler and OS/architecture; packaging injects release version and commit. |
 | 9.2 | Instalação limpa a partir de binários publicados e `go install` por tag. | pendente | No published tag/release or fresh go install by tag validated. |
-| 9.3 | CI do CLI e suites integradas do backend. | parcial | Seven CLI jobs pass; integrated backend suite is unavailable. |
+| 9.3 | CI do CLI e suites integradas do backend. | parcial | CLI formatting/module/vet/race/build/cross-build and bounded schema fuzz CI are implemented. Backend integrated suites and real Woobe E2E remain unverified. |
 | 9.4 | Documentação de cada comando, permissão, exemplo e capacidade mínima. | parcial | Generated catalog/usage exist; all domain examples/effective permission/capability contracts are incomplete. |
 | 9.5 | Completion e smoke de help. | concluída | Cobra completion/help discovery and native build smoke pass. |
 | 9.6 | Matriz de compatibilidade cliente/servidor/protocolo. | parcial | SDK/toolchain/protocol pins exist; real server compatibility matrix remains unverified. |
 | 9.7 | Binários por sistema/arquitetura declarados, checksums SHA-256 e manifesto dos artefatos. | concluída | Six OS/arch packages have schemas, SHA256 and artifact metadata with archive verification. |
-| 9.8 | Guia de migração do CLI mínimo Python para o CLI Go. | pendente | No standalone migration guide mapping all inspected Python workflows. |
+| 9.8 | Guia de migração do CLI mínimo Python para o CLI Go. | concluída | docs/MIGRATION.md maps pinned Python prototype flags, credentials, installation, output, key lifecycle and explicit compatibility gaps to the Go client; no automatic protected-session/checkpoint migration or release is claimed. |
 | 9.9 | Changelog e notas de release com capabilities realmente entregues. | parcial | PR/status notes exist; final release changelog/capability notes have not been published. |
 | 9.10 | Smoke em instalação Woobe com infraestrutura real e targets de teste. | pendente | No deployed Woobe instance/credentials for real infrastructure smoke. |
