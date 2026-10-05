@@ -670,7 +670,7 @@
       "phase": 9,
       "requirement": "CI do CLI e suites integradas do backend.",
       "status": "partial",
-      "evidence": "CLI formatting/module/vet/race/build/cross-build and bounded schema fuzz CI are implemented. Backend integrated suites and real Woobe E2E remain unverified."
+      "evidence": "CLI formatting/module/vet/race/build and bounded schema fuzz CI are implemented; six distribution targets are packaged, source/checksum/schema verified, and native executable smoke runs on Linux/macOS/Windows. Required aggregate job fails on failed/cancelled/skipped groups. Backend integrated suites and real Woobe E2E remain unverified."
     },
     {
       "id": "9.4",
@@ -698,7 +698,7 @@
       "phase": 9,
       "requirement": "Binários por sistema/arquitetura declarados, checksums SHA-256 e manifesto dos artefatos.",
       "status": "done",
-      "evidence": "Six OS/arch packages have schemas, SHA256 and artifact metadata with archive verification."
+      "evidence": "Six OS/arch packages include schemas, SHA256 and artifact metadata; CI validates and stores archives and exercises packaged executables on three native runner OSes. Artifacts have finite retention and are development builds, not a tagged release."
     },
     {
       "id": "9.8",

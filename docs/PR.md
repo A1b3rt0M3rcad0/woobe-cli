@@ -1,13 +1,11 @@
 # Title
 
-feat: validate manifest bodies before writes and harden recovery transport
+ci: publish verified distribution artifacts and exercise native CLI binaries
 
 # Description
 
-Adds exactly 30 commits after PR #3, for 143 commits above the initial master. Resolved manifest bodies can opt into advertised schema validation before write attempts; read-only preflight reports deferred dependency values, strict completeness and schema snapshot identity. Unsupported validation flags are refused. The backend remains responsible for authorization, route/query schemas and domain rules.
+The old workflow cross-built executables but left complete distribution archive verification local. CI now packages all six Linux/macOS/Windows amd64/arm64 targets, verifies source identity/content/checksums, and downloads the same artifacts for native executable smoke on three hosted OS runners. An aggregate check requires tests, packages and all native smoke instances to succeed, including refusal of cancelled/skipped prerequisites. Evidence files are stored in Actions with finite retention.
 
-Checkpoint loading/saving is bounded, plan/result/dependency ownership is verified, returned numeric precision is preserved and pre-write failures are resumable with structured partial evidence. Default writes use fresh HTTP/1 connections to block net/http replay even with Idempotency-Key; reads retain pooled connections. Ambiguous response JSON, path segments and conflicting scope queries are refused.
+The native checks validate embedded build identity, essential discovery commands, both manifest schemas, local resource validation and malformed-input exit behavior. They do not certify keychains, real Woobe authorization/runtime or every native architecture. Development CI builds do not publish tags/releases.
 
-Local validation: 151 test functions plus subtests, race tests, vet, module verification, native build/discovery. Coverage 77.6%; discovery 238 handlers / 188 HTTP operations. Final published-head CI and six-target package verification are reported in PR metadata.
-
-Full-plan completion remains 39/101 (38.6%), 33 partial, 29 pending. This advances partial requirements without claiming their complete backend/domain/E2E acceptance. Canonical backend authority, real Woobe E2E, complete semantic reconciliation and native credential providers remain open. No backend mutation, merge or release is performed. Review order: #1 → #2 → #3 → recovery/preflight PR.
+PRs #1–#6 are merged into master. This continuation also reconciles the README completeness count and records the workflow/remote artifact contract in CI.md. The full plan remains 39/101 deliveries (38.6%); real-server phase acceptance remains 0/10. Exact CI run results are reported in the GitHub PR metadata.
