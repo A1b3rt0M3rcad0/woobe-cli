@@ -27,6 +27,7 @@ type App struct {
 	Out, Err                                                                                 io.Writer
 	ConfigPath, ContextName, APIURL, Workspace, Project, Credential, RuntimeCredential, Mode string
 	Timeout                                                                                  time.Duration
+	ValidateBody                                                                             bool
 	Yes, DryRun, NoInput                                                                     bool
 	File, IfMatch, IdempotencyKey, SecretFile                                                string
 	Query                                                                                    []string
@@ -52,6 +53,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.DurationVar(&a.Timeout, "timeout", 30*time.Second, "HTTP deadline")
 	f.BoolVar(&a.Yes, "yes", false, "Accept the specified destructive operation")
 	f.BoolVar(&a.NoInput, "no-input", false, "Deterministic execution (always enabled)")
+	f.BoolVar(&a.ValidateBody, "validate-body", false, "Validate the advertised request-body schema before a canonical write")
 	f.BoolVar(&a.DryRun, "dry-run", false, "Render the request without executing")
 	f.StringVar(&a.File, "file", "", "JSON input file, or - for stdin")
 	f.StringArrayVar(&a.Query, "query", nil, "Query name=value (repeatable)")

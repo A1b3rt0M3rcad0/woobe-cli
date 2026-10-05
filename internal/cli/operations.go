@@ -145,6 +145,15 @@ func (a *App) register(op Operation) {
 		if (op.Effect == "publication" || op.Effect == "execution" || strings.HasSuffix(op.Command, " revoke") || strings.HasSuffix(op.Command, " cancel")) && !a.Yes && !a.DryRun {
 			return output.New(2, "operation requires --yes")
 		}
+		if a.ValidateBody && !a.DryRun {
+			_, doc, _, def, e := a.serverOperation(cmd.Context(), op.Command)
+			if e != nil {
+				return notAttempted(e)
+			}
+			if e = validateBodySchema(doc, def, b); e != nil {
+				return notAttempted(e)
+			}
+		}
 		return a.call(cmd, op.Method, path, b, op.Secret)
 	}}
 	for _, p := range op.Params {
