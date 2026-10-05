@@ -20,3 +20,20 @@ func TestLocalReferencesAndComposition(t *testing.T) {
 		t.Fatal("unsupported hidden")
 	}
 }
+
+func TestJSONPointerReferences(t *testing.T) {
+	doc := decode(`{"a/b":{"~x":[{"type":"integer"}]},"space name":true}`)
+	for _, ref := range []string{"#/a~1b/~0x/0", "#/space%20name"} {
+		if _, e := Resolve(doc, ref); e != nil {
+			t.Fatal(ref, e)
+		}
+	}
+	if _, e := Resolve(doc, "#"); e != nil {
+		t.Fatal(e)
+	}
+	for _, ref := range []string{"#/a~2b", "#/a~1b/~0x/00", "#/space%xxname", "#anchor"} {
+		if _, e := Resolve(doc, ref); e == nil {
+			t.Fatal(ref)
+		}
+	}
+}
