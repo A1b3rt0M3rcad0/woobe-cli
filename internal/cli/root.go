@@ -218,6 +218,9 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 	if e == nil {
 		return 0
 	}
+	if partial, ok := e.(*manifestPartial); ok {
+		return a.emitManifestPartial(partial)
+	}
 	if partial, ok := e.(*partialPages); ok {
 		_ = output.Write(a.Out, a.Mode, output.Redact(partial.Data), nil, &output.Error{Code: partial.Code, Message: partial.Message})
 		return partial.Code

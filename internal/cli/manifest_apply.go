@@ -90,7 +90,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			case "committed", "reconciled", "unchanged":
 				continue
 			case "unknown", "in_flight":
-				return &output.Error{Code: 10, Message: "previous write requires remote reconciliation before resume: " + s.ID, Outcome: "unknown"}
+				return partialApply(cp, s.ID, "previous write requires remote reconciliation before resume", "unknown", true)
 			}
 			if a.DryRun {
 				return a.emit(map[string]any{"manifest_hash": d.Hash(), "executed": false})
@@ -149,13 +149,13 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 					cp.Steps[s.ID] = "rejected"
 				}
 				if e = save(); e != nil {
-					return &output.Error{Code: 10, Message: "apply failed and checkpoint persistence failed", Outcome: "unknown"}
+					return partialApply(cp, s.ID, "apply failed and checkpoint persistence failed", "unknown", false)
 				}
-				return &output.Error{Code: 10, Message: "partial apply stopped at " + s.ID, Outcome: cp.Steps[s.ID]}
+				return partialApply(cp, s.ID, "partial apply stopped", cp.Steps[s.ID], true)
 			}
 			var result output.Envelope
 			if e = json.Unmarshal(childOut.Bytes(), &result); e != nil {
-				return &output.Error{Code: 10, Message: "operation committed but result could not be checkpointed", Outcome: "unknown"}
+				return partialApply(cp, s.ID, "operation committed but result could not be checkpointed", "unknown", true)
 			}
 			data := result.Data
 			if env, ok := data.(map[string]any); ok {
@@ -166,7 +166,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			cp.Results[s.ID] = output.Redact(data)
 			cp.Steps[s.ID] = "committed"
 			if e = save(); e != nil {
-				return &output.Error{Code: 10, Message: "write committed but checkpoint save failed", Outcome: "unknown"}
+				return partialApply(cp, s.ID, "write committed but checkpoint save failed", "committed", false)
 			}
 		}
 		return a.emit(cp)
