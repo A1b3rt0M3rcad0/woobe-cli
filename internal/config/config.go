@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -33,12 +34,20 @@ func DefaultPath() string {
 }
 func Load(path string) (Config, error) {
 	c := Config{Version: 1, Contexts: map[string]Context{}}
-	b, err := os.ReadFile(path)
+	f, err := os.Open(path)
 	if os.IsNotExist(err) {
 		return c, nil
 	}
 	if err != nil {
 		return c, err
+	}
+	defer f.Close()
+	b, err := io.ReadAll(io.LimitReader(f, 1<<20+1))
+	if err != nil {
+		return c, err
+	}
+	if len(b) > 1<<20 {
+		return c, fmt.Errorf("config exceeds 1 MiB")
 	}
 	if err = jsoninput.Validate(b); err != nil {
 		return c, fmt.Errorf("invalid config JSON: %w", err)

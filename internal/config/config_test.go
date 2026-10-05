@@ -22,3 +22,9 @@ func TestRejectAmbiguousConfig(t *testing.T) {
 		}
 	}
 }
+
+func TestConfigSizeLimit(t *testing.T) {
+	if _, e := loadText(t, strings.Repeat(" ", 1<<20+1)); e == nil {
+		t.Fatal("oversize accepted")
+	}
+}
