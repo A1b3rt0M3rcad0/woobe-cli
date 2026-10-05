@@ -45,3 +45,12 @@ func TestValidationFlagIsNeverSilentlyIgnored(t *testing.T) {
 		}
 	}
 }
+
+func TestBodyValidationDryRunMakesNoDiscoveryRead(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { t.Error("network call") }))
+	defer s.Close()
+	code, v := invoke(t, []string{"project", "agent", "create", "--file", "-", "--api-url", s.URL, "--validate-body", "--dry-run"}, `{}`)
+	if code != 0 {
+		t.Fatal(code, v)
+	}
+}

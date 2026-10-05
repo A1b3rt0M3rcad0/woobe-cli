@@ -90,6 +90,13 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 		if a.DryRun {
 			return a.emit(map[string]any{"manifest_hash": d.Hash(), "checkpoint": cp, "executed": false, "validation": "local_plan_only"})
 		}
+		var schemaDoc map[string]any
+		if a.ValidateBody {
+			schemaDoc, e = a.loadServerSchema(cmd.Context())
+			if e != nil {
+				return notAttempted(e)
+			}
+		}
 		steps, _ := d.Order()
 		for _, s := range steps {
 			switch cp.Steps[s.ID] {
@@ -102,6 +109,16 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			s, e = manifest.ResolveStep(s, cp.Results)
 			if e != nil {
 				return stopBeforeWrite(path, cp, s.ID, output.New(2, e.Error()))
+			}
+			if a.ValidateBody {
+				op, _ := a.operation(s.Command)
+				def, e := operationDefinition(schemaDoc, op)
+				if e == nil {
+					e = validateBodySchema(schemaDoc, def, s.Body)
+				}
+				if e != nil {
+					return stopBeforeWrite(path, cp, s.ID, e)
+				}
 			}
 			if skipUnchanged {
 				observed, unchanged, e := a.observeUnchanged(cmd.Context(), s)
