@@ -98,5 +98,16 @@ func declarations(s map[string]any, p string) error {
 			}
 		}
 	}
+	if v, ok := s["dependentRequired"]; ok {
+		m, ok := v.(map[string]any)
+		if !ok {
+			return unsupported(p, "invalid dependentRequired")
+		}
+		for _, v := range m {
+			if e := stringList(v, p, "dependentRequired"); e != nil {
+				return e
+			}
+		}
+	}
 	return nil
 }

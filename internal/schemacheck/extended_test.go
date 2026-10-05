@@ -68,3 +68,17 @@ func TestObjectPropertyBounds(t *testing.T) {
 		}
 	}
 }
+
+func TestDependentRequired(t *testing.T) {
+	s := decode(`{"dependentRequired":{"card":["billing"]}}`)
+	for _, v := range []string{`{}`, `{"card":null,"billing":"A"}`} {
+		if e := Check(s, decode(v), nil); e != nil {
+			t.Fatal(v, e)
+		}
+	}
+	for _, v := range []string{`{"card":"C"}`} {
+		if Check(s, decode(v), nil) == nil {
+			t.Fatal(v)
+		}
+	}
+}
