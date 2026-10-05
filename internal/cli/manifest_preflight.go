@@ -9,7 +9,8 @@ import (
 )
 
 func (a *App) manifestPreflightCommand(g *cobra.Command) {
-	g.AddCommand(&cobra.Command{Use: "preflight", Short: "Read advertised body schemas and validate manifest inputs without mutations", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
+	var requireComplete bool
+	c := &cobra.Command{Use: "preflight", Short: "Read advertised body schemas and validate manifest inputs without mutations", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
 		d, e := a.readManifest()
 		if e != nil {
 			return e
@@ -65,11 +66,16 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 			rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "valid", "write_executed": false})
 		}
 		data := map[string]any{"manifest_hash": d.Hash(), "operations": rows, "complete": complete, "authorization": "not_evaluated", "path_query_validation": "not_evaluated", "executed": false}
+		if requireComplete && !complete && failure == nil {
+			failure = output.New(9, "dependency body schemas require execution results before complete validation")
+		}
 		if failure != nil {
 			return &preflightFailure{Data: data, Cause: failure}
 		}
 		return a.emit(data)
-	}})
+	}}
+	c.Flags().BoolVar(&requireComplete, "require-complete", false, "Fail when dependency body values cannot yet be validated")
+	g.AddCommand(c)
 }
 
 type preflightFailure struct {
