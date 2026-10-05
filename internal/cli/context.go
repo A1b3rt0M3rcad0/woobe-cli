@@ -114,35 +114,53 @@ func (a *App) contextCommands() {
 		}
 		return a.emit(map[string]any{"context": args[0], "unset": strings.Join(args[1:], ",")})
 	}})
-	cr := &cobra.Command{Use: "credential"}
-	g.AddCommand(cr)
-	for _, action := range []string{"attach", "detach"} {
-		action := action
-		cr.AddCommand(&cobra.Command{Use: action + " <context>", Args: cobra.ExactArgs(1), RunE: func(_ *cobra.Command, args []string) error {
-			c, e := config.Load(a.ConfigPath)
-			if e != nil {
-				return e
-			}
-			v, ok := c.Contexts[args[0]]
-			if !ok {
-				return output.New(2, "unknown context")
-			}
-			if action == "attach" {
-				if a.Credential == "" {
-					return output.New(2, "--credential required")
-				}
-				if _, e = a.store().Get(a.Credential); e != nil {
+	for _, runtimeCredential := range []bool{false, true} {
+		label := "credential"
+		if runtimeCredential {
+			label = "runtime-credential"
+		}
+		cr := &cobra.Command{Use: label}
+		g.AddCommand(cr)
+		for _, action := range []string{"attach", "detach"} {
+			action := action
+			cr.AddCommand(&cobra.Command{Use: action + " <context>", Args: cobra.ExactArgs(1), RunE: func(_ *cobra.Command, args []string) error {
+				c, e := config.Load(a.ConfigPath)
+				if e != nil {
 					return e
 				}
-				v.Credential = a.Credential
-			} else {
-				v.Credential = ""
-			}
-			c.Contexts[args[0]] = v
-			if e = config.Save(a.ConfigPath, c); e != nil {
-				return e
-			}
-			return a.emit(map[string]string{"context": args[0], "action": action})
-		}})
+				v, ok := c.Contexts[args[0]]
+				if !ok {
+					return output.New(2, "unknown context")
+				}
+				ref := a.Credential
+				if runtimeCredential {
+					ref = a.RuntimeCredential
+				}
+				if action == "attach" {
+					if ref == "" {
+						return output.New(2, "credential reference flag required")
+					}
+					if _, e = a.store().Get(ref); e != nil {
+						return e
+					}
+					if runtimeCredential {
+						v.RuntimeCredential = ref
+					} else {
+						v.Credential = ref
+					}
+				} else {
+					if runtimeCredential {
+						v.RuntimeCredential = ""
+					} else {
+						v.Credential = ""
+					}
+				}
+				c.Contexts[args[0]] = v
+				if e = config.Save(a.ConfigPath, c); e != nil {
+					return e
+				}
+				return a.emit(map[string]string{"context": args[0], "action": action})
+			}})
+		}
 	}
 }

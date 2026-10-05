@@ -76,3 +76,18 @@ func TestUnsetWorkspaceClearsProject(t *testing.T) {
 		t.Fatal(c, e)
 	}
 }
+
+func TestRuntimeCredentialAttachment(t *testing.T) {
+	a := contextApp(t)
+	if e := a.store().Put("runtime", "secret-value"); e != nil {
+		t.Fatal(e)
+	}
+	if code := a.Execute(context.Background(), []string{"context", "runtime-credential", "attach", "dev", "--runtime-credential", "runtime"}); code != 0 {
+		t.Fatal(code)
+	}
+	c, e := config.Load(a.ConfigPath)
+	v := c.Contexts["dev"]
+	if e != nil || v.RuntimeCredential != "runtime" || v.Credential != "" {
+		t.Fatal(v, e)
+	}
+}
