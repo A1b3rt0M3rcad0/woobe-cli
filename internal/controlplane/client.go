@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"io"
 	"net/http"
@@ -111,6 +112,9 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 	if method == "HEAD" || len(bytes.TrimSpace(b)) == 0 {
 		return nil, resp.Header, nil
 	}
+	if jsoninput.Validate(b) != nil {
+		return nil, resp.Header, responseError(method, resp, 9, "server returned ambiguous or invalid JSON")
+	}
 	var v any
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.UseNumber()
@@ -119,7 +123,7 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 	}
 	if env, ok := v.(map[string]any); ok {
 		if success, ok := env["success"].(bool); ok && !success {
-			return nil, resp.Header, &output.Error{Code: 7, Message: "server returned unsuccessful response", Outcome: "unknown"}
+			return nil, resp.Header, responseError(method, resp, 7, "server returned unsuccessful response")
 		}
 	}
 	var extra any
