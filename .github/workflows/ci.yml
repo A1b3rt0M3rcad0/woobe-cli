@@ -2,12 +2,17 @@ name: CLI
 on:
   pull_request:
   push:
-    branches: [master, 'feat/**']
+    branches: [master, 'feat/**', 'docs/**']
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: cli-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -25,22 +30,76 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: cli-validation
+          if-no-files-found: error
+          retention-days: 90
           path: |
             coverage.out
             discovery.json
-  cross-build:
+  package:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [linux, darwin, windows]
-        arch: [amd64, arm64]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: '1.27.1'
-      - run: go build -trimpath -o dist/woobe-${{ matrix.os }}-${{ matrix.arch }} ./cmd/woobe
+          cache: true
+      - name: Build six versioned archives
+        shell: bash
+        run: bash scripts/package.sh "0.0.0-ci.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+      - name: Verify archives and source identity
+        run: python3 scripts/verify_artifacts.py --commit "$GITHUB_SHA"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: woobe-distribution
+          if-no-files-found: error
+          retention-days: 90
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/SHA256SUMS
+            dist/artifacts.json
+  native-smoke:
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: woobe-distribution
+          path: dist
+      - name: Verify downloaded archives
+        shell: bash
+        run: python scripts/verify_artifacts.py --commit "$GITHUB_SHA"
+      - name: Exercise packaged native executable
+        shell: bash
+        run: python scripts/smoke_artifacts.py --commit "$GITHUB_SHA" --report native-smoke.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-smoke-${{ matrix.runner }}
+          if-no-files-found: error
+          retention-days: 90
+          path: native-smoke.json
+  ci:
+    if: always()
+    needs: [test, package, native-smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every validation group to succeed
         env:
-          CGO_ENABLED: '0'
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          groups = json.loads(os.environ['RESULTS'])
+          failed = {name: job['result'] for name, job in groups.items() if job['result'] != 'success'}
+          if failed:
+              raise SystemExit(f'CLI validation did not succeed: {failed}')
+          print('Tests, six packaged targets and three native smoke jobs passed')
+          PY
