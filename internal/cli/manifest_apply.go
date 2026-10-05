@@ -70,6 +70,9 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			if old.Steps == nil {
 				return output.New(2, "invalid checkpoint steps")
 			}
+			if e = validateCheckpointPlan(old, d); e != nil {
+				return e
+			}
 			cp = old
 			if cp.Results == nil {
 				cp.Results = map[string]any{}

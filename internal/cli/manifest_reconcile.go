@@ -88,6 +88,9 @@ func (a *App) manifestReconcileCommand(g *cobra.Command) {
 		if cp.CredentialFingerprint != fingerprint || cp.Hash != d.Hash() || cp.Origin != v.APIURL || cp.Workspace != v.Workspace || cp.Project != v.Project || cp.Credential != v.Credential {
 			return output.New(6, "checkpoint belongs to another plan or context")
 		}
+		if e = validateCheckpointPlan(cp, d); e != nil {
+			return e
+		}
 		if cp.Steps[args[0]] != "unknown" && cp.Steps[args[0]] != "in_flight" {
 			return output.New(6, "only uncertain steps can be reconciled")
 		}
