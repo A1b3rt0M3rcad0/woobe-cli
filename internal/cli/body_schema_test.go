@@ -45,3 +45,15 @@ func TestActualJSONMediaMatching(t *testing.T) {
 		t.Fatal("wrong media accepted")
 	}
 }
+
+func TestOptionalBodyAndRequiredDeclaration(t *testing.T) {
+	if e := validateBodySchema(nil, map[string]any{}, nil); e != nil {
+		t.Fatal(e)
+	}
+	if e := validateBodySchema(nil, schemaDoc(`{"requestBody":{"required":true}}`), nil); output.Normalize(e).Code != 2 {
+		t.Fatal(e)
+	}
+	if e := validateBodySchema(nil, schemaDoc(`{"requestBody":{"required":"yes"}}`), nil); output.Normalize(e).Code != 9 {
+		t.Fatal(e)
+	}
+}

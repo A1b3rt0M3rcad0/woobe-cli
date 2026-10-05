@@ -10,6 +10,9 @@ import (
 func validateBodySchema(doc, def map[string]any, b []byte) error {
 	body, ok := def["requestBody"]
 	if !ok {
+		if b == nil {
+			return nil
+		}
 		return output.New(9, "operation has no advertised request body")
 	}
 	var e error
@@ -18,6 +21,17 @@ func validateBodySchema(doc, def map[string]any, b []byte) error {
 		return e
 	}
 	obj, _ := body.(map[string]any)
+	if raw, exists := obj["required"]; exists {
+		if _, ok := raw.(bool); !ok {
+			return output.New(9, "invalid requestBody required declaration")
+		}
+	}
+	if b == nil {
+		if obj["required"] == true {
+			return output.New(2, "advertised request body is required")
+		}
+		return nil
+	}
 	content, _ := obj["content"].(map[string]any)
 	var media map[string]any
 	for _, key := range []string{"application/json", "application/*", "*/*"} {
