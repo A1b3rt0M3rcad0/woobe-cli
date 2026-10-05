@@ -4,7 +4,7 @@
 
 Base: todas as 101 entregas das fases 0–9 do §18 de PLAN.md, com peso igual. Concluída=1; parcial=0; pendente=0. A classificação é uma avaliação de engenharia com evidência por item, não estimativa de esforço, cobertura de código ou certificação de produção.
 
-O denominador inclui backend, CLI, documentação e distribuição. Concluída significa implementação entregue no boundary indicado; os aceites de fase que exigem API real/E2E continuam sem comprovação. Nenhuma das 10 fases tem seu aceite integral verificado.
+O denominador inclui backend, CLI, documentação e distribuição. Concluída significa implementação entregue no boundary indicado; evidências de API real/E2E estão registradas por item e no PR do backend. Nenhuma das 10 fases tem seu aceite integral verificado contra todos os seus critérios.
 
 | Fase | Concluídas | Parciais | Pendentes | Entregas concluídas |
 | --- | --- | --- | --- | --- |
@@ -93,7 +93,7 @@ O denominador inclui backend, CLI, documentação e distribuição. Concluída s
 | 6.7 | Catálogos e compatibilidade de ModelSpec/estratégias. | parcial | Catalogs exist; full strategy/ModelSpec compatibility matrix is absent. |
 | 6.8 | Skills e versões. | concluída | surface.go provides Skill/version handlers; resource manifests include typed SkillVersion parents. |
 | 6.9 | ChatSurfaces, lifecycle e Access Keys. | concluída | Surface lifecycle/access-key handlers exist; configuration capture supports ChatSurface updates. |
-| 6.10 | Paginação/export conforme capacidade real. | parcial | Woobe PR #177 at 77c53832f0e5b35488d1574b3cf62777486f5189: seven backend workflows passed; draft remains unmerged. Reviewed pagination for category list/history/audit and Agent sessions, preserving filters, bounded pages/bytes/deadline and partial evidence. Generic Link traversal does not certify collection completeness; full semantic export remains open. |
+| 6.10 | Paginação/export conforme capacidade real. | parcial | Reviewed pagination for category list/history/audit and Agent sessions, with all four verified in required live CLI run 37386311731 at backend 8ab9d139 and CLI 659baea. Cursor/revision traversal preserves filters, bounded pages/bytes/deadline and partial evidence; sessions enforce effective environment/target conditions. Generic Link traversal does not certify collection completeness; full semantic export remains open. |
 | 7.1 | Runtime público por SDK/adapter, com credencial própria. | concluída | runtime.go uses pinned Go SDK with separately selected runtime credentials. |
 | 7.2 | Agent e Network Run, HTTP e streaming. | concluída | Agent/Network run/stream adapters use pinned SDK; real target E2E is separately unverified. |
 | 7.3 | Contratos de output/External Context. | parcial | Semantic event output exists; full External Context/output contract validation remains incomplete. |
@@ -102,7 +102,7 @@ O denominador inclui backend, CLI, documentação e distribuição. Concluída s
 | 7.6 | Rerun explícito e reset de contexto suportado. | concluída | Explicit rerun/reset endpoints are registered; they do not silently retry writes. |
 | 7.7 | Traces, invocations, snapshots e diagnostics. | concluída | Observed trace/invocation/snapshot/diagnostic handlers are provided. |
 | 7.8 | Usage/metrics existentes. | concluída | Observed usage summary/daily handlers are provided. |
-| 7.9 | Auditoria administrativa, sem confundir com runtime tracing. | parcial | Woobe PR #177 at 77c53832f0e5b35488d1574b3cf62777486f5189: seven backend workflows passed; draft remains unmerged. Authority audit is a dedicated scoped GET command with cursor-complete pagination; exhaustive audit acceptance across administrative operations remains. |
+| 7.9 | Auditoria administrativa, sem confundir com runtime tracing. | parcial | Authority audit is a dedicated scoped GET with cursor-complete pagination, verified through the live CLI workflow at 8ab9d139. Exhaustive audit acceptance across administrative operations remains. |
 | 7.10 | Interrupção, deadline, gap e degradação sem duplicação de Run. | parcial | Cancellation/deadline are supported; reconnect/gap replay scenarios are not implemented/certified. |
 | 8.1 | Schema de manifest versionado. | concluída | Versioned step v1/resource v2 schemas are packaged and tested. |
 | 8.2 | Validate/diff/plan/export. | parcial | Validate/plan/field diff/projection/capture are implemented; complete semantic export/import is absent. |
@@ -116,7 +116,7 @@ O denominador inclui backend, CLI, documentação e distribuição. Concluída s
 | 8.10 | Não usar export incompleto como PATCH destrutivo. | concluída | Projection documents are not accepted as manifests; capture selects explicit readable fields and tests preserve omissions/null. |
 | 9.1 | Build do executável Go `woobe` e versão semântica com revisão identificável. | concluída | Go build/version exposes source commit, compiler and OS/architecture; packaging injects release version and commit. |
 | 9.2 | Instalação limpa a partir de binários publicados e `go install` por tag. | pendente | No published tag/release or fresh go install by tag validated. |
-| 9.3 | CI do CLI e suites integradas do backend. | parcial | Woobe PR #177 at 77c53832f0e5b35488d1574b3cf62777486f5189: seven backend workflows passed; draft remains unmerged. CLI race/vet/module/packaging/native smoke and seven backend workflows passed at the recorded pre-continuation SHAs. New pagination branch still needs its own remote runs and updated backend pin. |
+| 9.3 | CI do CLI e suites integradas do backend. | parcial | CLI code 659baea passed all six jobs in run 37385398090; required live backend/CLI tests passed at 8ab9d139 (run 37386311731). Seven workflow groups passed at prior backend 77c53832. Latest workflow results remain in PR #177; full phase acceptance is not asserted. |
 | 9.4 | Documentação de cada comando, permissão, exemplo e capacidade mínima. | parcial | Generated catalog/usage exist; all domain examples/effective permission/capability contracts are incomplete. |
 | 9.5 | Completion e smoke de help. | concluída | Cobra completion/help discovery and native build smoke pass. |
 | 9.6 | Matriz de compatibilidade cliente/servidor/protocolo. | parcial | Woobe PR #177 at 77c53832f0e5b35488d1574b3cf62777486f5189: seven backend workflows passed; draft remains unmerged. Backend 77c53832 and CLI a9c6ace are proven compatible by required live tests; broader client/server version matrix remains. |

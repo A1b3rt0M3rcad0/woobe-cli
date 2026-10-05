@@ -1,12 +1,14 @@
 # Implementation status
 
-Updated 2026-10-05 (America/Sao_Paulo). The canonical Go client is in `A1b3rt0M3rcad0/woobe-cli`; implementation PRs #1–#7 are merged at `a9c6ace053ea1f3e57abbb5d372f77010211ad56`. This continuation is on `feat/cli-pagination-contracts`. No new PR, merge, tag or release is claimed.
+Updated 2026-10-05 (America/Sao_Paulo). The canonical Go client is in `A1b3rt0M3rcad0/woobe-cli`; implementation PRs #1–#7 are merged at `a9c6ace053ea1f3e57abbb5d372f77010211ad56`. This continuation is on `feat/cli-pagination-contracts`; the code revision `659baea23458380b84bc7059d2a544c9c06fc1f5` passed all six [CLI CI jobs](https://github.com/A1b3rt0M3rcad0/woobe-cli/actions/runs/37385398090). No new PR, merge, tag or release is claimed.
 
 ## Backend acceptance
 
 [Woobe PR #177](https://github.com/A1b3rt0M3rcad0/woobe/pull/177) at `77c53832f0e5b35488d1574b3cf62777486f5189` is **draft and unmerged**, awaiting user approval. Seven backend workflows passed on that SHA. Required tests compile the pinned Go client and run API, workers, PostgreSQL, Redis, RabbitMQ and MongoDB with a deterministic model provider.
 
 Verified scenarios include Project/provider/Agent/Network configuration, staging and production publication, Agent and Network rollback, runtime execution with separate keys, category lifecycle, revision-fixed grants, stale ETags, constrained authority, administrative replay, key rotation and old-key refusal. This evidence replaces the older claim that backend acceptance was entirely unavailable. It does not imply approval, merged availability or complete acceptance of every roadmap phase.
+
+The pagination/backend continuation is `8ab9d13953c1cd77462af85a3a3a957395141edc`. Its required live CLI tests passed, including all four body-paginated routes and a session reader restricted to the Agent and staging. Catalog revision `2026-10-05.2` includes the session GET under `run:read`; the authority guard evaluates the actual environment query and the default draft filter. Exact results of the remaining workflow groups are maintained in PR #177.
 
 ## Delivered client behavior
 

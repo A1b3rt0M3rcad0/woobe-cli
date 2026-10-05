@@ -509,7 +509,7 @@
       "phase": 6,
       "requirement": "Paginação/export conforme capacidade real.",
       "status": "partial",
-      "evidence": "Woobe PR #177 at 77c53832f0e5b35488d1574b3cf62777486f5189: seven backend workflows passed; draft remains unmerged. Reviewed pagination for category list/history/audit and Agent sessions, preserving filters, bounded pages/bytes/deadline and partial evidence. Generic Link traversal does not certify collection completeness; full semantic export remains open."
+      "evidence": "Reviewed pagination for category list/history/audit and Agent sessions, with all four verified in required live CLI run 37386311731 at backend 8ab9d139 and CLI 659baea. Cursor/revision traversal preserves filters, bounded pages/bytes/deadline and partial evidence; sessions enforce effective environment/target conditions. Generic Link traversal does not certify collection completeness; full semantic export remains open."
     },
     {
       "id": "7.1",
@@ -572,7 +572,7 @@
       "phase": 7,
       "requirement": "Auditoria administrativa, sem confundir com runtime tracing.",
       "status": "partial",
-      "evidence": "Woobe PR #177 at 77c53832f0e5b35488d1574b3cf62777486f5189: seven backend workflows passed; draft remains unmerged. Authority audit is a dedicated scoped GET command with cursor-complete pagination; exhaustive audit acceptance across administrative operations remains."
+      "evidence": "Authority audit is a dedicated scoped GET with cursor-complete pagination, verified through the live CLI workflow at 8ab9d139. Exhaustive audit acceptance across administrative operations remains."
     },
     {
       "id": "7.10",
@@ -670,7 +670,7 @@
       "phase": 9,
       "requirement": "CI do CLI e suites integradas do backend.",
       "status": "partial",
-      "evidence": "Woobe PR #177 at 77c53832f0e5b35488d1574b3cf62777486f5189: seven backend workflows passed; draft remains unmerged. CLI race/vet/module/packaging/native smoke and seven backend workflows passed at the recorded pre-continuation SHAs. New pagination branch still needs its own remote runs and updated backend pin."
+      "evidence": "CLI code 659baea passed all six jobs in run 37385398090; required live backend/CLI tests passed at 8ab9d139 (run 37386311731). Seven workflow groups passed at prior backend 77c53832. Latest workflow results remain in PR #177; full phase acceptance is not asserted."
     },
     {
       "id": "9.4",
@@ -729,5 +729,21 @@
     "cli_commit": "a9c6ace053ea1f3e57abbb5d372f77010211ad56",
     "state": "draft, unmerged",
     "workflow_count": 7
+  },
+  "client_evidence": {
+    "code_commit": "659baea23458380b84bc7059d2a544c9c06fc1f5",
+    "ci_run": 37385398090,
+    "native_os": [
+      "linux",
+      "darwin",
+      "windows"
+    ],
+    "job_count": 6
+  },
+  "backend_continuation": {
+    "commit": "8ab9d13953c1cd77462af85a3a3a957395141edc",
+    "cli_commit": "659baea23458380b84bc7059d2a544c9c06fc1f5",
+    "catalog_revision": "2026-10-05.2",
+    "required_live_cli_run": 37386311731
   }
 }
