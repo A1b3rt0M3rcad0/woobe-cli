@@ -123,6 +123,7 @@ func (a *App) resolve() (config.Context, error) {
 			return v, output.New(2, "unknown context")
 		}
 	}
+	originalWorkspace := v.Workspace
 	vals := []struct {
 		dst       *string
 		flag, env string
@@ -133,6 +134,9 @@ func (a *App) resolve() (config.Context, error) {
 		} else if s := os.Getenv(x.env); s != "" {
 			*x.dst = s
 		}
+	}
+	if v.Workspace != originalWorkspace && a.Project == "" && os.Getenv("WOOBE_PROJECT_ID") == "" {
+		v.Project = ""
 	}
 	if v.APIURL == "" {
 		v.APIURL = "http://localhost:8000"
