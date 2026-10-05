@@ -44,6 +44,9 @@ func (c *Comparator) normalize(v any, depth int) (any, error) {
 		}
 		return exactDecimal(strconv.FormatFloat(x, 'g', -1, 64))
 	case []any:
+		if len(x) > 100000-c.work {
+			return nil, fmt.Errorf("state comparison exceeds work limit")
+		}
 		out := make([]any, len(x))
 		for i, child := range x {
 			n, err := c.normalize(child, depth+1)
@@ -54,6 +57,9 @@ func (c *Comparator) normalize(v any, depth int) (any, error) {
 		}
 		return out, nil
 	case map[string]any:
+		if len(x) > 100000-c.work {
+			return nil, fmt.Errorf("state comparison exceeds work limit")
+		}
 		out := make(map[string]any, len(x))
 		for key, child := range x {
 			n, err := c.normalize(child, depth+1)
