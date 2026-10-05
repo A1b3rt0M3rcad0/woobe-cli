@@ -70,6 +70,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	}})
 	a.contextCommands()
 	a.requestCommands()
+	a.requestPagesCommand()
 	a.workspaceCommands()
 	a.projectCommands()
 	a.agentCommands()
@@ -214,6 +215,10 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 	e := a.Root.ExecuteContext(ctx)
 	if e == nil {
 		return 0
+	}
+	if partial, ok := e.(*partialPages); ok {
+		_ = output.Write(a.Out, a.Mode, output.Redact(partial.Data), nil, &output.Error{Code: 10, Message: partial.Message})
+		return 10
 	}
 	if partial, ok := e.(*diagnosticPartial); ok {
 		_ = output.Write(a.Out, a.Mode, output.Redact(partial.Data), nil, &output.Error{Code: 10, Message: partial.Error()})

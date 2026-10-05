@@ -49,7 +49,7 @@ func (a *App) completeDiscovery() {
 					kind = "http-projection"
 					effect = "read"
 					availability = "observed"
-				case path == "request":
+				case path == "request" || path == "request-pages":
 					kind = "generic-http"
 					effect = "specified_by_request"
 					availability = "server-dependent"
