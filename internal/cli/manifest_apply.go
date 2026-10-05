@@ -101,12 +101,12 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 
 			s, e = manifest.ResolveStep(s, cp.Results)
 			if e != nil {
-				return output.New(2, e.Error())
+				return stopBeforeWrite(path, cp, s.ID, output.New(2, e.Error()))
 			}
 			if skipUnchanged {
 				observed, unchanged, e := a.observeUnchanged(cmd.Context(), s)
 				if e != nil {
-					return e
+					return stopBeforeWrite(path, cp, s.ID, e)
 				}
 				if unchanged {
 					cp.Results[s.ID] = output.Redact(observed)

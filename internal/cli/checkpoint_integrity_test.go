@@ -57,3 +57,9 @@ func TestCheckpointDependencyStates(t *testing.T) {
 		t.Fatal("missing dependency acceptance")
 	}
 }
+
+func TestNotAttemptedStateIsResumable(t *testing.T) {
+	if _, e := parseCheckpoint([]byte(`{"steps":{"a":"not_attempted"}}`)); e != nil {
+		t.Fatal(e)
+	}
+}
