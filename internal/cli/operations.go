@@ -107,8 +107,8 @@ func (a *App) register(op Operation) {
 		path := op.Path
 		for _, p := range []struct{ name, value string }{{"workspace_id", a.Workspace}, {"project_id", a.Project}} {
 			if strings.Contains(path, "{"+p.name+"}") {
-				if p.value == "" {
-					return output.New(2, p.name+" required")
+				if e := resourceID(p.value); e != nil {
+					return e
 				}
 				path = strings.ReplaceAll(path, "{"+p.name+"}", url.PathEscape(p.value))
 			}
@@ -123,8 +123,8 @@ func (a *App) register(op Operation) {
 				value = args[argIndex]
 				argIndex++
 			}
-			if value == "" || value == "." || value == ".." {
-				return output.New(2, "invalid resource ID")
+			if e := resourceID(value); e != nil {
+				return e
 			}
 			path = strings.ReplaceAll(path, "{"+p+"}", url.PathEscape(value))
 		}

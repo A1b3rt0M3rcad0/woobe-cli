@@ -75,15 +75,15 @@ func (a *App) readResource(ctx context.Context, op Operation, args []string) (an
 	path := op.Path
 	for _, scope := range []struct{ name, id string }{{"workspace_id", a.Workspace}, {"project_id", a.Project}} {
 		if strings.Contains(path, "{"+scope.name+"}") {
-			if scope.id == "" {
-				return nil, nil, output.New(2, scope.name+" required")
+			if e := resourceID(scope.id); e != nil {
+				return nil, nil, e
 			}
 			path = strings.ReplaceAll(path, "{"+scope.name+"}", url.PathEscape(scope.id))
 		}
 	}
 	for i, p := range op.Params {
-		if args[i] == "" || args[i] == "." || args[i] == ".." {
-			return nil, nil, output.New(2, "invalid read resource ID")
+		if e := resourceID(args[i]); e != nil {
+			return nil, nil, e
 		}
 		path = strings.ReplaceAll(path, "{"+p+"}", url.PathEscape(args[i]))
 	}
