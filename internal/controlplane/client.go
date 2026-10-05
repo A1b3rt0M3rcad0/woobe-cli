@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 type Client struct {
@@ -25,6 +26,11 @@ func New(base, token string, timeout time.Duration) (*Client, error) {
 	u, e := url.Parse(base)
 	if e != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
 		return nil, output.New(2, "api URL must be an HTTP(S) origin without credentials, query or fragment")
+	}
+	if u.EscapedPath() != "" {
+		if e := ValidatePath(u.EscapedPath()); e != nil {
+			return nil, e
+		}
 	}
 	h := &http.Client{Timeout: timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	return &Client{Base: strings.TrimRight(base, "/"), Token: token, HTTP: h, Headers: make(http.Header)}, nil
@@ -144,6 +150,23 @@ func responseError(method string, resp *http.Response, code int, message string)
 func ValidatePath(path string) error {
 	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || strings.ContainsAny(path, "?#\\") {
 		return output.New(2, "request path must be origin-relative; use --query for query parameters")
+	}
+	if !utf8.ValidString(path) {
+		return output.New(2, "invalid path encoding")
+	}
+	for _, segment := range strings.Split(path, "/") {
+		decoded, e := url.PathUnescape(segment)
+		if e != nil || !utf8.ValidString(decoded) {
+			return output.New(2, "invalid path escape")
+		}
+		if decoded == "." || decoded == ".." || strings.ContainsAny(decoded, "/\\%") {
+			return output.New(2, "request path contains ambiguous segments")
+		}
+		for _, r := range decoded {
+			if r < 32 || r == 127 {
+				return output.New(2, "request path contains control characters")
+			}
+		}
 	}
 	return nil
 }
