@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -21,10 +22,14 @@ func unsupported(p, r string) error { return &Error{Path: p, Rule: r, Unsupporte
 
 // Check implements a bounded, explicit schema subset. Unknown assertions fail closed.
 func Check(schema, value, document any) error {
-	if e := inspect(schema, document, "$", 0, map[string]bool{}); e != nil {
+	budget := 100000
+	if e := valueWork(value, 0, &budget); e != nil {
 		return e
 	}
-	return check(schema, value, document, "$", 0)
+	if e := inspect(schema, document, "$", 0, map[string]bool{}, &budget); e != nil {
+		return e
+	}
+	return check(schema, value, document, "$", 0, &budget)
 }
 func equal(a, b any) bool {
 	if x, y := number(a), number(b); x != nil || y != nil {
@@ -60,15 +65,26 @@ func equal(a, b any) bool {
 	return string(x) == string(y)
 }
 func number(v any) *big.Rat {
+	var text string
 	switch x := v.(type) {
 	case json.Number:
-		r, _ := new(big.Rat).SetString(x.String())
-		return r
+		text = x.String()
 	case float64:
-		r, _ := new(big.Rat).SetString(fmt.Sprint(x))
-		return r
+		text = fmt.Sprint(x)
+	default:
+		return nil
 	}
-	return nil
+	if len(text) > 4096 {
+		return nil
+	}
+	if i := strings.IndexAny(text, "eE"); i >= 0 {
+		exp, e := strconv.Atoi(text[i+1:])
+		if e != nil || exp > 4096 || exp < -4096 {
+			return nil
+		}
+	}
+	r, _ := new(big.Rat).SetString(text)
+	return r
 }
 func typeOK(t string, v any) bool {
 	switch t {
@@ -94,7 +110,11 @@ func typeOK(t string, v any) bool {
 	}
 	return false
 }
-func check(raw, v, doc any, p string, depth int) error {
+func check(raw, v, doc any, p string, depth int, budget *int) error {
+	*budget--
+	if *budget < 0 {
+		return unsupported(p, "schema evaluation budget exceeded")
+	}
 	if depth > 64 {
 		return unsupported(p, "schema depth exceeds 64")
 	}
@@ -108,24 +128,15 @@ func check(raw, v, doc any, p string, depth int) error {
 	if !ok {
 		return unsupported(p, "schema must be object or boolean")
 	}
-	if e := declarations(s, p); e != nil {
+	if e := schemaHeader(s, p); e != nil {
 		return e
-	}
-	allowed := map[string]bool{}
-	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items prefixItems contains minContains maxContains minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not if then else") {
-		allowed[k] = true
-	}
-	for k := range s {
-		if !allowed[k] && !strings.HasPrefix(k, "x-") {
-			return unsupported(p, "unsupported keyword: "+k)
-		}
 	}
 	if ref, ok := s["$ref"].(string); ok {
 		target, e := Resolve(doc, ref)
 		if e != nil {
 			return e
 		}
-		if e = check(target, v, doc, p, depth+1); e != nil {
+		if e = check(target, v, doc, p, depth+1, budget); e != nil {
 			return e
 		}
 	}
@@ -137,7 +148,7 @@ func check(raw, v, doc any, p string, depth int) error {
 			}
 			matches := 0
 			for _, b := range branches {
-				e := check(b, v, doc, p, depth+1)
+				e := check(b, v, doc, p, depth+1, budget)
 				if x, ok := e.(*Error); ok && x.Unsupported {
 					return e
 				}
@@ -151,7 +162,7 @@ func check(raw, v, doc any, p string, depth int) error {
 		}
 	}
 	if b, ok := s["not"]; ok {
-		e := check(b, v, doc, p, depth+1)
+		e := check(b, v, doc, p, depth+1, budget)
 		if x, ok := e.(*Error); ok && x.Unsupported {
 			return e
 		}
@@ -160,7 +171,7 @@ func check(raw, v, doc any, p string, depth int) error {
 		}
 	}
 	if cond, ok := s["if"]; ok {
-		e := check(cond, v, doc, p, depth+1)
+		e := check(cond, v, doc, p, depth+1, budget)
 		if x, ok := e.(*Error); ok && x.Unsupported {
 			return e
 		}
@@ -169,7 +180,7 @@ func check(raw, v, doc any, p string, depth int) error {
 			branch = "then"
 		}
 		if sub, ok := s[branch]; ok {
-			if e := check(sub, v, doc, p, depth+1); e != nil {
+			if e := check(sub, v, doc, p, depth+1, budget); e != nil {
 				return e
 			}
 		}
@@ -239,7 +250,7 @@ func check(raw, v, doc any, p string, depth int) error {
 		if deps, ok := s["dependentSchemas"].(map[string]any); ok {
 			for k, sub := range deps {
 				if _, exists := obj[k]; exists {
-					if e := check(sub, v, doc, p, depth+1); e != nil {
+					if e := check(sub, v, doc, p, depth+1, budget); e != nil {
 						return e
 					}
 				}
@@ -253,14 +264,14 @@ func check(raw, v, doc any, p string, depth int) error {
 		sort.Strings(keys)
 		for _, k := range keys {
 			if sub, ok := s["propertyNames"]; ok {
-				if e := check(sub, k, doc, p, depth+1); e != nil {
+				if e := check(sub, k, doc, p, depth+1, budget); e != nil {
 					return e
 				}
 			}
 			matched := false
 			if sub, ok := props[k]; ok {
 				matched = true
-				if e := check(sub, obj[k], doc, p+"."+k, depth+1); e != nil {
+				if e := check(sub, obj[k], doc, p+"."+k, depth+1, budget); e != nil {
 					return e
 				}
 			}
@@ -268,14 +279,14 @@ func check(raw, v, doc any, p string, depth int) error {
 				for pattern, sub := range patterns {
 					if regexp.MustCompile(pattern).MatchString(k) {
 						matched = true
-						if e := check(sub, obj[k], doc, p+"."+k, depth+1); e != nil {
+						if e := check(sub, obj[k], doc, p+"."+k, depth+1, budget); e != nil {
 							return e
 						}
 					}
 				}
 			}
 			if sub, ok := s["additionalProperties"]; ok && !matched {
-				if e := check(sub, obj[k], doc, p+"."+k, depth+1); e != nil {
+				if e := check(sub, obj[k], doc, p+"."+k, depth+1, budget); e != nil {
 					return e
 				}
 			}
@@ -288,7 +299,7 @@ func check(raw, v, doc any, p string, depth int) error {
 		if sub, ok := s["contains"]; ok {
 			matches := 0
 			for i, x := range a {
-				e := check(sub, x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1)
+				e := check(sub, x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1, budget)
 				if y, ok := e.(*Error); ok && y.Unsupported {
 					return e
 				}
@@ -306,25 +317,24 @@ func check(raw, v, doc any, p string, depth int) error {
 				return e
 			}
 		}
-		seen := []any{}
+		seen := map[string]bool{}
 		for i, x := range a {
 			if s["uniqueItems"] == true {
-				for _, prior := range seen {
-					if equal(prior, x) {
-						return fail(p, "duplicate array item")
-					}
+				key := semanticKey(x)
+				if seen[key] {
+					return fail(p, "duplicate array item")
 				}
-				seen = append(seen, x)
+				seen[key] = true
 			}
 			prefix, _ := s["prefixItems"].([]any)
 			if i < len(prefix) {
-				if e := check(prefix[i], x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1); e != nil {
+				if e := check(prefix[i], x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1, budget); e != nil {
 					return e
 				}
 				continue
 			}
 			if sub, ok := s["items"]; ok {
-				if e := check(sub, x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1); e != nil {
+				if e := check(sub, x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1, budget); e != nil {
 					return e
 				}
 			}
@@ -383,4 +393,28 @@ func bounds(s map[string]any, min, max string, n int, p string) error {
 		}
 	}
 	return nil
+}
+
+func semanticKey(v any) string {
+	if n := number(v); n != nil {
+		return "n:" + n.RatString()
+	}
+	switch x := v.(type) {
+	case []any:
+		parts := []string{}
+		for _, v := range x {
+			parts = append(parts, semanticKey(v))
+		}
+		b, _ := json.Marshal(parts)
+		return "a:" + string(b)
+	case map[string]any:
+		m := map[string]string{}
+		for k, v := range x {
+			m[k] = semanticKey(v)
+		}
+		b, _ := json.Marshal(m)
+		return "o:" + string(b)
+	}
+	b, _ := json.Marshal(v)
+	return "v:" + string(b)
 }

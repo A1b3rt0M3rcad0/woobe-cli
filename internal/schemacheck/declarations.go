@@ -16,7 +16,8 @@ func validType(v any, p string) error {
 	seen := map[string]bool{}
 	for _, v := range types {
 		s, ok := v.(string)
-		if !ok || !strings.Contains("|null|object|array|string|boolean|number|integer|", "|"+s+"|") || s == "" || seen[s] {
+		known := map[string]bool{"null": true, "object": true, "array": true, "string": true, "boolean": true, "number": true, "integer": true}
+		if !ok || !known[s] || seen[s] {
 			return unsupported(p, "invalid type declaration")
 		}
 		seen[s] = true
@@ -129,6 +130,33 @@ func declarations(s map[string]any, p string) error {
 		a, ok := v.([]any)
 		if !ok || len(a) == 0 {
 			return unsupported(p, "invalid prefixItems")
+		}
+	}
+	for _, k := range []string{"allOf", "anyOf", "oneOf"} {
+		if v, ok := s[k]; ok {
+			a, ok := v.([]any)
+			if !ok || len(a) == 0 {
+				return unsupported(p, "invalid composition")
+			}
+		}
+	}
+	if v, ok := s["$id"]; ok && v != "" {
+		return unsupported(p, "schema resource IDs are not supported")
+	}
+	return nil
+}
+
+func schemaHeader(s map[string]any, p string) error {
+	if e := declarations(s, p); e != nil {
+		return e
+	}
+	allowed := map[string]bool{}
+	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items prefixItems contains minContains maxContains minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not if then else") {
+		allowed[k] = true
+	}
+	for k := range s {
+		if !allowed[k] && !strings.HasPrefix(k, "x-") {
+			return unsupported(p, "unsupported keyword: "+k)
 		}
 	}
 	return nil

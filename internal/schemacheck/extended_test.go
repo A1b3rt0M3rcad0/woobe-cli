@@ -166,3 +166,44 @@ func TestContainsBounds(t *testing.T) {
 		}
 	}
 }
+
+func TestEvaluationBudget(t *testing.T) {
+	sub := any(true)
+	for i := 0; i < 18; i++ {
+		sub = map[string]any{"allOf": []any{sub, sub}}
+	}
+	e := Check(sub, nil, nil)
+	if x, ok := e.(*Error); !ok || !x.Unsupported {
+		t.Fatal(e)
+	}
+}
+
+func TestRecursiveSchemaInspection(t *testing.T) {
+	doc := decode(`{"type":"object","properties":{"child":{"$ref":"#"}}}`)
+	if e := Check(doc, decode(`{"child":{}}`), doc); e != nil {
+		t.Fatal(e)
+	}
+}
+func TestNumericEvaluationBounds(t *testing.T) {
+	for _, v := range []string{"1e1000000000", "1e-1000000000"} {
+		e := Check(decode(`{}`), decode(v), nil)
+		if x, ok := e.(*Error); !ok || !x.Unsupported {
+			t.Fatal(e)
+		}
+	}
+}
+func TestMalformedInactiveComposition(t *testing.T) {
+	e := Check(decode(`{"type":"object","properties":{"absent":{"allOf":4}}}`), decode(`{}`), nil)
+	if x, ok := e.(*Error); !ok || !x.Unsupported {
+		t.Fatal(e)
+	}
+}
+
+func TestMalformedTypeUnionAndHugeEnum(t *testing.T) {
+	for _, schema := range []string{`{"type":"null|object"}`, `{"enum":[1e1000000000]}`} {
+		e := Check(decode(schema), nil, nil)
+		if x, ok := e.(*Error); !ok || !x.Unsupported {
+			t.Fatal(schema, e)
+		}
+	}
+}
