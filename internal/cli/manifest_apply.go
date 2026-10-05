@@ -25,6 +25,7 @@ type checkpoint struct {
 
 func (a *App) manifestApplyCommand(g *cobra.Command) {
 	var path string
+	var skipUnchanged bool
 	cmd := &cobra.Command{Use: "apply", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
 		if !a.Yes {
 			return output.New(2, "apply requires --yes")
@@ -86,7 +87,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 		steps, _ := d.Order()
 		for _, s := range steps {
 			switch cp.Steps[s.ID] {
-			case "committed", "reconciled":
+			case "committed", "reconciled", "unchanged":
 				continue
 			case "unknown", "in_flight":
 				return &output.Error{Code: 10, Message: "previous write requires remote reconciliation before resume: " + s.ID, Outcome: "unknown"}
@@ -97,6 +98,20 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			s, e = manifest.ResolveStep(s, cp.Results)
 			if e != nil {
 				return output.New(2, e.Error())
+			}
+			if skipUnchanged {
+				observed, unchanged, e := a.observeUnchanged(cmd.Context(), s)
+				if e != nil {
+					return e
+				}
+				if unchanged {
+					cp.Results[s.ID] = output.Redact(observed)
+					cp.Steps[s.ID] = "unchanged"
+					if e = save(); e != nil {
+						return e
+					}
+					continue
+				}
 			}
 			cp.Steps[s.ID] = "in_flight"
 			if e = save(); e != nil {
@@ -156,6 +171,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 		}
 		return a.emit(cp)
 	}}
+	cmd.Flags().BoolVar(&skipUnchanged, "skip-unchanged", false, "Read compatible update targets and checkpoint unchanged supplied fields")
 	cmd.Flags().StringVar(&path, "checkpoint", "", "Private checkpoint file, required for apply and resume")
 	g.AddCommand(cmd)
 }

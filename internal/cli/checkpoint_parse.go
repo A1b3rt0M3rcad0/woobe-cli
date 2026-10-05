@@ -20,7 +20,7 @@ func parseCheckpoint(b []byte) (checkpoint, error) {
 	}
 	for _, s := range cp.Steps {
 		switch s {
-		case "committed", "reconciled", "rejected", "unknown", "in_flight":
+		case "committed", "reconciled", "unchanged", "rejected", "unknown", "in_flight":
 		default:
 			return cp, output.New(2, "invalid checkpoint step status")
 		}
