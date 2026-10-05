@@ -152,3 +152,17 @@ func TestPrefixItems(t *testing.T) {
 		}
 	}
 }
+
+func TestContainsBounds(t *testing.T) {
+	s := decode(`{"contains":{"type":"integer"},"minContains":1,"maxContains":2}`)
+	for _, v := range []string{`["x",1]`, `[1,2]`} {
+		if e := Check(s, decode(v), nil); e != nil {
+			t.Fatal(v, e)
+		}
+	}
+	for _, v := range []string{`[]`, `["x"]`, `[1,2,3]`} {
+		if Check(s, decode(v), nil) == nil {
+			t.Fatal(v)
+		}
+	}
+}

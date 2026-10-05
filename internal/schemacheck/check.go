@@ -112,7 +112,7 @@ func check(raw, v, doc any, p string, depth int) error {
 		return e
 	}
 	allowed := map[string]bool{}
-	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items prefixItems minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not if then else") {
+	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type nullable required properties additionalProperties items prefixItems contains minContains maxContains minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not if then else") {
 		allowed[k] = true
 	}
 	for k := range s {
@@ -284,6 +284,27 @@ func check(raw, v, doc any, p string, depth int) error {
 	if a, ok := v.([]any); ok {
 		if e := bounds(s, "minItems", "maxItems", len(a), p); e != nil {
 			return e
+		}
+		if sub, ok := s["contains"]; ok {
+			matches := 0
+			for i, x := range a {
+				e := check(sub, x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1)
+				if y, ok := e.(*Error); ok && y.Unsupported {
+					return e
+				}
+				if e == nil {
+					matches++
+				}
+			}
+			limits := map[string]any{"minContains": json.Number("1")}
+			for _, k := range []string{"minContains", "maxContains"} {
+				if n, ok := s[k]; ok {
+					limits[k] = n
+				}
+			}
+			if e := bounds(limits, "minContains", "maxContains", matches, p); e != nil {
+				return e
+			}
 		}
 		seen := []any{}
 		for i, x := range a {
