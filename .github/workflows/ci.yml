@@ -19,6 +19,7 @@ jobs:
       - run: go mod verify
       - run: go vet ./...
       - run: go test -race -coverprofile=coverage.out ./...
+      - run: go test ./internal/schemacheck -run='^$' -fuzz=FuzzSchemaCheck -fuzztime=10s -parallel=2
       - run: go build -trimpath -o bin/woobe ./cmd/woobe
       - run: bin/woobe help --output json > discovery.json
       - uses: actions/upload-artifact@v4
