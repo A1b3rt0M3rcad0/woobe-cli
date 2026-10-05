@@ -87,6 +87,9 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			}
 			return config.AtomicWrite(path, b, 0600)
 		}
+		if a.DryRun {
+			return a.emit(map[string]any{"manifest_hash": d.Hash(), "checkpoint": cp, "executed": false, "validation": "local_plan_only"})
+		}
 		steps, _ := d.Order()
 		for _, s := range steps {
 			switch cp.Steps[s.ID] {
@@ -95,9 +98,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			case "unknown", "in_flight":
 				return partialApply(cp, s.ID, "previous write requires remote reconciliation before resume", "unknown", true)
 			}
-			if a.DryRun {
-				return a.emit(map[string]any{"manifest_hash": d.Hash(), "executed": false})
-			}
+
 			s, e = manifest.ResolveStep(s, cp.Results)
 			if e != nil {
 				return output.New(2, e.Error())
