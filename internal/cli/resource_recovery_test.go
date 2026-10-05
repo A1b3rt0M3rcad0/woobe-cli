@@ -19,7 +19,7 @@ func TestResourceCreationReconciliationResumesWithoutReplay(t *testing.T) {
 			conn, _, _ := w.(http.Hijacker).Hijack()
 			_ = conn.Close()
 		case "GET /ai/agents/a":
-			_, _ = w.Write([]byte(`{"data":{"id":"a","project_id":"p","name":"A"}}`))
+			_, _ = w.Write([]byte(`{"data":{"id":"a","project_id":"p","name":"A","temperature":1.0}}`))
 		case "POST /ai/agents/a/prompts":
 			prompts++
 			_, _ = w.Write([]byte(`{"data":{"id":"prompt"}}`))
@@ -31,7 +31,7 @@ func TestResourceCreationReconciliationResumesWithoutReplay(t *testing.T) {
 	defer s.Close()
 	dir := t.TempDir()
 	cp := filepath.Join(dir, "cp")
-	body := `{"schema_version":"2","project_id":"p","resources":[{"key":"agent","kind":"Agent","action":"create","spec":{"name":"A"}},{"key":"prompt","kind":"AgentPrompt","action":"create","parents":{"agent":"${resources.agent.id}"},"depends_on":["agent"],"spec":{"content":"Teach"}}]}`
+	body := `{"schema_version":"2","project_id":"p","resources":[{"key":"agent","kind":"Agent","action":"create","spec":{"name":"A","temperature":1e0}},{"key":"prompt","kind":"AgentPrompt","action":"create","parents":{"agent":"${resources.agent.id}"},"depends_on":["agent"],"spec":{"content":"Teach"}}]}`
 	run := func(args []string) int {
 		out := &bytes.Buffer{}
 		a := New(bytes.NewBufferString(body), out, &bytes.Buffer{})

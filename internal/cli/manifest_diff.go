@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/manifest"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
 	"net/url"
-	"reflect"
 	"sort"
 	"strings"
 )
@@ -35,9 +35,14 @@ func fieldChanges(current any, desired map[string]any) ([]FieldChange, error) {
 		return nil, output.New(9, "resource does not expose an object projection")
 	}
 	changes := []FieldChange{}
+	comparator := &jsoninput.Comparator{}
 	for k, v := range desired {
 		old, present := obj[k]
-		if !present || !reflect.DeepEqual(old, v) {
+		equal, err := comparator.Equal(old, v)
+		if err != nil {
+			return nil, output.New(9, err.Error())
+		}
+		if !present || !equal {
 			if output.Sensitive(k) {
 				old = "[REDACTED]"
 				v = "[REDACTED]"
@@ -143,7 +148,10 @@ func (a *App) manifestDiff(ctx context.Context, d manifest.Document) ([]map[stri
 		if e != nil {
 			return nil, e
 		}
-		if s.IfMatch != "" && meta["etag"] != "" && s.IfMatch != meta["etag"] {
+		if s.IfMatch != "" && meta["etag"] == "" {
+			return nil, output.New(9, "resource diff cannot verify if_match without an observed ETag")
+		}
+		if s.IfMatch != "" && s.IfMatch != meta["etag"] {
 			return nil, output.New(6, "resource ETag differs from expected revision")
 		}
 		row["observation"] = meta
