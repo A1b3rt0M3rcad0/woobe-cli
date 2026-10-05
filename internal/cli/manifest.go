@@ -67,6 +67,7 @@ func (a *App) manifestCommands() {
 		}
 		return a.emit(map[string]any{"source_schema_version": d.Version(), "valid": true, "manifest_hash": d.Hash(), "authorization": "not_evaluated"})
 	}})
+	a.manifestPreflightCommand(g)
 	a.manifestCompileCommands(g)
 	a.manifestPlanCommands(g)
 	a.checkpointCommand(g)

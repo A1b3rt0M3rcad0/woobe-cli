@@ -42,8 +42,12 @@ func runtimeError(e error) error {
 			code = 4
 		case 404:
 			code = 5
-		case 409:
+		case 409, 412:
 			code = 6
+		case 408, 504:
+			code = 8
+		case 405, 501:
+			code = 9
 		}
 		return &output.Error{Code: code, Message: "runtime request failed", Status: r.StatusCode}
 	}

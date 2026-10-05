@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 type Client struct {
@@ -25,7 +27,12 @@ func New(base, token string, timeout time.Duration) (*Client, error) {
 	if e != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
 		return nil, output.New(2, "api URL must be an HTTP(S) origin without credentials, query or fragment")
 	}
-	h := &http.Client{Timeout: timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	if u.EscapedPath() != "" {
+		if e := ValidatePath(u.EscapedPath()); e != nil {
+			return nil, e
+		}
+	}
+	h := &http.Client{Transport: sharedNoReplayTransport, Timeout: timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	return &Client{Base: strings.TrimRight(base, "/"), Token: token, HTTP: h, Headers: make(http.Header)}, nil
 }
 func (c *Client) Request(ctx context.Context, method, path string, q url.Values, body []byte) (any, http.Header, error) {
@@ -111,6 +118,9 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 	if method == "HEAD" || len(bytes.TrimSpace(b)) == 0 {
 		return nil, resp.Header, nil
 	}
+	if jsoninput.Validate(b) != nil {
+		return nil, resp.Header, responseError(method, resp, 9, "server returned ambiguous or invalid JSON")
+	}
 	var v any
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.UseNumber()
@@ -119,7 +129,7 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 	}
 	if env, ok := v.(map[string]any); ok {
 		if success, ok := env["success"].(bool); ok && !success {
-			return nil, resp.Header, &output.Error{Code: 7, Message: "server returned unsuccessful response", Outcome: "unknown"}
+			return nil, resp.Header, responseError(method, resp, 7, "server returned unsuccessful response")
 		}
 	}
 	var extra any
@@ -140,6 +150,23 @@ func responseError(method string, resp *http.Response, code int, message string)
 func ValidatePath(path string) error {
 	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || strings.ContainsAny(path, "?#\\") {
 		return output.New(2, "request path must be origin-relative; use --query for query parameters")
+	}
+	if !utf8.ValidString(path) {
+		return output.New(2, "invalid path encoding")
+	}
+	for _, segment := range strings.Split(path, "/") {
+		decoded, e := url.PathUnescape(segment)
+		if e != nil || !utf8.ValidString(decoded) {
+			return output.New(2, "invalid path escape")
+		}
+		if decoded == "." || decoded == ".." || strings.ContainsAny(decoded, "/\\%") {
+			return output.New(2, "request path contains ambiguous segments")
+		}
+		for _, r := range decoded {
+			if r < 32 || r == 127 {
+				return output.New(2, "request path contains control characters")
+			}
+		}
 	}
 	return nil
 }

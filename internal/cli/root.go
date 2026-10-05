@@ -22,11 +22,13 @@ var Version = "dev"
 var Commit = "unknown"
 
 type App struct {
+	SchemaSHA                                                                                string
 	Root                                                                                     *cobra.Command
 	In                                                                                       io.Reader
 	Out, Err                                                                                 io.Writer
 	ConfigPath, ContextName, APIURL, Workspace, Project, Credential, RuntimeCredential, Mode string
 	Timeout                                                                                  time.Duration
+	ValidateBody                                                                             bool
 	Yes, DryRun, NoInput                                                                     bool
 	File, IfMatch, IdempotencyKey, SecretFile                                                string
 	Query                                                                                    []string
@@ -52,13 +54,31 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.DurationVar(&a.Timeout, "timeout", 30*time.Second, "HTTP deadline")
 	f.BoolVar(&a.Yes, "yes", false, "Accept the specified destructive operation")
 	f.BoolVar(&a.NoInput, "no-input", false, "Deterministic execution (always enabled)")
+	f.StringVar(&a.SchemaSHA, "schema-sha256", "", "Expected advertised OpenAPI snapshot SHA-256 when validating bodies")
+	f.BoolVar(&a.ValidateBody, "validate-body", false, "Validate the advertised request-body schema before a canonical write")
 	f.BoolVar(&a.DryRun, "dry-run", false, "Render the request without executing")
 	f.StringVar(&a.File, "file", "", "JSON input file, or - for stdin")
 	f.StringArrayVar(&a.Query, "query", nil, "Query name=value (repeatable)")
 	f.StringVar(&a.IfMatch, "if-match", "", "Expected server ETag")
 	f.StringVar(&a.IdempotencyKey, "idempotency-key", "", "Key, only when supported by server")
 	f.StringVar(&a.SecretFile, "secret-file", "", "Exclusive private destination for issued secret")
-	r.PersistentPreRunE = func(*cobra.Command, []string) error {
+	r.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		path := strings.TrimPrefix(cmd.CommandPath(), "woobe ")
+		if a.SchemaSHA != "" {
+			if len(a.SchemaSHA) != 64 || strings.Trim(a.SchemaSHA, "0123456789abcdef") != "" {
+				return output.New(2, "schema-sha256 must be 64 lowercase hexadecimal characters")
+			}
+			if !a.ValidateBody && path != "manifest preflight" && path != "validate-input" {
+				return output.New(2, "schema-sha256 requires body validation")
+			}
+		}
+		if a.ValidateBody {
+			path := strings.TrimPrefix(cmd.CommandPath(), "woobe ")
+			op, ok := a.operation(path)
+			if !(path == "manifest apply" || path == "manifest preflight" || path == "validate-input" || (ok && op.Kind == "http" && op.Method != "GET" && op.Method != "HEAD")) {
+				return output.New(9, "--validate-body requires a canonical HTTP write or manifest apply/preflight")
+			}
+		}
 		if a.Mode != "json" && a.Mode != "jsonl" && a.Mode != "table" {
 			return output.New(2, "invalid output mode")
 		}
@@ -221,6 +241,10 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 	e := a.Root.ExecuteContext(ctx)
 	if e == nil {
 		return 0
+	}
+	if p, ok := e.(*preflightFailure); ok {
+		_ = a.emitPreflight(p.Data, p.Cause)
+		return p.Cause.Code
 	}
 	if partial, ok := e.(*manifestPartial); ok {
 		return a.emitManifestPartial(partial)

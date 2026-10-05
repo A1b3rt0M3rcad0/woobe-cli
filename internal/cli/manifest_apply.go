@@ -3,7 +3,6 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/config"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/manifest"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/spf13/cobra"
@@ -59,7 +58,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			return e
 		}
 		cp := checkpoint{CredentialFingerprint: fingerprint, Hash: d.Hash(), Origin: v.APIURL, Workspace: v.Workspace, Project: v.Project, Credential: v.Credential, Steps: map[string]string{}, Results: map[string]any{}}
-		if b, err := os.ReadFile(path); err == nil {
+		if b, err := readCheckpoint(path); err == nil {
 			old, err := parseCheckpoint(b)
 			if err != nil {
 				return output.New(2, "invalid checkpoint")
@@ -70,6 +69,9 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			if old.Steps == nil {
 				return output.New(2, "invalid checkpoint steps")
 			}
+			if e = validateCheckpointPlan(old, d); e != nil {
+				return e
+			}
 			cp = old
 			if cp.Results == nil {
 				cp.Results = map[string]any{}
@@ -77,12 +79,16 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 		} else if !os.IsNotExist(err) {
 			return output.New(2, "cannot read checkpoint")
 		}
-		save := func() error {
-			b, e := json.MarshalIndent(cp, "", "  ")
+		save := func() error { return saveCheckpoint(path, cp) }
+		if a.DryRun {
+			return a.emit(map[string]any{"manifest_hash": d.Hash(), "checkpoint": cp, "executed": false, "validation": "local_plan_only"})
+		}
+		var schemaDoc map[string]any
+		if a.ValidateBody {
+			schemaDoc, e = a.loadServerSchema(cmd.Context())
 			if e != nil {
-				return e
+				return notAttempted(e)
 			}
-			return config.AtomicWrite(path, b, 0600)
 		}
 		steps, _ := d.Order()
 		for _, s := range steps {
@@ -92,30 +98,38 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			case "unknown", "in_flight":
 				return partialApply(cp, s.ID, "previous write requires remote reconciliation before resume", "unknown", true)
 			}
-			if a.DryRun {
-				return a.emit(map[string]any{"manifest_hash": d.Hash(), "executed": false})
-			}
+
 			s, e = manifest.ResolveStep(s, cp.Results)
 			if e != nil {
-				return output.New(2, e.Error())
+				return stopBeforeWrite(path, cp, s.ID, output.New(2, e.Error()))
+			}
+			if a.ValidateBody {
+				op, _ := a.operation(s.Command)
+				def, e := operationDefinition(schemaDoc, op)
+				if e == nil {
+					e = validateBodySchema(schemaDoc, def, s.Body)
+				}
+				if e != nil {
+					return stopBeforeWrite(path, cp, s.ID, e)
+				}
 			}
 			if skipUnchanged {
 				observed, unchanged, e := a.observeUnchanged(cmd.Context(), s)
 				if e != nil {
-					return e
+					return stopBeforeWrite(path, cp, s.ID, e)
 				}
 				if unchanged {
 					cp.Results[s.ID] = output.Redact(observed)
 					cp.Steps[s.ID] = "unchanged"
 					if e = save(); e != nil {
-						return e
+						return stopBeforeWrite(path, cp, s.ID, e)
 					}
 					continue
 				}
 			}
 			cp.Steps[s.ID] = "in_flight"
 			if e = save(); e != nil {
-				return e
+				return stopBeforeWrite(path, cp, s.ID, e)
 			}
 			childOut := &bytes.Buffer{}
 			childErr := &bytes.Buffer{}
@@ -145,16 +159,23 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			if code != 0 {
 				cp.Steps[s.ID] = "unknown"
 				var env output.Envelope
-				if json.Unmarshal(childOut.Bytes(), &env) == nil && env.Error != nil && env.Error.Outcome == "rejected" {
-					cp.Steps[s.ID] = "rejected"
+				if json.Unmarshal(childOut.Bytes(), &env) == nil && env.Error != nil {
+					switch env.Error.Outcome {
+					case "rejected", "not_attempted":
+						cp.Steps[s.ID] = env.Error.Outcome
+					}
 				}
 				if e = save(); e != nil {
 					return partialApply(cp, s.ID, "apply failed and checkpoint persistence failed", "unknown", false)
 				}
-				return partialApply(cp, s.ID, "partial apply stopped", cp.Steps[s.ID], true)
+				partial := partialApply(cp, s.ID, "partial apply stopped", cp.Steps[s.ID], true).(*manifestPartial)
+				partial.Cause = env.Error
+				return partial
 			}
 			var result output.Envelope
-			if e = json.Unmarshal(childOut.Bytes(), &result); e != nil {
+			dec := json.NewDecoder(bytes.NewReader(childOut.Bytes()))
+			dec.UseNumber()
+			if e = dec.Decode(&result); e != nil {
 				return partialApply(cp, s.ID, "operation committed but result could not be checkpointed", "unknown", true)
 			}
 			data := result.Data

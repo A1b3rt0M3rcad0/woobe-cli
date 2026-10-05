@@ -89,7 +89,12 @@ func (a *App) register(op Operation) {
 			return output.New(2, "required resource IDs must be supplied positionally or by their named flags")
 		}
 		return nil
-	}, RunE: func(cmd *cobra.Command, args []string) error {
+	}, RunE: func(cmd *cobra.Command, args []string) (err error) {
+		defer func() {
+			if err != nil && op.Method != "GET" && op.Method != "HEAD" && output.Normalize(err).Outcome == "" {
+				err = notAttempted(err)
+			}
+		}()
 		if op.Status == "proposed" && !a.DryRun {
 			if e := a.requireAdvertised(cmd.Context(), op); e != nil {
 				return e
@@ -102,8 +107,8 @@ func (a *App) register(op Operation) {
 		path := op.Path
 		for _, p := range []struct{ name, value string }{{"workspace_id", a.Workspace}, {"project_id", a.Project}} {
 			if strings.Contains(path, "{"+p.name+"}") {
-				if p.value == "" {
-					return output.New(2, p.name+" required")
+				if e := resourceID(p.value); e != nil {
+					return e
 				}
 				path = strings.ReplaceAll(path, "{"+p.name+"}", url.PathEscape(p.value))
 			}
@@ -118,8 +123,8 @@ func (a *App) register(op Operation) {
 				value = args[argIndex]
 				argIndex++
 			}
-			if value == "" || value == "." || value == ".." {
-				return output.New(2, "invalid resource ID")
+			if e := resourceID(value); e != nil {
+				return e
 			}
 			path = strings.ReplaceAll(path, "{"+p+"}", url.PathEscape(value))
 		}
@@ -135,10 +140,21 @@ func (a *App) register(op Operation) {
 			if id == "" {
 				return output.New(2, op.QueryScope+" required")
 			}
-			a.Query = append(a.Query, op.QueryScope+"="+id)
+			if e := a.addScopeQuery(op.QueryScope, id); e != nil {
+				return e
+			}
 		}
 		if (op.Effect == "publication" || op.Effect == "execution" || strings.HasSuffix(op.Command, " revoke") || strings.HasSuffix(op.Command, " cancel")) && !a.Yes && !a.DryRun {
 			return output.New(2, "operation requires --yes")
+		}
+		if a.ValidateBody && !a.DryRun {
+			_, doc, _, def, e := a.serverOperation(cmd.Context(), op.Command)
+			if e != nil {
+				return notAttempted(e)
+			}
+			if e = validateBodySchema(doc, def, b); e != nil {
+				return notAttempted(e)
+			}
 		}
 		return a.call(cmd, op.Method, path, b, op.Secret)
 	}}

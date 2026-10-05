@@ -64,6 +64,10 @@ func (a *App) completeDiscovery() {
 				case path == "manifest apply" || path == "manifest reconcile":
 					kind = "composition"
 					effect = "mutation"
+				case path == "manifest preflight":
+					kind = "diagnostic-http"
+					effect = "read"
+					availability = "server-dependent"
 				case path == "manifest diff":
 					kind = "composition"
 					effect = "read"
@@ -82,7 +86,7 @@ func (a *App) completeDiscovery() {
 			}
 			op.Usage = cmd.UseLine()
 			switch path {
-			case "manifest validate", "manifest plan", "manifest diff", "manifest apply", "manifest reconcile", "manifest compile":
+			case "manifest validate", "manifest preflight", "manifest plan", "manifest diff", "manifest apply", "manifest reconcile", "manifest compile":
 				op.Body = true
 			}
 			flags := map[string]FlagDescriptor{}

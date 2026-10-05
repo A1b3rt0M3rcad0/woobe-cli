@@ -43,6 +43,9 @@ func saveCheckpoint(path string, cp checkpoint) error {
 	if e != nil {
 		return e
 	}
+	if len(b) > 32<<20 {
+		return output.New(9, "checkpoint exceeds 32 MiB")
+	}
 	return config.AtomicWrite(path, b, 0600)
 }
 func (a *App) manifestReconcileCommand(g *cobra.Command) {
@@ -73,7 +76,7 @@ func (a *App) manifestReconcileCommand(g *cobra.Command) {
 			return e
 		}
 		defer release()
-		b, e := os.ReadFile(path)
+		b, e := readCheckpoint(path)
 		if e != nil {
 			return output.New(2, "checkpoint unavailable")
 		}
@@ -87,6 +90,9 @@ func (a *App) manifestReconcileCommand(g *cobra.Command) {
 		}
 		if cp.CredentialFingerprint != fingerprint || cp.Hash != d.Hash() || cp.Origin != v.APIURL || cp.Workspace != v.Workspace || cp.Project != v.Project || cp.Credential != v.Credential {
 			return output.New(6, "checkpoint belongs to another plan or context")
+		}
+		if e = validateCheckpointPlan(cp, d); e != nil {
+			return e
 		}
 		if cp.Steps[args[0]] != "unknown" && cp.Steps[args[0]] != "in_flight" {
 			return output.New(6, "only uncertain steps can be reconciled")
