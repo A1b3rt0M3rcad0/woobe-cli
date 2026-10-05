@@ -16,6 +16,7 @@ type Document struct {
 	Workspace     string `json:"workspace_id"`
 	Project       string `json:"project_id"`
 	Steps         []Step `json:"steps"`
+	SourceVersion string `json:"-"`
 }
 type Step struct {
 	ID        string          `json:"id"`
@@ -30,6 +31,15 @@ func Parse(b []byte) (Document, error) {
 	var d Document
 	if e := jsoninput.Validate(b); e != nil {
 		return d, e
+	}
+	var header struct {
+		SchemaVersion string `json:"schema_version"`
+	}
+	if e := json.Unmarshal(b, &header); e != nil {
+		return d, e
+	}
+	if header.SchemaVersion == "2" {
+		return parseResources(b)
 	}
 	dec := json.NewDecoder(bytes.NewReader(b))
 	dec.DisallowUnknownFields()
