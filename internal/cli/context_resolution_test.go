@@ -38,3 +38,15 @@ func TestWorkspaceOverrideClearsInheritedProject(t *testing.T) {
 		t.Fatal(v, e)
 	}
 }
+
+func TestExplicitEmptyFlagsOverrideEnvironment(t *testing.T) {
+	a := contextApp(t)
+	t.Setenv("WOOBE_PROJECT_ID", "env-project")
+	if e := a.Root.PersistentFlags().Set("project", ""); e != nil {
+		t.Fatal(e)
+	}
+	v, e := a.resolve()
+	if e != nil || v.Project != "" {
+		t.Fatal(v, e)
+	}
+}

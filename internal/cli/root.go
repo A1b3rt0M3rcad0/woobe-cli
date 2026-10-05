@@ -125,17 +125,17 @@ func (a *App) resolve() (config.Context, error) {
 	}
 	originalWorkspace := v.Workspace
 	vals := []struct {
-		dst       *string
-		flag, env string
-	}{{&v.APIURL, a.APIURL, "WOOBE_API_URL"}, {&v.Workspace, a.Workspace, "WOOBE_WORKSPACE_ID"}, {&v.Project, a.Project, "WOOBE_PROJECT_ID"}, {&v.Credential, a.Credential, "WOOBE_CREDENTIAL"}, {&v.RuntimeCredential, a.RuntimeCredential, "WOOBE_RUNTIME_CREDENTIAL"}}
+		dst             *string
+		flag, env, name string
+	}{{&v.APIURL, a.APIURL, "WOOBE_API_URL", "api-url"}, {&v.Workspace, a.Workspace, "WOOBE_WORKSPACE_ID", "workspace"}, {&v.Project, a.Project, "WOOBE_PROJECT_ID", "project"}, {&v.Credential, a.Credential, "WOOBE_CREDENTIAL", "credential"}, {&v.RuntimeCredential, a.RuntimeCredential, "WOOBE_RUNTIME_CREDENTIAL", "runtime-credential"}}
 	for _, x := range vals {
-		if x.flag != "" {
+		if x.flag != "" || a.Root.PersistentFlags().Changed(x.name) {
 			*x.dst = x.flag
 		} else if s := os.Getenv(x.env); s != "" {
 			*x.dst = s
 		}
 	}
-	if v.Workspace != originalWorkspace && a.Project == "" && os.Getenv("WOOBE_PROJECT_ID") == "" {
+	if v.Workspace != originalWorkspace && a.Project == "" && !a.Root.PersistentFlags().Changed("project") && os.Getenv("WOOBE_PROJECT_ID") == "" {
 		v.Project = ""
 	}
 	if v.APIURL == "" {
