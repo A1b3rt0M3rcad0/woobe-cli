@@ -57,5 +57,15 @@ func validateCheckpointPlan(cp checkpoint, d manifest.Document) error {
 			return output.New(2, "checkpoint contains a step outside the plan")
 		}
 	}
+	for id := range cp.Results {
+		if !ids[id] {
+			return output.New(2, "checkpoint result outside the plan")
+		}
+	}
+	for id := range cp.Reconciliations {
+		if !ids[id] || cp.Steps[id] != "reconciled" {
+			return output.New(2, "checkpoint reconciliation has no matching reconciled step")
+		}
+	}
 	return nil
 }

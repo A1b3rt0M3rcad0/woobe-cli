@@ -28,3 +28,12 @@ func TestCheckpointPlanIDs(t *testing.T) {
 		t.Fatal("foreign step")
 	}
 }
+
+func TestCheckpointEvidenceOwnership(t *testing.T) {
+	d := manifest.Document{Steps: []manifest.Step{{ID: "a"}}}
+	for _, cp := range []checkpoint{{Steps: map[string]string{}, Results: map[string]any{"other": 1}}, {Steps: map[string]string{"a": "committed"}, Reconciliations: map[string]Reconciliation{"a": {}}}} {
+		if validateCheckpointPlan(cp, d) == nil {
+			t.Fatal(cp)
+		}
+	}
+}
