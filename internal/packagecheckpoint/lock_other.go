@@ -11,3 +11,5 @@ func supportedProtection() error {
 	return output.New(9, "private package checkpoints require a supported OS protection mechanism")
 }
 func lockCheckpoint(path string) (*os.File, error) { return nil, supportedProtection() }
+
+func openPrivateRead(path string) (*os.File, error) { return nil, supportedProtection() }

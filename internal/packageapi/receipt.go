@@ -6,6 +6,9 @@ import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagecheckpoint"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
+	"net/url"
+	"time"
 )
 
 type PlanReceipt struct {
@@ -18,6 +21,31 @@ type PlanReceipt struct {
 func (r PlanReceipt) Validate() error {
 	if r.Format != "woobe-package-plan-receipt" || r.SchemaVersion != "1.0" || !digestPattern.MatchString(r.PrincipalFingerprint) || !validExpiry(r.Plan.ExpiresAt) || !digestPattern.MatchString(r.Plan.PlanDigest) || !identifier.MatchString(r.Plan.PlanID) {
 		return output.New(2, "Invalid or expired Package plan receipt")
+	}
+	origin, err := url.Parse(r.Plan.APIOrigin)
+	if err != nil || origin.Host == "" || origin.User != nil || origin.RawQuery != "" || origin.Fragment != "" || origin.Path != "" && origin.Path != "/" || origin.Scheme != "http" && origin.Scheme != "https" {
+		return output.New(2, "Invalid Package plan origin")
+	}
+	for _, id := range []string{r.Plan.ProjectID, r.Plan.UploadID} {
+		if !identifier.MatchString(id) {
+			return output.New(2, "Invalid Package plan identity")
+		}
+	}
+	for _, value := range []string{r.Plan.ArtifactDigest, r.Plan.DefinitionDigest, r.Plan.CapabilitiesDigest, r.Plan.BindingsDigest} {
+		if !digestPattern.MatchString(value) {
+			return output.New(2, "Invalid Package plan digest")
+		}
+	}
+	created, e := time.Parse(time.RFC3339Nano, r.Plan.CreatedAt)
+	expires, e2 := time.Parse(time.RFC3339Nano, r.Plan.ExpiresAt)
+	if e != nil || e2 != nil || !expires.After(created) || len(r.Plan.Effects) == 0 || r.Plan.PackageSchemaVersion != "1.0" {
+		return output.New(2, "Invalid Package plan metadata")
+	}
+	if r.Plan.Lifecycle != "draft" && r.Plan.Lifecycle != "staging" && r.Plan.Lifecycle != "release" && r.Plan.Lifecycle != "production" {
+		return output.New(2, "Invalid Package plan lifecycle")
+	}
+	if packagefmt.Validate(&packagefmt.Document{Value: r.Plan.Bindings, File: "approved-bindings"}) != nil {
+		return output.New(2, "Invalid approved Package bindings")
 	}
 	return nil
 }

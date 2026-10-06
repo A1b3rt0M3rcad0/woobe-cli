@@ -50,7 +50,29 @@ OPERATION_ID --revision REVISION` resumes its observed dependency wait;
 resources. Package polling only retries transient GET observations, never POST
 mutations.
 
-Import/Export, checkpoint integration, native lifecycle materialization and the
-complete cross-project/runtime qualification are still under implementation.
+Apply a captured source or an approved private plan with an explicit checkpoint:
+
+```sh
+woobe package import ./support --project PROJECT_ID \
+  --bind credential.primary-key=CREDENTIAL_UUID \
+  --checkpoint ./import-checkpoint.json --wait --wait-timeout 5m
+woobe package import --plan-file ./approved-plan.json --project PROJECT_ID \
+  --checkpoint ./import-checkpoint.json --wait
+```
+
+Source imports also save `CHECKPOINT.plan.json` exclusively so a prepared request
+can use its original approved plan after restart. The checkpoint stores identities,
+revisions and state, never authorization or resolved protected values. Protected
+binding aliases are read once immediately before the single Apply request. The
+in-flight checkpoint is fsynced before POST. A lost response is an unknown
+outcome; invoking import with the same checkpoint performs lookup/observation
+without posting Apply again or rereading protected bindings. A lookup 404 does
+not authorize a second Apply. Existing private operational files are not replaced
+by `--yes`.
+
+Native lifecycle phases preserve standalone Agent Production when a Network
+creates Agent Releases. Public CLI/API/worker/PostgreSQL tests qualify Agent
+Draft and Network Production apply. Full Export and the complete cross-project
+roundtrip/runtime qualification are still under implementation.
 Private receipts/checkpoints currently return unsupported exit code 9 on Windows;
 there is no unprotected plaintext fallback.

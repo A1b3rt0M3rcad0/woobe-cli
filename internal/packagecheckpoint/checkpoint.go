@@ -167,7 +167,7 @@ func (s *Store) Read() (Checkpoint, error) {
 	if !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 || info.Size() > 1<<20 {
 		return empty, output.New(3, "package checkpoint must be a bounded private regular file")
 	}
-	file, err := os.Open(s.Path)
+	file, err := openPrivateRead(s.Path)
 	if err != nil {
 		return empty, err
 	}

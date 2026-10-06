@@ -62,7 +62,7 @@ func ReadPrivate(path string) ([]byte, error) {
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 || info.Size() > 2<<20 {
 		return nil, output.New(3, "Package receipt must be a bounded private regular file")
 	}
-	file, err := os.Open(path)
+	file, err := openPrivateRead(path)
 	if err != nil {
 		return nil, err
 	}

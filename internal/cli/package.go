@@ -84,4 +84,5 @@ func (a *App) packageCommands() {
 	group.AddCommand(validate)
 	a.packageOperationCommands(group)
 	a.packagePlanningCommands(group)
+	a.packageImportCommands(group)
 }
