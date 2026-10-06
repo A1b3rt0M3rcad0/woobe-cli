@@ -45,6 +45,8 @@ func (a *App) completeDiscovery() {
 					kind = "multipart-http"
 					effect = "mutation"
 					availability = "observed"
+				case path == "package plan":
+					kind, effect, availability = "package-http", "planning", "server-dependent"
 				case path == "package status":
 					kind, effect, availability = "package-http", "read", "server-dependent"
 				case path == "package cancel" || path == "package resume":

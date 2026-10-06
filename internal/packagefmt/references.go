@@ -75,6 +75,25 @@ func Resolve(manifest map[string]any, documents map[string]*Document) (*Graph, e
 		return nil, fail("PACKAGE_REFERENCE_NOT_FOUND", "Entrypoint does not resolve to its declared kind", "", "")
 	}
 	adjacency := map[string][]string{}
+	declared := Object(Object(manifest["spec"])["requires"])
+	knowledgeRequirements := map[string]bool{}
+	for _, group := range []string{"credentials", "project_environment", "secrets", "knowledge"} {
+		field := "ref"
+		if group == "project_environment" {
+			field = "key"
+		}
+		aliases := map[string]bool{}
+		for _, raw := range List(declared[group]) {
+			alias := Text(Object(raw)[field])
+			if aliases[alias] {
+				return nil, fail("PACKAGE_REQUIREMENT_DUPLICATE", "Destination requirement is duplicated", "", "/spec/requires/"+group)
+			}
+			aliases[alias] = true
+		}
+		if group == "knowledge" {
+			knowledgeRequirements = aliases
+		}
+	}
 	requirements := map[string]string{}
 	for _, raw := range List(Object(Object(manifest["spec"])["requires"])["credentials"]) {
 		requirement := Object(raw)
@@ -132,6 +151,9 @@ func Resolve(manifest map[string]any, documents map[string]*Document) (*Graph, e
 			}
 		}
 		if document["kind"] == "Knowledge" {
+			if spec["mode"] == "binding" && !knowledgeRequirements[Text(Object(spec["binding"])["ref"])] {
+				return nil, fail("PACKAGE_REQUIREMENT_NOT_FOUND", "Knowledge binding must declare a destination requirement", graph.Paths[key], "")
+			}
 			if spec["mode"] == "portable" {
 				if len(Object(spec["collection"])) == 0 || len(List(spec["documents"])) == 0 || len(Object(spec["embedding"])) == 0 || len(Object(spec["vector_snapshot"])) == 0 || len(Object(spec["binding"])) != 0 {
 					return nil, fail("PACKAGE_KNOWLEDGE_INVALID", "Portable Knowledge requires documents, collection, embedding and build configuration", graph.Paths[key], "")

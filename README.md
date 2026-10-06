@@ -149,3 +149,7 @@ Backend integration and Workspace CLI Keys are delivered by
 [Woobe PR #177](https://github.com/A1b3rt0M3rcad0/woobe/pull/177).
 Server capabilities require advertisement and authorization; the CLI cannot grant
 permissions the server does not provide.
+
+## Portable packages
+
+See [Package validation, destination planning and current implementation status](docs/PACKAGES.md). The complete import/export workflow is under implementation in the paired draft PRs.
