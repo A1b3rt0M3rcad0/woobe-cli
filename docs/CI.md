@@ -1,11 +1,11 @@
 # CI do Woobe CLI
 
-O workflow `CLI` roda em PRs, pushes na master e nas branches `feat/**`/`docs/**`, além de execução manual. O conjunto desta entrega foi integrado na master; versões geradas pelo CI continuam sendo builds de desenvolvimento.
+O workflow `CLI` roda em PRs, pushes nas branches `feat/**`/`docs/**`, além de execução manual. Versões geradas pelo CI continuam sendo builds de desenvolvimento.
 
 | Job | Aceite |
 | --- | --- |
-| `test` | gofmt, auditoria de 101 requisitos, módulos, vet, suíte Go com race/coverage, fuzz de schema por 10 segundos com dois workers, build e discovery. |
-| `package` | Seis arquivos Linux/macOS/Windows × amd64/arm64, schemas v1/v2, SHA256SUMS e artifacts.json. Conteúdo, alvos, nomes e SHA de origem devem coincidir. |
+| `test` | Piso VERSION e metadados reservados consistentes, testes de incrementos automáticos/identidade/conflitos/recuperação, gofmt, auditoria de 101 requisitos, módulos, vet, suíte Go com race/coverage, fuzz de schema por 10 segundos com dois workers, build e discovery. |
+| `package` | Seis arquivos Linux/macOS/Windows × amd64/arm64, schemas v1/v2, notices, SHA256SUMS e artifacts.json. Conteúdo, alvos, nomes, permissões executáveis e SHA de origem devem coincidir. |
 | `native-smoke` (três runners) | Baixar os pacotes do mesmo run e executar o alvo correspondente ao host; verificar versão/commit/OS/arch, discovery, schemas, manifest local válido, recusa de JSON inválido, duas páginas por cursor e metadados de coleção parcial em fixture HTTP loopback. |
 | `ci` | Todos os três grupos anteriores devem terminar em success. Failure, cancelled ou skipped impedem o sucesso deste job agregador. |
 
@@ -17,7 +17,7 @@ O job `ci` é o check estável para configurar nas regras da branch. Sua presen�
 
 - `cli-validation`: coverage.out e discovery.json.
 - `woobe-distribution`: seis arquivos compactados, SHA256SUMS e artifacts.json.
-- `native-smoke-<runner>`: relatório JSON com identidade da origem, alvo efetivamente executado e checks.
+- `native-smoke-<runner>`: relatórios JSON do binário com identidade da origem, alvo efetivamente executado e checks.
 
 O upload falha se os arquivos não existirem. A retenção solicitada é de 90 dias, sujeita às políticas do GitHub. Essas evidências ficam associadas ao run; não são um release permanente. A versão de desenvolvimento contém run number e attempt. Em PRs, o checkout e o pacote correspondem ao commit de integração temporário do GitHub; em push da master, correspondem ao commit efetivo da master. Nenhum job publica tags ou releases.
 
@@ -31,6 +31,23 @@ python3 scripts/smoke_artifacts.py --commit "$(git rev-parse HEAD)" --report nat
 ```
 
 O smoke exige um host Linux, macOS ou Windows em amd64/arm64 e executa somente seu próprio alvo. A matriz hospedada executa três combinações concretas de OS/arquitetura, que constam nos relatórios; ela não afirma execução nativa de todos os seis alvos. Não há validação de providers de keychain, sessão protegida Windows, login real, permissões do servidor ou runtime remoto. A evidência de backend está no PR #177; providers nativos e a matriz completa permanecem no planejamento.
+
+Cada push na `master` inicia **Release CLI**, que calcula automaticamente a
+versão, fixa o SHA e reutiliza este workflow. Retorna o ID imutável do artefato
+e SHA-256 do manifest ao publicador. A execução de release não é cancelada por
+novos pushes e substitui o run standalone na master, evitando dois CI completos.
+Depois dos gates, o publicador reserva a tag e publica somente os seis arquivos
+nativos e seus metadados no GitHub Releases, com verificação posterior. O job
+`image` cria o pacote GHCR Linux amd64/arm64 a partir dos mesmos binários
+validados, verifica digest e comportamento antes do job `publish`. Esse job
+promove a versão no GHCR, publica o Release e atualiza `latest`. Tags explícitas
+`v*` passam pelos mesmos gates e permitem publicar sem merge. Usa apenas
+GITHUB_TOKEN com contents:write e packages:write. npm, Node.js, instalação npm,
+registry npm, NPM_TOKEN e OIDC não fazem
+parte desse fluxo; os helpers npm permanecem adiados.
+
+Veja [INSTALLATION.md](INSTALLATION.md) para cálculo de versões e recuperação.
+Preparar a branch não ativa o workflow nem publica releases.
 
 ## Pagination continuation evidence — 2026-10-05
 
