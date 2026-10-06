@@ -8,6 +8,7 @@ import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/identity"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/spf13/cobra"
 	"io"
 	"net/url"
@@ -115,6 +116,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.authCommands()
 	a.runtimeCommands()
 	a.manifestCommands()
+	a.packageCommands()
 	a.uploadCommands()
 	a.exportCommands()
 	a.projectionCommand()
@@ -249,6 +251,10 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 	e := a.Root.ExecuteContext(ctx)
 	if e == nil {
 		return 0
+	}
+	if failure, ok := e.(*packageFailure); ok {
+		_ = output.Write(a.Out, a.Mode, map[string]any{"package_schema_version": "1.0", "valid": false, "diagnostics": []*packagefmt.Diagnostic{failure.Diagnostic}, "executed": false}, nil, output.New(2, failure.Diagnostic.Message))
+		return 2
 	}
 	if p, ok := e.(*preflightFailure); ok {
 		_ = a.emitPreflight(p.Data, p.Cause)
