@@ -71,6 +71,24 @@ def verify_assets(repo, release, files):
     return set(names)
 
 
+def release_for_tag(repo, tag):
+    release = github(f'repos/{repo}/releases/tags/{tag}', missing=True)
+    if release is not None:
+        return release
+    # The by-tag endpoint is for published releases and can hide drafts even
+    # from their creator. List drafts with the authenticated token, then read
+    # the matching immutable release ID. Authentication failures still fail.
+    page = 1
+    while True:
+        releases = github(f'repos/{repo}/releases?per_page=100&page={page}')
+        for item in releases:
+            if item['tag_name'] == tag:
+                return github(f'repos/{repo}/releases/{item["id"]}')
+        if len(releases) < 100:
+            return None
+        page += 1
+
+
 def preflight(repo, version, commit, files):
     # Read repository access first: a private-repo/authentication 404 must not
     # be interpreted as a missing tag or release.
@@ -91,7 +109,7 @@ def preflight(repo, version, commit, files):
             obj = github(f'repos/{repo}/git/tags/{obj["sha"]}')['object']
         if obj['type'] != 'commit' or obj['sha'] != commit:
             raise ValueError('immutable release tag points to a different commit')
-    release = github(f'repos/{repo}/releases/tags/v{version}', missing=True)
+    release = release_for_tag(repo, f'v{version}')
     if release and not tag and (not release['draft'] or release['target_commitish'] != commit):
         raise ValueError('existing release has neither an immutable tag nor an exact draft revision')
     if release and release['prerelease'] != ('-' in version):
@@ -135,7 +153,7 @@ def publish(repo, version, commit, files, preflight_only=False, image=None):
     for name, path in files.items():
         if name not in assets:
             run('gh', 'release', 'upload', tag, str(path), '--repo', repo)
-    release = github(f'repos/{repo}/releases/tags/{tag}')
+    release = release_for_tag(repo, tag)
     if verify_assets(repo, release, files) != set(files):
         raise ValueError('GitHub publication is incomplete')
     # Remote files have just been compared byte for byte with this candidate.

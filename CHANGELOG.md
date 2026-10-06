@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4
+
+- Find draft releases by immutable ID when the published by-tag endpoint returns 404.
+- Resume partial uploads and verify all remote assets before finalizing publication.
+
 ## 0.1.3
 
 - Support Actions installation tokens whose repository metadata omits user-role permissions.

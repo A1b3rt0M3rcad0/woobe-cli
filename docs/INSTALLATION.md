@@ -16,12 +16,12 @@ and download your platform archive plus `SHA256SUMS`.
 
 | Platform | Example archive |
 | --- | --- |
-| Linux x64 | `woobe_0.1.3_linux_amd64.tar.gz` |
-| Linux arm64 | `woobe_0.1.3_linux_arm64.tar.gz` |
-| macOS Intel | `woobe_0.1.3_darwin_amd64.tar.gz` |
-| macOS Apple Silicon | `woobe_0.1.3_darwin_arm64.tar.gz` |
-| Windows x64 | `woobe_0.1.3_windows_amd64.zip` |
-| Windows arm64 | `woobe_0.1.3_windows_arm64.zip` |
+| Linux x64 | `woobe_0.1.4_linux_amd64.tar.gz` |
+| Linux arm64 | `woobe_0.1.4_linux_arm64.tar.gz` |
+| macOS Intel | `woobe_0.1.4_darwin_amd64.tar.gz` |
+| macOS Apple Silicon | `woobe_0.1.4_darwin_arm64.tar.gz` |
+| Windows x64 | `woobe_0.1.4_windows_amd64.zip` |
+| Windows arm64 | `woobe_0.1.4_windows_arm64.zip` |
 
 Verify the downloaded file's SHA-256 against `SHA256SUMS` before extraction.
 Use `sha256sum` on Linux, `shasum -a 256` on macOS or
@@ -90,7 +90,7 @@ workflow's GITHUB_TOKEN do not trigger another workflow run.
 The repository package is `ghcr.io/a1b3rt0m3rcad0/woobe-cli`. After publication:
 
 ```sh
-docker run --rm ghcr.io/a1b3rt0m3rcad0/woobe-cli:0.1.3 version
+docker run --rm ghcr.io/a1b3rt0m3rcad0/woobe-cli:0.1.4 version
 docker run --rm ghcr.io/a1b3rt0m3rcad0/woobe-cli:latest help
 ```
 

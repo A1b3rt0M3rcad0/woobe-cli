@@ -181,6 +181,25 @@ class ReleaseTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'exact draft revision'):
                 release.preflight(self.repo, '0.1.0', 'b' * 40, self.files)
 
+    def test_draft_hidden_by_tag_endpoint_is_found_by_id(self):
+        draft = {'id': 42, 'tag_name': 'v0.1.0', 'draft': True,
+                 'prerelease': False, 'target_commitish': self.commit, 'assets': []}
+        def github(path, missing=False):
+            if '/git/ref/' in path:
+                return {'object': {'type': 'commit', 'sha': self.commit}}
+            if '/releases/tags/' in path:
+                return None
+            if '/releases?' in path:
+                return [draft]
+            if path.endswith('/releases/42'):
+                return draft
+            return self.github(path, missing)
+        with patch.object(release, 'github', side_effect=github):
+            actual, assets, reserved = release.preflight(self.repo, '0.1.0', self.commit, self.files)
+            self.assertEqual(actual, draft)
+            self.assertEqual(assets, set())
+            self.assertTrue(reserved)
+
     def test_new_version_must_advance_published_versions(self):
         with patch.object(release, 'github', side_effect=self.github), \
              patch.object(release, 'published_versions', return_value=['0.2.0']):
