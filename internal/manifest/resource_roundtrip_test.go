@@ -28,6 +28,7 @@ func TestAllResourceKindsCompileExplicitActions(t *testing.T) {
 			}
 			if action == "update" {
 				r.ResourceID = "existing"
+				r.IfMatch = "revision"
 				if k.Name == "Project" {
 					r.ResourceID = "p"
 				}
