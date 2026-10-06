@@ -113,6 +113,10 @@ func validateParameterSchema(doc, path, def map[string]any, values map[string]st
 		if p.location != "path" && p.location != "query" {
 			continue
 		}
+		// Unsupported optional schemas must never receive a silent approval.
+		if e := schemacheck.Check(p.schema, nil, doc); e != nil && output.Normalize(schemaError(e)).Code == 9 {
+			return schemaError(e)
+		}
 		var raw []string
 		if p.location == "path" {
 			if v, ok := values[p.name]; ok {

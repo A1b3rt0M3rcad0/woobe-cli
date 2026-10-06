@@ -126,11 +126,13 @@ func (a *App) register(op Operation) {
 			return e
 		}
 		path := op.Path
+		pathValues := map[string]string{}
 		for _, p := range []struct{ name, value string }{{"workspace_id", a.Workspace}, {"project_id", a.Project}} {
 			if strings.Contains(path, "{"+p.name+"}") {
 				if e := resourceID(p.value); e != nil {
 					return e
 				}
+				pathValues[p.name] = p.value
 				path = strings.ReplaceAll(path, "{"+p.name+"}", url.PathEscape(p.value))
 			}
 		}
@@ -147,6 +149,7 @@ func (a *App) register(op Operation) {
 			if e := resourceID(value); e != nil {
 				return e
 			}
+			pathValues[p] = value
 			path = strings.ReplaceAll(path, "{"+p+"}", url.PathEscape(value))
 		}
 		b, e := a.body(op.Body)
@@ -168,13 +171,29 @@ func (a *App) register(op Operation) {
 		if (op.Effect == "publication" || op.Effect == "execution" || strings.HasSuffix(op.Command, " revoke") || strings.HasSuffix(op.Command, " cancel")) && !a.Yes && !a.DryRun {
 			return output.New(2, "operation requires --yes")
 		}
-		if a.ValidateBody && !a.DryRun {
-			_, doc, _, def, e := a.serverOperation(cmd.Context(), op.Command)
+		if (a.ValidateBody || a.ValidateParameters) && !a.DryRun {
+			_, doc, pathDef, def, e := a.serverOperation(cmd.Context(), op.Command)
 			if e != nil {
 				return notAttempted(e)
 			}
-			if e = validateBodySchema(doc, def, b); e != nil {
-				return notAttempted(e)
+			if a.ValidateBody {
+				if e = validateBodySchema(doc, def, b); e != nil {
+					return notAttempted(e)
+				}
+			}
+			if a.ValidateParameters {
+				q, e := a.query()
+				if e != nil {
+					return e
+				}
+				if op.Pagination != "" {
+					if e = pageOptions.query(q, op.Pagination); e != nil {
+						return e
+					}
+				}
+				if e = validateParameterSchema(doc, pathDef, def, pathValues, q); e != nil {
+					return e
+				}
 			}
 		}
 		if op.Pagination != "" {
