@@ -46,3 +46,23 @@ func TestParameterValidationCannotBeIgnored(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateInputParameterOnlyIsReadOnly(t *testing.T) {
+	calls := 0
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.URL.Path != "/openapi.json" {
+			t.Error("operation executed")
+		}
+		w.Write([]byte(`{"openapi":"3.1.0","paths":{"/ai/agents/{agent_id}":{"get":{"parameters":[{"name":"agent_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}]}}}}`))
+	}))
+	defer s.Close()
+	code, v := invoke(t, []string{"validate-input", "--command", "project agent get", "--validate-parameters", "--path-param", "agent_id=550e8400-e29b-41d4-a716-446655440000", "--api-url", s.URL}, "")
+	if code != 0 || calls != 1 {
+		t.Fatal(code, v, calls)
+	}
+	data := v["data"].(map[string]any)
+	if data["path_query_validation"] != "supported_schema_subset" || data["body_validation"] != "not_evaluated" || data["executed"] != false {
+		t.Fatal(v)
+	}
+}
