@@ -109,6 +109,9 @@ func (a *App) manifestReconcileCommand(g *cobra.Command) {
 		if !found {
 			return output.New(2, "unknown manifest step")
 		}
+		if len(stepSecretNames(step)) > 0 {
+			return output.New(9, "protected credential writes cannot be reconciled from redacted resource projections")
+		}
 		step, e = manifest.ResolveStep(step, cp.Results)
 		if e != nil {
 			return output.New(2, e.Error())

@@ -5,6 +5,8 @@ import json
 import os
 import pathlib
 import platform
+import http.server
+import threading
 import subprocess
 import tarfile
 import tempfile
@@ -53,7 +55,7 @@ def smoke(root, commit):
             raise ValueError('packaged binary identity differs from archive metadata')
         discovery = invoke(['help'])['data']
         commands = {row['command'] for row in discovery}
-        if not {'manifest validate', 'manifest apply', 'manifest reconcile', 'runtime target run', 'version'} <= commands:
+        if not {'manifest validate', 'manifest apply', 'manifest reconcile', 'runtime target run', 'version', 'workspace authority category diff'} <= commands:
             raise ValueError('discovery is missing essential executable commands')
         for revision, identity in [('1', 'urn:woobe:manifest:steps:1'), ('2', 'urn:woobe:manifest:resources:2')]:
             schema = invoke(['schema', '--command', 'manifest validate', '--kind', 'document', '--manifest-version', revision])['data']
@@ -63,9 +65,124 @@ def smoke(root, commit):
         validation = invoke(['manifest', 'validate', '--file', '-', '--project', 'p'], body)['data']
         if validation['valid'] is not True or validation['source_schema_version'] != '2' or len(validation['manifest_hash']) != 64:
             raise ValueError('local manifest validation has incorrect semantics')
+        category_body = json.dumps({'schema_version': '2', 'workspace_id': 'w', 'resources': [{'key': 'reader', 'kind': 'AuthorityCategory', 'action': 'create', 'spec': {'name': 'reader', 'permissions': ['agent:read']}}]})
+        category = invoke(['manifest', 'compile', '--file', '-'], category_body)['data']
+        if category['document']['workspace_id'] != 'w' or category['executed'] is not False:
+            raise ValueError('packaged category compilation lost its Workspace')
         invoke(['manifest', 'validate', '--file', '-'], '{', code=2)
+        protected_plan = json.dumps({'schema_version': '2', 'project_id': 'p', 'resources': [{'key': 'tool', 'kind': 'Tool', 'action': 'create', 'spec': {'config': {'headers': [{'name': 'Authorization', 'value': {'$secret_ref': 'tool-auth'}}]}}}]})
+        protected = invoke(['manifest', 'compile', '--file', '-'], protected_plan)['data']['document']
+        if protected['steps'][0]['body']['config']['headers'][0]['value'] != {'$secret_ref': 'tool-auth'}:
+            raise ValueError('packaged compilation lost protected credential reference')
+        invoke(['project', 'tool', 'mcp', 'bulk', '--project', 'p', '--file', '-', '--dry-run'], json.dumps({'tool_id': '11111111-1111-4111-8111-111111111111', 'mode': 'invalid'}), code=2)
+        for permission_mode in ['allow', 'deny', 'review']:
+            invoke(['project', 'tool', 'mcp', 'bulk', '--project', 'p', '--file', '-', '--dry-run'], json.dumps({'tool_id': '11111111-1111-4111-8111-111111111111', 'mode': permission_mode}))
+
+        # A loopback fixture verifies the packaged client's body pagination on
+        # each native OS; real Woobe policy remains the separate backend gate.
+        class Pages(http.server.BaseHTTPRequestHandler):
+            requests = []
+            validation_reads = 0
+            writes = 0
+
+            def do_GET(self):
+                from urllib.parse import urlparse, parse_qs
+                route = urlparse(self.path)
+                query = parse_qs(route.query)
+                if route.path == '/openapi.json':
+                    type(self).validation_reads += 1
+                    schema = {'openapi': '3.1.0', 'paths': {'/ai/agents': {'post': {'requestBody': {'content': {'application/json': {'schema': {
+                        'type': 'object', 'required': ['id', 'model_id', 'created_at'], 'properties': {
+                            'id': {'type': 'string', 'readOnly': True},
+                            'model_id': {'type': 'string', 'format': 'uuid'},
+                            'created_at': {'type': 'string', 'format': 'date-time'}}}}}}}}}}
+                    schema['paths']['/runtime/agents/{agent_id}/sessions'] = {'get': {'parameters': [
+                        {'name': 'agent_id', 'in': 'path', 'required': True, 'schema': {'type': 'string'}},
+                        {'name': 'project_id', 'in': 'query', 'required': True, 'schema': {'type': 'string'}},
+                        {'name': 'limit', 'in': 'query', 'schema': {'type': 'integer', 'minimum': 1, 'maximum': 100}},
+                        {'name': 'cursor', 'in': 'query', 'schema': {'type': 'string'}}]}}
+                    schema['paths']['/identity/workspaces/{workspace_id}/authority-categories/{category_id}'] = {'get': {'operationId': 'get_category'}}
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps(schema).encode())
+                    return
+                if route.path == '/identity/workspaces/w/authority-categories/c':
+                    revision = int(query['revision'][0])
+                    payload = {'data': {'id': 'c', 'workspace_id': 'w', 'revision': revision, 'name': 'reader', 'description': None, 'scope': 'project', 'permissions': ['agent:read'] if revision == 1 else ['agent:write', 'agent:read'], 'conditions': {}, 'catalog_revision': 'fixture'}}
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps(payload).encode())
+                    return
+                self.requests.append(query)
+                if route.path != '/runtime/agents/a/sessions' or query.get('project_id') != ['p'] or query.get('limit') != ['1']:
+                    self.send_error(400)
+                    return
+                terminal = query.get('cursor') == ['first']
+                payload = {'success': True, 'data': {'items': [{'id': 'second' if terminal else 'first'}], 'has_next': not terminal, 'next_cursor': None if terminal else 'first'}}
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(payload).encode())
+
+            def do_POST(self):
+                type(self).writes += 1
+                if self.path != '/ai/agents':
+                    self.send_error(400)
+                    return
+                self.rfile.read(int(self.headers.get('Content-Length', '0')))
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(b'{"id":"a"}')
+
+            def log_message(self, *_):
+                pass
+
+        server = http.server.HTTPServer(('127.0.0.1', 0), Pages)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            origin = f'http://127.0.0.1:{server.server_port}'
+            pages = invoke(['runtime', 'agent', 'sessions', 'a', '--project', 'p', '--api-url', origin, '--limit', '1', '--all'])
+            if pages['data']['page_count'] != 2 or pages['meta']['collection_complete'] != 'verified' or pages['meta']['complete'] is not True or len(Pages.requests) != 2:
+                raise ValueError('packaged pagination failed to consume both pages')
+            partial = invoke(['runtime', 'agent', 'sessions', 'a', '--project', 'p', '--api-url', origin, '--limit', '1'])
+            if partial['meta']['complete'] is not False or partial['meta']['collection_complete'] != 'partial':
+                raise ValueError('single page incorrectly claims collection completeness')
+            valid_body = {'model_id': '6ba7b810-9dad-11d1-80b4-00c04fd430c8', 'created_at': '2026-10-05T20:40:46-03:00'}
+            valid = invoke(['validate-input', '--command', 'project agent create', '--api-url', origin, '--file', '-'], json.dumps(valid_body))
+            if valid['data']['validation_direction'] != 'request' or valid['data']['executed'] is not False:
+                raise ValueError('packaged input validation did not report request direction')
+            for invalid in [dict(valid_body, model_id='invalid'), dict(valid_body, id='server'), dict(valid_body, created_at='2026-02-29T00:00:00Z')]:
+                denied = invoke(['project', 'agent', 'create', '--validate-body', '--api-url', origin, '--file', '-'], json.dumps(invalid), code=2)
+                if denied['error']['write_outcome'] != 'not_attempted':
+                    raise ValueError('invalid body was not refused before mutation')
+            if Pages.writes != 0:
+                raise ValueError('invalid request body caused a mutation')
+            invoke(['project', 'agent', 'create', '--validate-body', '--api-url', origin, '--file', '-'], json.dumps(valid_body))
+            if Pages.writes != 1 or Pages.validation_reads != 5:
+                raise ValueError('packaged request validation/write counts differ')
+            parameter_preflight = invoke(['validate-input', '--command', 'runtime agent sessions', '--validate-parameters', '--path-param', 'agent_id=a', '--query', 'project_id=p', '--query', 'limit=1', '--api-url', origin])
+            if parameter_preflight['data']['path_query_validation'] != 'supported_schema_subset' or parameter_preflight['data']['body_validation'] != 'not_evaluated':
+                raise ValueError('parameter-only preflight incorrectly reports its scope')
+            pages_before = len(Pages.requests)
+            invoke(['runtime', 'agent', 'sessions', 'a', '--project', 'p', '--api-url', origin, '--query', 'limit=101', '--validate-parameters'], code=2)
+            if len(Pages.requests) != pages_before:
+                raise ValueError('invalid query caused a resource read')
+            invoke(['runtime', 'agent', 'sessions', 'a', '--project', 'p', '--api-url', origin, '--limit', '1', '--all', '--validate-parameters'])
+            if len(Pages.requests) != pages_before + 2:
+                raise ValueError('validated packaged pagination did not consume both pages')
+            category_diff = invoke(['workspace', 'authority', 'category', 'diff', 'c', '--workspace', 'w', '--from-revision', '1', '--to-revision', '2', '--api-url', origin])['data']
+            if category_diff['grants_changed'] is not False or category_diff['executed'] is not False or [row['field'] for row in category_diff['changes']] != ['permissions']:
+                raise ValueError('packaged category diff has incorrect authority semantics')
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
-            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input'],
+            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff', 'protected-reference-compile', 'canonical-mcp-permissions'],
             'backend_acceptance': 'not_evaluated', 'credential_provider_acceptance': 'not_evaluated'}
 
 

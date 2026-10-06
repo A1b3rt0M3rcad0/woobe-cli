@@ -1,4 +1,12 @@
-# Entrada no backend da Woobe
+# Backend handoff completed; client continuation
+
+Updated 2026-10-05. The integration described below was delivered in [Woobe PR #177](https://github.com/A1b3rt0M3rcad0/woobe/pull/177), at `77c53832f0e5b35488d1574b3cf62777486f5189`. Seven workflows passed, including required real API/worker CLI scenarios and migration/upgrade acceptance. The PR remains draft and unmerged for user approval.
+
+The current client continuation delivers reviewed body pagination; the existing backend PR can pin that immutable client revision and extend live category/audit history tests. Native credentials, complete semantic reconciliation and schema coverage, and stream replay/gaps remain independent client work. See [STATUS.md](STATUS.md) and [REMAINING.md](REMAINING.md).
+
+The rest of this document is the historical handoff procedure. Its earlier percentage and zero-acceptance statements describe the pre-integration checkpoint, not current status.
+
+## Historical backend entry procedure
 
 O próximo bloco de implementação deve começar em `A1b3rt0M3rcad0/woobe`. O CLI já oferece descoberta, chamadas públicas, credenciais separadas, manifests recuperáveis, comparação sem perda de precisão e preflight explícito para exercitar os contratos. Isso permite iniciar a integração do servidor; não significa CLI completo, backend homologado ou autorização para release.
 

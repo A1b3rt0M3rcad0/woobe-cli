@@ -40,19 +40,50 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 		rows := []map[string]any{}
 		var failure *output.Error
 		complete := true
-		failed := func(id string, e error) {
+		failed := func(id string, e error, parameterFailure bool) {
 			complete = false
 			cause := output.Normalize(e)
 			if failure == nil || cause.Code == 9 {
 				failure = cause
 			}
-			rows = append(rows, map[string]any{"step_id": id, "body_validation": "failed", "error": cause, "write_executed": false})
+			bodyStatus, parameterStatus := "failed", "not_evaluated"
+			if parameterFailure {
+				bodyStatus, parameterStatus = "not_evaluated", "failed"
+			}
+			rows = append(rows, map[string]any{"step_id": id, "body_validation": bodyStatus, "path_query_validation": parameterStatus, "error": cause, "write_executed": false})
 		}
 		for _, s := range steps {
 			op, _ := a.operation(s.Command)
 			def, e := operationDefinition(doc, op)
 			if e != nil {
-				failed(s.ID, e)
+				failed(s.ID, e, false)
+				continue
+			}
+			parameterStatus := "not_evaluated"
+			if a.ValidateParameters {
+				resolved, e := manifest.ResolveStep(s, map[string]any{})
+				if e != nil {
+					complete = false
+					rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "deferred_dependency_result", "path_query_validation": "deferred_dependency_result", "write_executed": false})
+					continue
+				}
+				values, query, e := a.manifestParameterValues(op, resolved)
+				if e == nil {
+					e = validateOperationParameters(doc, op, values, query)
+				}
+				if e != nil {
+					failed(s.ID, e, true)
+					continue
+				}
+				parameterStatus = "supported_schema_subset"
+			}
+			if len(stepSecretNames(s)) > 0 {
+				if check := validateBodySchema(doc, def, []byte("null")); check != nil && output.Normalize(check).Code == 9 {
+					failed(s.ID, check, false)
+					continue
+				}
+				complete = false
+				rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "deferred_protected_credential", "path_query_validation": parameterStatus, "write_executed": false, "secret_values_read": false})
 				continue
 			}
 			var body any
@@ -65,24 +96,32 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 				body, e = manifest.Resolve(body, map[string]any{})
 				if e != nil {
 					if check := validateBodySchema(doc, def, []byte("null")); check != nil && output.Normalize(check).Code == 9 {
-						failed(s.ID, check)
+						failed(s.ID, check, false)
 						continue
 					}
 					complete = false
-					rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "deferred_dependency_result", "write_executed": false})
+					rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "deferred_dependency_result", "path_query_validation": parameterStatus, "write_executed": false})
 					continue
 				}
 				s.Body, _ = json.Marshal(body)
 			}
-			if e = validateBodySchema(doc, def, s.Body); e != nil {
-				failed(s.ID, e)
+			if e = validateMCPPermissions(s.Command, s.Body); e != nil {
+				failed(s.ID, e, false)
 				continue
 			}
-			rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "valid", "write_executed": false})
+			if e = validateBodySchema(doc, def, s.Body); e != nil {
+				failed(s.ID, e, false)
+				continue
+			}
+			rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "valid", "path_query_validation": parameterStatus, "write_executed": false})
 		}
-		data := map[string]any{"manifest_hash": d.Hash(), "schema_sha256": schemaDigest(doc), "operations": rows, "complete": complete, "authorization": "not_evaluated", "path_query_validation": "not_evaluated", "executed": false}
+		parameterStatus := "not_evaluated"
+		if a.ValidateParameters {
+			parameterStatus = "per_operation"
+		}
+		data := map[string]any{"manifest_hash": d.Hash(), "schema_sha256": schemaDigest(doc), "operations": rows, "complete": complete, "authorization": "not_evaluated", "validation_direction": "request", "path_query_validation": parameterStatus, "executed": false}
 		if requireComplete && !complete && failure == nil {
-			failure = output.New(9, "dependency body schemas require execution results before complete validation")
+			failure = output.New(9, "dependency results or protected credentials require apply before complete validation")
 		}
 		if failure != nil {
 			return &preflightFailure{Data: data, Cause: failure}

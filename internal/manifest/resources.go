@@ -11,7 +11,7 @@ import (
 type ResourceDocument struct {
 	SchemaVersion string     `json:"schema_version"`
 	Workspace     string     `json:"workspace_id,omitempty"`
-	Project       string     `json:"project_id"`
+	Project       string     `json:"project_id,omitempty"`
 	Resources     []Resource `json:"resources"`
 }
 type Resource struct {
@@ -25,6 +25,7 @@ type Resource struct {
 	IfMatch    string            `json:"if_match,omitempty"`
 }
 type Kind struct {
+	Scope       string            `json:"scope"`
 	ParentKinds map[string]string `json:"parent_kinds,omitempty"`
 	Name        string            `json:"kind"`
 	Create      string            `json:"create_command,omitempty"`
@@ -34,7 +35,12 @@ type Kind struct {
 
 // Only verified configuration routes belong here. No inferred upsert, publication or secrets.
 func Kinds() []Kind {
-	return []Kind{{Name: "Agent", Create: "project agent create", Update: "project agent update", Parents: []string{}}, {Name: "Network", Create: "project network create", Update: "project network update", Parents: []string{}}, {Name: "AgentPrompt", Create: "project agent prompt create", Parents: []string{"agent"}, ParentKinds: map[string]string{"agent": "Agent"}}, {Name: "AgentContract", Create: "project agent contract create", Update: "project agent contract update", Parents: []string{"agent"}, ParentKinds: map[string]string{"agent": "Agent"}}, {Name: "AgentModelConfig", Create: "project agent model-config create", Parents: []string{"agent"}, ParentKinds: map[string]string{"agent": "Agent"}}, {Name: "Project", Update: "project update", Parents: []string{}}, {Name: "Tool", Create: "project tool create", Update: "project tool update", Parents: []string{}}, {Name: "KnowledgeCollection", Create: "project knowledge collection create", Update: "project knowledge collection update", Parents: []string{}}, {Name: "KnowledgeDocument", Create: "project knowledge document create", Parents: []string{}}, {Name: "Skill", Create: "project skill create", Parents: []string{}}, {Name: "SkillVersion", Create: "project skill version create", Parents: []string{"skill"}, ParentKinds: map[string]string{"skill": "Skill"}}, {Name: "ChatSurface", Create: "project surface create", Update: "project surface update", Parents: []string{}}, {Name: "NetworkDraft", Update: "project network draft update", Parents: []string{}}}
+	kinds := []Kind{{Name: "Agent", Create: "project agent create", Update: "project agent update", Parents: []string{}}, {Name: "Network", Create: "project network create", Update: "project network update", Parents: []string{}}, {Name: "AgentPrompt", Create: "project agent prompt create", Parents: []string{"agent"}, ParentKinds: map[string]string{"agent": "Agent"}}, {Name: "AgentContract", Create: "project agent contract create", Update: "project agent contract update", Parents: []string{"agent"}, ParentKinds: map[string]string{"agent": "Agent"}}, {Name: "AgentModelConfig", Create: "project agent model-config create", Parents: []string{"agent"}, ParentKinds: map[string]string{"agent": "Agent"}}, {Name: "Project", Update: "project update", Parents: []string{}}, {Name: "Tool", Create: "project tool create", Update: "project tool update", Parents: []string{}}, {Name: "KnowledgeCollection", Create: "project knowledge collection create", Update: "project knowledge collection update", Parents: []string{}}, {Name: "KnowledgeDocument", Create: "project knowledge document create", Parents: []string{}}, {Name: "Skill", Create: "project skill create", Parents: []string{}}, {Name: "SkillVersion", Create: "project skill version create", Parents: []string{"skill"}, ParentKinds: map[string]string{"skill": "Skill"}}, {Name: "ChatSurface", Create: "project surface create", Update: "project surface update", Parents: []string{}}, {Name: "NetworkDraft", Update: "project network draft update", Parents: []string{}}}
+	for i := range kinds {
+		kinds[i].Scope = "project"
+	}
+	kinds = append(kinds, Kind{Name: "AuthorityCategory", Scope: "workspace", Create: "workspace authority category create", Update: "workspace authority category update", Parents: []string{}})
+	return kinds
 }
 
 var resourceReference = regexp.MustCompile(`^\$\{resources\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_.-]+)\}$`)
@@ -83,8 +89,8 @@ func parseResources(b []byte) (Document, error) {
 }
 func (d ResourceDocument) Compile() (Document, error) {
 	out := Document{SchemaVersion: "1", Workspace: d.Workspace, Project: d.Project, SourceVersion: "2"}
-	if d.SchemaVersion != "2" || d.Project == "" || len(d.Resources) == 0 || len(d.Resources) > 1000 {
-		return out, fmt.Errorf("resource manifest requires schema_version 2, project_id and 1 to 1000 resources")
+	if d.SchemaVersion != "2" || len(d.Resources) == 0 || len(d.Resources) > 1000 {
+		return out, fmt.Errorf("resource manifest requires schema_version 2 and 1 to 1000 resources")
 	}
 	declared := map[string]string{}
 	for _, r := range d.Resources {
@@ -101,6 +107,12 @@ func (d ResourceDocument) Compile() (Document, error) {
 		k, ok := catalog[r.Kind]
 		if !ok {
 			return out, fmt.Errorf("unsupported resource kind %s", r.Kind)
+		}
+		if k.Scope == "workspace" && d.Workspace == "" {
+			return out, fmt.Errorf("workspace_id required for %s", r.Kind)
+		}
+		if k.Scope == "project" && d.Project == "" {
+			return out, fmt.Errorf("project_id required for %s", r.Kind)
 		}
 		if r.Kind == "Project" && r.ResourceID != d.Project {
 			return out, fmt.Errorf("Project resource_id must equal document project_id")
@@ -163,6 +175,15 @@ func (d ResourceDocument) Compile() (Document, error) {
 		if e := dec.Decode(&spec); e != nil || spec == nil {
 			return out, fmt.Errorf("resource spec must be an object")
 		}
+		if r.Kind == "AuthorityCategory" {
+			if e := ValidateCategorySpec(spec, r.Action == "create"); e != nil {
+				return out, e
+			}
+			if r.Action == "update" && r.IfMatch == "" {
+				return out, fmt.Errorf("category update requires explicit if_match")
+			}
+		}
+
 		if scope, ok := spec["project_id"]; ok && scope != d.Project {
 			return out, fmt.Errorf("resource project_id differs from document scope")
 		}
@@ -181,4 +202,18 @@ func (d ResourceDocument) Compile() (Document, error) {
 	}
 	_, e := out.Order()
 	return out, e
+}
+
+// ValidateCategorySpec excludes assignment, identity and lifecycle fields from imports.
+func ValidateCategorySpec(spec map[string]any, create bool) error {
+	allowed := map[string]bool{"name": true, "description": true, "permissions": true, "conditions": true, "catalog_revision": true}
+	if create {
+		allowed["scope"] = true
+	}
+	for field := range spec {
+		if !allowed[field] {
+			return fmt.Errorf("category spec field %s is not configuration", field)
+		}
+	}
+	return nil
 }

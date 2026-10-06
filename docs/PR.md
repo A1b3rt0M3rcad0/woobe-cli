@@ -1,11 +1,9 @@
-# Title
+# Pagination continuation
 
-ci: publish verified distribution artifacts and exercise native CLI binaries
+The client previously traversed advertised next links but did not consume the actual cursor/revision metadata returned by Woobe. Reviewed body pagination now supports category list/history/audit and Agent sessions, with --all, explicit continuation and collection evidence. Filters, scopes and credentials remain fixed; bounds and failures preserve partial data, with secrets redacted in JSON and table output.
 
-# Description
+Two client commits deliver the implementation, 17 regression tests, native pagination smoke and current backend-aware documentation/audit. CLI code `659baea23458380b84bc7059d2a544c9c06fc1f5` passed all six jobs in run 37385398090, including packaged binaries on Linux/macOS/Windows. Local race/vet/module/fuzz checks passed; total coverage is 79.1%.
 
-The old workflow cross-built executables but left complete distribution archive verification local. CI now packages all six Linux/macOS/Windows amd64/arm64 targets, verifies source identity/content/checksums, and downloads the same artifacts for native executable smoke on three hosted OS runners. An aggregate check requires tests, packages and all native smoke instances to succeed, including refusal of cancelled/skipped prerequisites. Evidence files are stored in Actions with finite retention.
+Two backend commits in existing PR #177 pin that client and validate all four pagination endpoints against live API/workers/persistence. Agent session GET now requires run:read with owning-Project and effective environment/target conditions. Required live CLI tests passed at backend `8ab9d13953c1cd77462af85a3a3a957395141edc`; final workflow evidence is maintained in the PR.
 
-The native checks validate embedded build identity, essential discovery commands, both manifest schemas, local resource validation and malformed-input exit behavior. They do not certify keychains, real Woobe authorization/runtime or every native architecture. Development CI builds do not publish tags/releases.
-
-PRs #1–#6 are merged into master. This continuation also reconciles the README completeness count and records the workflow/remote artifact contract in CI.md. The full plan remains 39/101 deliveries (38.6%); real-server phase acceptance remains 0/10. Exact CI run results are reported in the GitHub PR metadata.
+No new PR or merge is created by this continuation. Backend PR #177 remains draft for user approval. Native credentials, complete declarative reconciliation, full schema coverage and stream recovery remain; this is not a complete CLI release.

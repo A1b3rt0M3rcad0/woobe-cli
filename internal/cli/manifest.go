@@ -20,6 +20,9 @@ func (a *App) readManifest() (manifest.Document, error) {
 }
 func (a *App) validateManifest(d manifest.Document) error {
 	for _, s := range d.Steps {
+		if len(stepSecretNames(s)) > 0 && !secretConfigurationCommand(s.Command) {
+			return output.New(2, "protected references are supported only for Tool and provider credential configuration")
+		}
 		var found *Operation
 		for _, op := range a.Registry {
 			if op.Command == s.Command {
@@ -31,7 +34,16 @@ func (a *App) validateManifest(d manifest.Document) error {
 		if found == nil || found.Kind != "http" {
 			return output.New(2, "unknown manifest operation: "+s.Command)
 		}
-		if found.Status == "proposed" {
+		category := found.Command == "workspace authority category create" || found.Command == "workspace authority category update"
+		if category {
+			if d.Workspace == "" {
+				return output.New(2, "category manifest requires workspace_id")
+			}
+			if found.Method == "PATCH" && s.IfMatch == "" {
+				return output.New(2, "category update requires explicit if_match")
+			}
+		}
+		if found.Status == "proposed" && !category {
 			return output.New(9, "manifest uses absent server extension")
 		}
 		if found.Method == "GET" || found.Method == "HEAD" {
@@ -47,6 +59,15 @@ func (a *App) validateManifest(d manifest.Document) error {
 			var obj map[string]any
 			if json.Unmarshal(s.Body, &obj) != nil || obj == nil {
 				return output.New(2, "manifest configuration body must be an object")
+			}
+		}
+		if category && len(s.Body) > 0 {
+			var spec map[string]any
+			if e := json.Unmarshal(s.Body, &spec); e != nil {
+				return output.New(2, "invalid category definition")
+			}
+			if e := manifest.ValidateCategorySpec(spec, found.Method == "POST"); e != nil {
+				return output.New(2, e.Error())
 			}
 		}
 		if found.Body && len(s.Body) == 0 {

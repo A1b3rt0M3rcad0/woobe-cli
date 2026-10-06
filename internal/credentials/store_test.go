@@ -3,6 +3,7 @@ package credentials
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -23,6 +24,20 @@ func TestPrivateReferences(t *testing.T) {
 	v, e := s.Get("fixture")
 	if e != nil || v != "secret" {
 		t.Fatal(v, e)
+	}
+}
+func TestCredentialBounds(t *testing.T) {
+	s := Store{Dir: t.TempDir()}
+	for _, value := range []string{"", "  ", strings.Repeat("x", 65537)} {
+		if s.Put("bad", value) == nil {
+			t.Fatal("accepted invalid credential")
+		}
+		if e := os.WriteFile(filepath.Join(s.Dir, "bad.json"), []byte(value), 0600); e != nil {
+			t.Fatal(e)
+		}
+		if _, e := s.Get("bad"); e == nil {
+			t.Fatal("read invalid credential")
+		}
 	}
 }
 func TestSymlinkAndPublicFilesRejected(t *testing.T) {

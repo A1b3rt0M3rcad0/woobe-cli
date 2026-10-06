@@ -3,11 +3,15 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/schemacheck"
 )
 
 func validateBodySchema(doc, def map[string]any, b []byte) error {
+	if e := validateSchemaDialect(doc); e != nil {
+		return e
+	}
 	body, ok := def["requestBody"]
 	if !ok {
 		if b == nil {
@@ -44,13 +48,16 @@ func validateBodySchema(doc, def map[string]any, b []byte) error {
 	if !ok {
 		return output.New(9, "operation has no application/json schema")
 	}
+	if e := jsoninput.Validate(b); e != nil {
+		return output.New(2, "invalid or ambiguous JSON body")
+	}
 	var value any
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.UseNumber()
 	if e := d.Decode(&value); e != nil {
 		return output.New(2, "invalid JSON body")
 	}
-	if e := schemacheck.Check(schema, value, doc); e != nil {
+	if e := schemacheck.CheckRequest(schema, value, doc); e != nil {
 		return schemaError(e)
 	}
 	return nil

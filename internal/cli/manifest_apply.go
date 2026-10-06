@@ -11,6 +11,7 @@ import (
 )
 
 type checkpoint struct {
+	SecretFingerprints    map[string]string         `json:"secret_fingerprints,omitempty"`
 	CredentialFingerprint string                    `json:"credential_fingerprint,omitempty"`
 	Hash                  string                    `json:"manifest_hash"`
 	Origin                string                    `json:"api_url"`
@@ -57,11 +58,27 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 		if e != nil {
 			return e
 		}
+		secretValues, secretHashes := map[string]string{}, map[string]string{}
+		if !a.DryRun {
+			for _, step := range d.Steps {
+				if skipUnchanged && len(stepSecretNames(step)) > 0 {
+					return notAttempted(output.New(9, "skip-unchanged cannot compare protected credential values"))
+				}
+			}
+			secretValues, secretHashes, e = a.manifestSecretSnapshot(d)
+			if e != nil {
+				return notAttempted(e)
+			}
+		}
 		cp := checkpoint{CredentialFingerprint: fingerprint, Hash: d.Hash(), Origin: v.APIURL, Workspace: v.Workspace, Project: v.Project, Credential: v.Credential, Steps: map[string]string{}, Results: map[string]any{}}
+		cp.SecretFingerprints = secretHashes
 		if b, err := readCheckpoint(path); err == nil {
 			old, err := parseCheckpoint(b)
 			if err != nil {
 				return output.New(2, "invalid checkpoint")
+			}
+			if !a.DryRun && !sameSecretSnapshot(old.SecretFingerprints, cp.SecretFingerprints) {
+				return output.New(6, "checkpoint protected credential values changed")
 			}
 			if old.Hash != cp.Hash || old.Origin != cp.Origin || old.Workspace != cp.Workspace || old.Project != cp.Project || old.Credential != cp.Credential || old.CredentialFingerprint != cp.CredentialFingerprint {
 				return output.New(6, "checkpoint belongs to another plan or context")
@@ -84,7 +101,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			return a.emit(map[string]any{"manifest_hash": d.Hash(), "checkpoint": cp, "executed": false, "validation": "local_plan_only"})
 		}
 		var schemaDoc map[string]any
-		if a.ValidateBody {
+		if a.ValidateBody || a.ValidateParameters {
 			schemaDoc, e = a.loadServerSchema(cmd.Context())
 			if e != nil {
 				return notAttempted(e)
@@ -103,11 +120,28 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			if e != nil {
 				return stopBeforeWrite(path, cp, s.ID, output.New(2, e.Error()))
 			}
+			s, e = resolveStepSecrets(s, secretValues)
+			if e != nil {
+				return stopBeforeWrite(path, cp, s.ID, e)
+			}
+			if e = validateMCPPermissions(s.Command, s.Body); e != nil {
+				return stopBeforeWrite(path, cp, s.ID, e)
+			}
 			if a.ValidateBody {
 				op, _ := a.operation(s.Command)
 				def, e := operationDefinition(schemaDoc, op)
 				if e == nil {
 					e = validateBodySchema(schemaDoc, def, s.Body)
+				}
+				if e != nil {
+					return stopBeforeWrite(path, cp, s.ID, e)
+				}
+			}
+			if a.ValidateParameters {
+				op, _ := a.operation(s.Command)
+				values, query, e := a.manifestParameterValues(op, s)
+				if e == nil {
+					e = validateOperationParameters(schemaDoc, op, values, query)
 				}
 				if e != nil {
 					return stopBeforeWrite(path, cp, s.ID, e)
@@ -156,6 +190,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 				args = append(args, "--if-match", s.IfMatch)
 			}
 			code := child.Execute(cmd.Context(), args)
+			childOut = bytes.NewBuffer(scrubSecretJSON(childOut.Bytes(), secretValues))
 			if code != 0 {
 				cp.Steps[s.ID] = "unknown"
 				var env output.Envelope

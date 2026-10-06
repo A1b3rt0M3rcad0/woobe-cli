@@ -15,6 +15,6 @@ func (a *App) manifestCompileCommands(g *cobra.Command) {
 		if e = a.validateManifest(d); e != nil {
 			return e
 		}
-		return a.emit(map[string]any{"document": d, "manifest_hash": d.Hash(), "source_schema_version": d.Version(), "authorization": "not_evaluated", "executed": false})
+		return a.emitManifestPlan(map[string]any{"document": d, "manifest_hash": d.Hash(), "source_schema_version": d.Version(), "authorization": "not_evaluated", "executed": false})
 	}})
 }

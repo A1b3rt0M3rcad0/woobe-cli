@@ -73,6 +73,12 @@ func (a *App) readResource(ctx context.Context, op Operation, args []string) (an
 	if op.Kind != "http" || op.Method != "GET" || len(args) != len(op.Params) {
 		return nil, nil, output.New(2, "read operation and exact resource arguments required")
 	}
+	return a.readResourceQuery(ctx, op, args, nil)
+}
+func (a *App) readResourceQuery(ctx context.Context, op Operation, args []string, query url.Values) (any, map[string]string, error) {
+	if op.Kind != "http" || op.Method != "GET" || len(args) != len(op.Params) {
+		return nil, nil, output.New(2, "read operation and exact resource arguments required")
+	}
 	c, e := a.client()
 	if e != nil {
 		return nil, nil, e
@@ -93,6 +99,9 @@ func (a *App) readResource(ctx context.Context, op Operation, args []string) (an
 		path = strings.ReplaceAll(path, "{"+p+"}", url.PathEscape(args[i]))
 	}
 	q := url.Values{}
+	for name, values := range query {
+		q[name] = append([]string(nil), values...)
+	}
 	if op.QueryScope != "" {
 		id := a.Project
 		if op.QueryScope == "workspace_id" {
@@ -148,6 +157,11 @@ func (a *App) manifestDiff(ctx context.Context, d manifest.Document) ([]map[stri
 		if e != nil {
 			return nil, e
 		}
+		if s.Command == "workspace authority category update" {
+			if e := verifyCategoryObservation(current, meta, a.Workspace, s.Args[0]); e != nil {
+				return nil, e
+			}
+		}
 		if s.IfMatch != "" && meta["etag"] == "" {
 			return nil, output.New(9, "resource diff cannot verify if_match without an observed ETag")
 		}
@@ -163,7 +177,7 @@ func (a *App) manifestDiff(ctx context.Context, d manifest.Document) ([]map[stri
 			if e != nil {
 				return nil, e
 			}
-			changes, e := fieldChanges(current, desired)
+			changes, e := configurationChanges(s.Command, current, desired)
 			if e != nil {
 				return nil, e
 			}

@@ -45,12 +45,36 @@ type Envelope struct {
 }
 
 func Write(w io.Writer, mode string, data any, scope map[string]string, err error) error {
+	return WriteWithMeta(w, mode, data, scope, err, nil)
+}
+
+// WriteWithMeta adds collection evidence independently of command success.
+func WriteWithMeta(w io.Writer, mode string, data any, scope map[string]string, err error, meta map[string]any) error {
+	if meta != nil {
+		meta = Redact(meta).(map[string]any)
+	}
 	if mode == "table" {
+		if len(meta) > 0 {
+			if err != nil {
+				meta["complete"] = false
+			}
+			data = map[string]any{"response": data, "pagination": meta}
+			if e := renderTable(w, data, nil); e != nil {
+				return e
+			}
+			if err == nil {
+				return nil
+			}
+		}
 		return renderTable(w, data, err)
 	}
 	e := Envelope{SchemaVersion: "1", Success: err == nil, Context: scope, Data: data, Meta: map[string]any{"complete": err == nil}}
+	for key, value := range meta {
+		e.Meta[key] = value
+	}
 	if err != nil {
 		e.Error = Normalize(err)
+		e.Meta["complete"] = false
 	}
 	enc := json.NewEncoder(w)
 	if mode != "table" && mode != "json" && mode != "jsonl" {

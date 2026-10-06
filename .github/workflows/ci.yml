@@ -2,24 +2,45 @@ name: CLI
 on:
   pull_request:
   push:
-    branches: [master, 'feat/**', 'docs/**']
+    branches: ['feat/**', 'docs/**']
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      revision:
+        description: Exact reviewed source commit to validate
+        type: string
+        required: false
+        default: ''
+      version:
+        description: Exact version to package for a release
+        type: string
+        required: false
+        default: ''
+    outputs:
+      artifact_id:
+        value: ${{ jobs.package.outputs.artifact_id }}
+      manifest_sha256:
+        value: ${{ jobs.package.outputs.manifest_sha256 }}
 permissions:
   contents: read
 concurrency:
   group: cli-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ inputs.version == '' && github.event_name != 'workflow_dispatch' }}
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision || github.sha }}
       - uses: actions/setup-go@v5
         with:
           go-version: '1.27.1'
           cache: true
       - run: test -z "$(gofmt -l cmd internal)"
+      - run: python3 scripts/version.py
+      - run: python3 -m unittest discover -s scripts/tests
       - run: python3 scripts/completeness.py
       - run: go mod verify
       - run: go vet ./...
@@ -36,20 +57,30 @@ jobs:
             coverage.out
             discovery.json
   package:
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
+      manifest_sha256: ${{ steps.identity.outputs.manifest_sha256 }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision || github.sha }}
       - uses: actions/setup-go@v5
         with:
           go-version: '1.27.1'
           cache: true
       - name: Build six versioned archives
+        env:
+          CLI_PACKAGE_VERSION: ${{ inputs.version }}
         shell: bash
-        run: bash scripts/package.sh "0.0.0-ci.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+        run: bash scripts/package.sh "${CLI_PACKAGE_VERSION:-0.0.0-ci.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}}"
       - name: Verify archives and source identity
-        run: python3 scripts/verify_artifacts.py --commit "$GITHUB_SHA"
+        run: python3 scripts/verify_artifacts.py --commit "$(git rev-parse HEAD)"
+      - id: identity
+        run: echo "manifest_sha256=$(sha256sum dist/artifacts.json | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
+        id: upload
         with:
           name: woobe-distribution
           if-no-files-found: error
@@ -69,22 +100,26 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
         with:
-          name: woobe-distribution
+          ref: ${{ inputs.revision || github.sha }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          artifact-ids: ${{ needs.package.outputs.artifact_id }}
+          merge-multiple: true
           path: dist
       - name: Verify downloaded archives
         shell: bash
-        run: python scripts/verify_artifacts.py --commit "$GITHUB_SHA"
+        run: python scripts/verify_artifacts.py --commit "$(git rev-parse HEAD)"
       - name: Exercise packaged native executable
         shell: bash
-        run: python scripts/smoke_artifacts.py --commit "$GITHUB_SHA" --report native-smoke.json
+        run: python scripts/smoke_artifacts.py --commit "$(git rev-parse HEAD)" --report native-smoke.json
       - uses: actions/upload-artifact@v4
         with:
           name: native-smoke-${{ matrix.runner }}
           if-no-files-found: error
           retention-days: 90
-          path: native-smoke.json
+          path: |
+            native-smoke.json
   ci:
     if: always()
     needs: [test, package, native-smoke]

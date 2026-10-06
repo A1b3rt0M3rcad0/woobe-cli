@@ -123,7 +123,11 @@ woobe manifest status --checkpoint ./apply-checkpoint.json
 woobe doctor
 ```
 
-`validate-input` sends only an OpenAPI GET; it does not submit the supplied body. It supports object/array/primitive types, required/properties/additionalProperties, sizes, enum/const, numeric bounds with exact rationals, RE2-compatible patterns, local references and composition. Unsupported assertions (including format), external references and excessive schema depth return exit 9. Domain validation and authorization still occur on the server. Validation is explicit; writes do not silently add schema-fetch requirements.
+`validate-input` sends only an OpenAPI GET; it does not submit the supplied body. It supports object/array/primitive types, required/properties/additionalProperties, sizes, enum/const, numeric bounds with exact rationals, RE2-compatible patterns, local references and composition. Formats `uuid` (canonical hyphenated hex, case insensitive), `date` (valid full calendar date) and `date-time` (RFC 3339, required offset, fractions and leap-second minute checks) are validated. Other formats, unsupported assertions, external references and excessive schema depth return exit 9. Advertised OpenAPI versions must be 3.1.0–3.1.2; unknown or 3.0 dialects are refused instead of interpreted as 3.1. An absent version retains the existing explicit subset. Legacy `nullable` is refused in explicitly advertised 2020-12/OpenAPI 3.1 schemas, including unused properties; use a type union or anyOf with null. `$schema` and `jsonSchemaDialect`, when provided, must select JSON Schema 2020-12 or the OpenAPI 3.1 base dialect.
+
+Body validation applies **request direction**: a supplied `readOnly` field returns exit 2, including fields reached through references, `allOf`, nested objects and array items. Required read-only properties in the same object schema can be omitted; annotation lookup follows local references and `allOf` under that property's schema. `writeOnly` fields remain permitted and retain required/type rules. Contradictory annotations and direction annotations inside predicates (`not`, `if`, `contains`, `propertyNames`) return exit 9. Arbitrary cross-branch required/annotation projection is not inferred. Neutral internal schema checks retain their required semantics.
+
+The same checks run in `validate-input`, `manifest preflight`, opt-in HTTP writes and opt-in manifest apply, after dependency values resolve. Invalid inputs stop before mutation and preserve `not_attempted` recovery evidence. Success reports request direction and explicitly leaves path/query validation unevaluated. The shared body validator also rejects duplicate fields, multiple JSON values and excessive input depth. Domain validation and authorization still occur on the server. Validation is explicit; writes do not silently add schema-fetch requirements.
 
 JSON inputs reject duplicate fields, more than one value and nesting beyond 128. Manifests require object configuration bodies, exclude read steps and literal sensitive fields (including credential `value`), and reject duplicate/self dependencies. IDs match `[a-zA-Z0-9_-]{1,128}`. Canonical hashing ignores object-key order/formatting and preserves array order, null and numeric values. Updated hash/fingerprint rules can reject old checkpoints; preserve them for manual reconciliation instead of deleting/replaying.
 
@@ -185,7 +189,7 @@ woobe request-pages /ai/agents --query project_id=PROJECT --max-pages 20
 
 O catálogo v2 agora contém 13 tipos: Agent, Network, AgentPrompt, AgentContract, AgentModelConfig, NetworkDraft, Project, Tool, KnowledgeCollection, KnowledgeDocument, Skill, SkillVersion e ChatSurface. Project aceita apenas update e o ID deve ser o Project do documento. SkillVersion exige parent `skill` e referências de IDs do tipo Skill. As demais ações e campos seguem `manifest kinds` e o schema distribuído; não há emissão declarativa de credenciais ou categorias propostas.
 
-`request-pages` usa somente GET e segue `Link: <...>; rel="next"`. Limites: 1–100 páginas e 64 MiB acumulados. Origem, rota e filtros iniciais terminados em `_id` devem permanecer iguais; ciclos, múltiplos next e destinos externos são recusados. Páginas são mantidas em seus envelopes, com segredos mascarados na saída. `traversal_complete` significa somente que não há próximo link anunciado a partir da página selecionada; `collection_complete:"not_verified"` impede afirmar uma enumeração total ou inferir protocolos de cursor. Falhas após páginas recebidas preservam os dados com exit 10; interrupção/deadline preservam 130/8.
+`request-pages` e os comandos paginados suportam contratos revisados de cursor e histórico, além de Link. Use `--all`, `--limit`, `--cursor` ou `--before-revision` conforme o comando. A saída informa coleção inteira, páginas restantes, parcial ou não verificada; falhas preservam páginas recebidas. Consulte [PAGINATION.md](PAGINATION.md) para protocolos, limites, metadados e exemplos.
 
 Falhas de apply agora incluem checkpoint, contagens por estado, etapa interrompida e `checkpoint_saved`. A ausência de persistência é explícita; uma resposta de sucesso não autoriza repetir uma criação. Binários empacotados incluem a revisão fonte em `version`, junto de compilador/OS/arquitetura.
 
@@ -227,3 +231,126 @@ HTTP responses reject duplicate fields/nesting ambiguity. Canonical resource IDs
 The default administrative transport pools read connections but sends mutations over fresh HTTP/1 connections with replay disabled, including requests carrying Idempotency-Key. This trades write connection reuse for predictable single-attempt behavior; idempotency remains a server feature, not a retry instruction. Runtime SDK calls inherit this HTTP client. Replacing the HTTP transport in an embedding application requires preserving this guarantee explicitly. Checkpoint writes also enforce 32 MiB before replacing an existing file; a committed remote write followed by a failed checkpoint save remains a partial outcome requiring recovery.
 
 State comparisons in `manifest diff`, `apply --skip-unchanged` and `reconcile` use exact decimal JSON number semantics: `1`, `1.0` and `1e0` are equal, including inside supplied objects/arrays. Large integers remain distinct without conversion to floating point. Array order, missing fields, explicit nulls and string/number types remain significant. Nested supplied objects are compared in full; this is not a recursive partial PATCH interpretation. Comparison shares a 100,000-node budget across supplied fields, supports depth 128 and numbers of at most 4096 characters with exponent magnitude at most 4096. Unsupported comparisons return exit 9; they never justify an unchanged checkpoint or reconciliation. Expected `if_match` in diff also requires an observed matching ETag. These observations do not lock subsequent server state or establish original-write attribution.
+
+## Advertised path/query validation
+
+`--validate-parameters` validates the selected canonical HTTP operation's path
+and query values against its advertised OpenAPI 3.1 schema before the operation.
+It can be combined with `--validate-body` for writes; neither changes authority.
+Dry-run remains network-free and performs neither advertised validation.
+
+```sh
+woobe project agent update AGENT_UUID --file agent.json --validate-body --validate-parameters
+woobe runtime agent sessions AGENT_UUID --project PROJECT_UUID --query environment=staging --limit 1 --all --validate-parameters
+woobe validate-input --command 'project agent get' --validate-parameters --path-param agent_id=AGENT_UUID
+woobe manifest preflight --file resources.json --validate-parameters --require-complete
+woobe manifest apply --file resources.json --checkpoint apply.json --yes --validate-body --validate-parameters
+```
+
+Parameter-only `validate-input` does not require a body and explicitly reports
+`body_validation: not_evaluated`. The parameter subset supports strings,
+UUID/date/date-time formats, exact JSON numbers, booleans and form arrays
+(repeated values for explode=true; one comma-separated value for explode=false).
+Path-level parameters are replaced by operation-level declarations with the
+same name/location. Local references and unambiguous nullable/composed primitive
+types are supported. Canonical/server template names may differ when method and
+literal path segments match exactly and identify only one advertised route.
+
+Missing required parameters, duplicate scalar values and invalid values return
+exit 2. Unadvertised parameters, unsupported serialization/types/dialects and
+ambiguous templates return exit 9. Header/cookie schemas and authorization are
+not evaluated by this flag. Schema digests can pin the discovery snapshot.
+
+Manifest apply validates resolved parameters before recording an in-flight
+write; failures retain `not_attempted` checkpoints. Preflight defers parameters
+that depend on prior step results and records parameter/body evidence separately.
+Manifest parameter validation uses each operation's context-derived query scope;
+global `--query` overrides are refused because they are not propagated to steps.
+Unknown server query keys are never approved by guessing their semantics.
+
+
+## Workspace category definitions
+
+`AuthorityCategory` is a Workspace-owned resource kind. A category-only resource
+manifest requires `workspace_id`; `project_id` is optional. Mixed documents still
+require the owning scope of every kind. Creating a definition does not issue keys
+or assign authority. Editing a definition requires an explicit ID and strong
+`if_match`; it does not migrate existing grants to the new revision.
+
+```json
+{
+  "schema_version": "2",
+  "workspace_id": "WORKSPACE_UUID",
+  "resources": [{
+    "key": "reader", "kind": "AuthorityCategory", "action": "create",
+    "spec": {"name": "custom-reader", "scope": "project", "permissions": ["agent:read"]}
+  }]
+}
+```
+
+```sh
+woobe manifest preflight --workspace WORKSPACE_UUID --file category.json --validate-parameters --require-complete
+woobe manifest apply --workspace WORKSPACE_UUID --file category.json --checkpoint category.checkpoint.json --validate-body --validate-parameters --yes
+woobe workspace authority category diff CATEGORY_UUID --workspace WORKSPACE_UUID --from-revision 1 --to-revision 2
+woobe manifest capture --kind AuthorityCategory --id CATEGORY_UUID --workspace WORKSPACE_UUID --field name --field permissions --destination category-edit.json
+```
+
+The diff reads exactly the two selected immutable definitions and reports supplied
+configuration fields. It does not calculate every affected assignment or apply a
+migration. `--dry-run` reports that comparison was not evaluated and performs no
+network requests. Permission/condition order does not create a change; an absent
+restriction and an empty restrictive set remain distinct. Unknown condition
+semantics are unsupported rather than silently compared as understood authority.
+
+Capture copies only selected fields and the observed ETag. Category specs exclude
+assignment, grant, identity, status and revision fields; scope is immutable during
+update. Server OpenAPI advertisement is checked before category writes. A saved
+successful checkpoint resumes without another create; a lost checkpoint does not
+make category creation idempotent or infer existence by name. Full uncertain-write
+reconciliation and applied-category grant migration remain incomplete.
+
+## Protected manifest credentials
+
+Sensitive values may use an exact object `{"$secret_ref":"NAME"}` in Tool or
+provider-credential configuration. Import the value with `woobe auth credential import
+--name NAME --stdin < PRIVATE_INPUT` first; lookup uses the protected store beside the
+selected config. The delivered provider is the POSIX private-file store. Windows
+returns unsupported; native keychains remain a separate pending qualification.
+Environment-variable interpolation, prefixes, remote stores and step-result
+secrets are not supported. The stored value is the complete field value.
+
+```json
+{"schema_version":"1","project_id":"PROJECT_UUID","steps":[
+  {"id":"provider","command":"project provider-credential create","body":{
+    "project_id":"PROJECT_UUID","provider":"custom","name":"Provider",
+    "secret":{"$secret_ref":"provider-secret"},"metadata":{}}}
+]}
+```
+
+Compile and plan preserve reference markers without resolving them. Preflight
+reports `deferred_protected_credential`; `--require-complete` refuses that deferred
+state. Apply resolves a private in-memory snapshot, then validates the wire body
+when `--validate-body` is selected. Checkpoints bind reference names to value
+fingerprints and contain no resolved values. Changed, unavailable or added
+credentials refuse resume before writes; use the original snapshot to finish an
+existing checkpoint. Dry-run does not resolve these values or save a checkpoint.
+
+Successful steps resume without another write. Uncertain protected writes remain
+uncertain: redacted getters cannot certify their secret values. Reconciliation
+and `--skip-unchanged` refuse them. Output and checkpoint results redact resolved
+values even when a response echoes them under an unrelated field. This does not
+make unsupported server creates idempotent after losing a checkpoint.
+
+## Canonical MCP permission inputs
+
+`project tool mcp set` and `bulk` always validate `allow`, `deny` or `review`, UUID
+provider identity, bounded names/list sizes, duplicate names, surrounding
+whitespace and unknown fields. This check also runs for dry-run, validate-input
+and resolved manifest writes; invalid inputs stop before writes. Server schemas
+remain optional additional validation and authorization remains on the backend.
+
+The backend rejects undiscovered remote tool names before applying any part of a
+selective update and requires a valid MCP discovery. Bulk affects only that
+provider's discovered tools. `review` keeps a tool unavailable; it does not create
+a per-call approval dialog. Rediscovery preserves saved modes by remote name and
+new tools start in review. Existing immutable release snapshots are unaffected.

@@ -37,3 +37,18 @@ func TestJSONPointerReferences(t *testing.T) {
 		}
 	}
 }
+
+func TestInlineDefinitionsWithDocumentRelativeReferences(t *testing.T) {
+	schema := map[string]any{"type": "object", "$defs": map[string]any{"Name": map[string]any{"type": "string", "minLength": float64(2)}}, "properties": map[string]any{"name": map[string]any{"$ref": "#/schema/$defs/Name"}}, "required": []any{"name"}}
+	doc := map[string]any{"openapi": "3.1.0", "schema": schema}
+	if e := CheckRequest(schema, map[string]any{"name": "ok"}, doc); e != nil {
+		t.Fatal(e)
+	}
+	if e := CheckRequest(schema, map[string]any{"name": "x"}, doc); e == nil {
+		t.Fatal("invalid definition value accepted")
+	}
+	schema["$defs"] = []any{}
+	if e := CheckRequest(schema, map[string]any{"name": "ok"}, doc); e == nil {
+		t.Fatal("invalid definitions accepted")
+	}
+}

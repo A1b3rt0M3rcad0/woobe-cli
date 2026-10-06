@@ -68,7 +68,7 @@ func (a *App) completeDiscovery() {
 					kind = "diagnostic-http"
 					effect = "read"
 					availability = "server-dependent"
-				case path == "manifest diff":
+				case path == "manifest diff" || path == "workspace authority category diff":
 					kind = "composition"
 					effect = "read"
 					availability = "server-dependent"

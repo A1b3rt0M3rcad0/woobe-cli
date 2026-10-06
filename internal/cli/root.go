@@ -29,6 +29,7 @@ type App struct {
 	ConfigPath, ContextName, APIURL, Workspace, Project, Credential, RuntimeCredential, Mode string
 	Timeout                                                                                  time.Duration
 	ValidateBody                                                                             bool
+	ValidateParameters                                                                       bool
 	Yes, DryRun, NoInput                                                                     bool
 	File, IfMatch, IdempotencyKey, SecretFile                                                string
 	Query                                                                                    []string
@@ -55,6 +56,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.BoolVar(&a.Yes, "yes", false, "Accept the specified destructive operation")
 	f.BoolVar(&a.NoInput, "no-input", false, "Deterministic execution (always enabled)")
 	f.StringVar(&a.SchemaSHA, "schema-sha256", "", "Expected advertised OpenAPI snapshot SHA-256 when validating bodies")
+	f.BoolVar(&a.ValidateParameters, "validate-parameters", false, "Validate advertised path and query schemas before a canonical HTTP operation")
 	f.BoolVar(&a.ValidateBody, "validate-body", false, "Validate the advertised request-body schema before a canonical write")
 	f.BoolVar(&a.DryRun, "dry-run", false, "Render the request without executing")
 	f.StringVar(&a.File, "file", "", "JSON input file, or - for stdin")
@@ -68,8 +70,14 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 			if len(a.SchemaSHA) != 64 || strings.Trim(a.SchemaSHA, "0123456789abcdef") != "" {
 				return output.New(2, "schema-sha256 must be 64 lowercase hexadecimal characters")
 			}
-			if !a.ValidateBody && path != "manifest preflight" && path != "validate-input" {
+			if !a.ValidateBody && !a.ValidateParameters && path != "manifest preflight" && path != "validate-input" {
 				return output.New(2, "schema-sha256 requires body validation")
+			}
+		}
+		if a.ValidateParameters {
+			op, ok := a.operation(path)
+			if !(path == "validate-input" || path == "manifest apply" || path == "manifest preflight" || ok && op.Kind == "http") {
+				return output.New(9, "--validate-parameters requires a canonical HTTP operation or manifest apply/preflight or validate-input")
 			}
 		}
 		if a.ValidateBody {
@@ -250,7 +258,13 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 		return a.emitManifestPartial(partial)
 	}
 	if partial, ok := e.(*partialPages); ok {
-		_ = output.Write(a.Out, a.Mode, output.Redact(partial.Data), nil, &output.Error{Code: partial.Code, Message: partial.Message})
+		cause := partial.Cause
+		failure := &output.Error{Code: partial.Code, Message: partial.Message}
+		if cause != nil {
+			failure.Status = cause.Status
+			failure.RequestID = cause.RequestID
+		}
+		_ = output.WriteWithMeta(a.Out, a.Mode, output.Redact(partial.Data), nil, failure, partial.Meta)
 		return partial.Code
 	}
 	if partial, ok := e.(*diagnosticPartial); ok {

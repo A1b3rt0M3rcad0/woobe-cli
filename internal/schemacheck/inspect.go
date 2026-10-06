@@ -2,7 +2,7 @@ package schemacheck
 
 import "encoding/json"
 
-func inspect(raw, doc any, p string, depth int, refs map[string]bool, budget *int) error {
+func inspect(raw, doc any, p string, depth int, refs map[string]bool, budget *int, request, predicate, modern bool) error {
 	if depth > 64 {
 		return unsupported(p, "schema depth exceeds 64")
 	}
@@ -17,6 +17,13 @@ func inspect(raw, doc any, p string, depth int, refs map[string]bool, budget *in
 	if !ok {
 		return unsupported(p, "schema must be object or boolean")
 	}
+	modern = modern || modernDialect(s)
+	if _, exists := s["nullable"]; exists && modern {
+		return unsupported(p, "legacy nullable is not supported in an advertised 2020-12 dialect")
+	}
+	if request && (s["readOnly"] == true && s["writeOnly"] == true || predicate && (s["readOnly"] == true || s["writeOnly"] == true)) {
+		return unsupported(p, "ambiguous request direction annotations")
+	}
 	if e := schemaHeader(s, p); e != nil {
 		return e
 	}
@@ -27,20 +34,34 @@ func inspect(raw, doc any, p string, depth int, refs map[string]bool, budget *in
 			}
 		}
 	}
-	if ref, ok := s["$ref"].(string); ok && !refs[ref] {
-		refs[ref] = true
+	if ref, ok := s["$ref"].(string); ok {
+		refKey := ref
+		if modern {
+			refKey = "modern:" + refKey
+		}
+		if predicate {
+			refKey = "predicate:" + refKey
+		}
+		if refs[refKey] {
+			return inspectSiblings(s, doc, p, depth, refs, budget, request, predicate, modern)
+		}
+		refs[refKey] = true
 		target, e := Resolve(doc, ref)
 		if e != nil {
 			return e
 		}
-		if e = inspect(target, doc, p, depth+1, refs, budget); e != nil {
+		if e = inspect(target, doc, p, depth+1, refs, budget, request, predicate, modern); e != nil {
 			return e
 		}
 	}
-	for _, k := range []string{"properties", "dependentSchemas", "patternProperties"} {
+	return inspectSiblings(s, doc, p, depth, refs, budget, request, predicate, modern)
+}
+
+func inspectSiblings(s map[string]any, doc any, p string, depth int, refs map[string]bool, budget *int, request, predicate, modern bool) error {
+	for _, k := range []string{"$defs", "properties", "dependentSchemas", "patternProperties"} {
 		if m, ok := s[k].(map[string]any); ok {
 			for name, sub := range m {
-				if e := inspect(sub, doc, p+"."+name, depth+1, refs, budget); e != nil {
+				if e := inspect(sub, doc, p+"."+name, depth+1, refs, budget, request, predicate, modern); e != nil {
 					return e
 				}
 			}
@@ -48,7 +69,7 @@ func inspect(raw, doc any, p string, depth int, refs map[string]bool, budget *in
 	}
 	for _, k := range []string{"items", "additionalProperties", "propertyNames", "contains", "not", "if", "then", "else"} {
 		if sub, ok := s[k]; ok {
-			if e := inspect(sub, doc, p, depth+1, refs, budget); e != nil {
+			if e := inspect(sub, doc, p, depth+1, refs, budget, request, predicate || k == "not" || k == "if" || k == "contains" || k == "propertyNames", modern); e != nil {
 				return e
 			}
 		}
@@ -56,7 +77,7 @@ func inspect(raw, doc any, p string, depth int, refs map[string]bool, budget *in
 	for _, k := range []string{"allOf", "anyOf", "oneOf", "prefixItems"} {
 		if a, ok := s[k].([]any); ok {
 			for _, sub := range a {
-				if e := inspect(sub, doc, p, depth+1, refs, budget); e != nil {
+				if e := inspect(sub, doc, p, depth+1, refs, budget, request, predicate, modern); e != nil {
 					return e
 				}
 			}

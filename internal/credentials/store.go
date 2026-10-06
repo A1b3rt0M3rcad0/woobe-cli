@@ -3,6 +3,7 @@ package credentials
 import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/config"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -32,11 +33,24 @@ func (s Store) Get(name string) (string, error) {
 	if e != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 {
 		return "", output.New(3, "credential file must be regular and private")
 	}
-	b, e := os.ReadFile(p)
+	f, e := os.Open(p)
 	if e != nil {
 		return "", output.New(3, "credential unavailable")
 	}
-	return strings.TrimSpace(string(b)), nil
+	defer f.Close()
+	opened, e := f.Stat()
+	if e != nil || !os.SameFile(info, opened) || !opened.Mode().IsRegular() || opened.Mode().Perm()&0077 != 0 || opened.Size() > 64<<10 {
+		return "", output.New(3, "credential file must be bounded regular and private")
+	}
+	b, e := io.ReadAll(io.LimitReader(f, 64<<10+1))
+	if e != nil {
+		return "", output.New(3, "credential unavailable")
+	}
+	v := strings.TrimSpace(string(b))
+	if len(b) > 64<<10 || v == "" {
+		return "", output.New(3, "credential unavailable")
+	}
+	return v, nil
 }
 func (s Store) Put(name, value string) error {
 	if runtime.GOOS == "windows" {
@@ -46,8 +60,8 @@ func (s Store) Put(name, value string) error {
 	if e != nil {
 		return e
 	}
-	if strings.TrimSpace(value) == "" {
-		return output.New(2, "empty credential")
+	if strings.TrimSpace(value) == "" || len(value) > 64<<10 {
+		return output.New(2, "credential must contain 1 to 65536 bytes")
 	}
 	return config.AtomicWrite(p, []byte(value), 0600)
 }

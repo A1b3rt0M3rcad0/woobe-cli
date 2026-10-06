@@ -22,14 +22,23 @@ func unsupported(p, r string) error { return &Error{Path: p, Rule: r, Unsupporte
 
 // Check implements a bounded, explicit schema subset. Unknown assertions fail closed.
 func Check(schema, value, document any) error {
+	return checkDocument(schema, value, document, false)
+}
+
+// CheckRequest applies OpenAPI request direction: read-only fields cannot be sent.
+func CheckRequest(schema, value, document any) error {
+	return checkDocument(schema, value, document, true)
+}
+
+func checkDocument(schema, value, document any, request bool) error {
 	budget := 100000
 	if e := valueWork(value, 0, &budget); e != nil {
 		return e
 	}
-	if e := inspect(schema, document, "$", 0, map[string]bool{}, &budget); e != nil {
+	if e := inspect(schema, document, "$", 0, map[string]bool{}, &budget, request, false, modernDialect(document)); e != nil {
 		return e
 	}
-	return check(schema, value, document, "$", 0, &budget)
+	return check(schema, value, document, "$", 0, &budget, request)
 }
 func equal(a, b any) bool {
 	if x, y := number(a), number(b); x != nil || y != nil {
@@ -110,7 +119,7 @@ func typeOK(t string, v any) bool {
 	}
 	return false
 }
-func check(raw, v, doc any, p string, depth int, budget *int) error {
+func check(raw, v, doc any, p string, depth int, budget *int, request bool) error {
 	*budget--
 	if *budget < 0 {
 		return unsupported(p, "schema evaluation budget exceeded")
@@ -131,12 +140,15 @@ func check(raw, v, doc any, p string, depth int, budget *int) error {
 	if e := schemaHeader(s, p); e != nil {
 		return e
 	}
+	if request && s["readOnly"] == true {
+		return fail(p, "read-only field cannot be sent in a request")
+	}
 	if ref, ok := s["$ref"].(string); ok {
 		target, e := Resolve(doc, ref)
 		if e != nil {
 			return e
 		}
-		if e = check(target, v, doc, p, depth+1, budget); e != nil {
+		if e = check(target, v, doc, p, depth+1, budget, request); e != nil {
 			return e
 		}
 	}
@@ -148,7 +160,7 @@ func check(raw, v, doc any, p string, depth int, budget *int) error {
 			}
 			matches := 0
 			for _, b := range branches {
-				e := check(b, v, doc, p, depth+1, budget)
+				e := check(b, v, doc, p, depth+1, budget, request)
 				if x, ok := e.(*Error); ok && x.Unsupported {
 					return e
 				}
@@ -162,7 +174,7 @@ func check(raw, v, doc any, p string, depth int, budget *int) error {
 		}
 	}
 	if b, ok := s["not"]; ok {
-		e := check(b, v, doc, p, depth+1, budget)
+		e := check(b, v, doc, p, depth+1, budget, request)
 		if x, ok := e.(*Error); ok && x.Unsupported {
 			return e
 		}
@@ -171,7 +183,7 @@ func check(raw, v, doc any, p string, depth int, budget *int) error {
 		}
 	}
 	if cond, ok := s["if"]; ok {
-		e := check(cond, v, doc, p, depth+1, budget)
+		e := check(cond, v, doc, p, depth+1, budget, request)
 		if x, ok := e.(*Error); ok && x.Unsupported {
 			return e
 		}
@@ -180,7 +192,7 @@ func check(raw, v, doc any, p string, depth int, budget *int) error {
 			branch = "then"
 		}
 		if sub, ok := s[branch]; ok {
-			if e := check(sub, v, doc, p, depth+1, budget); e != nil {
+			if e := check(sub, v, doc, p, depth+1, budget, request); e != nil {
 				return e
 			}
 		}
@@ -229,6 +241,16 @@ func check(raw, v, doc any, p string, depth int, budget *int) error {
 					return unsupported(p, "invalid required field")
 				}
 				if _, ok := obj[name]; !ok {
+					if request {
+						props, _ := s["properties"].(map[string]any)
+						ro, e := requestReadOnly(props[name], doc, p+"."+name, depth+1, budget)
+						if e != nil {
+							return e
+						}
+						if ro {
+							continue
+						}
+					}
 					return fail(p, "required field absent: "+name)
 				}
 			}
@@ -247,7 +269,7 @@ func check(raw, v, doc any, p string, depth int, budget *int) error {
 		if deps, ok := s["dependentSchemas"].(map[string]any); ok {
 			for k, sub := range deps {
 				if _, exists := obj[k]; exists {
-					if e := check(sub, v, doc, p, depth+1, budget); e != nil {
+					if e := check(sub, v, doc, p, depth+1, budget, request); e != nil {
 						return e
 					}
 				}
@@ -261,14 +283,14 @@ func check(raw, v, doc any, p string, depth int, budget *int) error {
 		sort.Strings(keys)
 		for _, k := range keys {
 			if sub, ok := s["propertyNames"]; ok {
-				if e := check(sub, k, doc, p, depth+1, budget); e != nil {
+				if e := check(sub, k, doc, p, depth+1, budget, request); e != nil {
 					return e
 				}
 			}
 			matched := false
 			if sub, ok := props[k]; ok {
 				matched = true
-				if e := check(sub, obj[k], doc, p+"."+k, depth+1, budget); e != nil {
+				if e := check(sub, obj[k], doc, p+"."+k, depth+1, budget, request); e != nil {
 					return e
 				}
 			}
@@ -276,14 +298,14 @@ func check(raw, v, doc any, p string, depth int, budget *int) error {
 				for pattern, sub := range patterns {
 					if regexp.MustCompile(pattern).MatchString(k) {
 						matched = true
-						if e := check(sub, obj[k], doc, p+"."+k, depth+1, budget); e != nil {
+						if e := check(sub, obj[k], doc, p+"."+k, depth+1, budget, request); e != nil {
 							return e
 						}
 					}
 				}
 			}
 			if sub, ok := s["additionalProperties"]; ok && !matched {
-				if e := check(sub, obj[k], doc, p+"."+k, depth+1, budget); e != nil {
+				if e := check(sub, obj[k], doc, p+"."+k, depth+1, budget, request); e != nil {
 					return e
 				}
 			}
@@ -296,7 +318,7 @@ func check(raw, v, doc any, p string, depth int, budget *int) error {
 		if sub, ok := s["contains"]; ok {
 			matches := 0
 			for i, x := range a {
-				e := check(sub, x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1, budget)
+				e := check(sub, x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1, budget, request)
 				if y, ok := e.(*Error); ok && y.Unsupported {
 					return e
 				}
@@ -325,19 +347,22 @@ func check(raw, v, doc any, p string, depth int, budget *int) error {
 			}
 			prefix, _ := s["prefixItems"].([]any)
 			if i < len(prefix) {
-				if e := check(prefix[i], x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1, budget); e != nil {
+				if e := check(prefix[i], x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1, budget, request); e != nil {
 					return e
 				}
 				continue
 			}
 			if sub, ok := s["items"]; ok {
-				if e := check(sub, x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1, budget); e != nil {
+				if e := check(sub, x, doc, fmt.Sprintf("%s[%d]", p, i), depth+1, budget, request); e != nil {
 					return e
 				}
 			}
 		}
 	}
 	if text, ok := v.(string); ok {
+		if format, ok := s["format"].(string); ok && !formatOK(format, text) {
+			return fail(p, "format mismatch: "+format)
+		}
 		if e := bounds(s, "minLength", "maxLength", utf8.RuneCountInString(text), p); e != nil {
 			return e
 		}
