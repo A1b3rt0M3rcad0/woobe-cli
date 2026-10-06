@@ -84,6 +84,11 @@ def smoke(root, commit):
                             'id': {'type': 'string', 'readOnly': True},
                             'model_id': {'type': 'string', 'format': 'uuid'},
                             'created_at': {'type': 'string', 'format': 'date-time'}}}}}}}}}}
+                    schema['paths']['/runtime/agents/{agent_id}/sessions'] = {'get': {'parameters': [
+                        {'name': 'agent_id', 'in': 'path', 'required': True, 'schema': {'type': 'string'}},
+                        {'name': 'project_id', 'in': 'query', 'required': True, 'schema': {'type': 'string'}},
+                        {'name': 'limit', 'in': 'query', 'schema': {'type': 'integer', 'minimum': 1, 'maximum': 100}},
+                        {'name': 'cursor', 'in': 'query', 'schema': {'type': 'string'}}]}}
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
@@ -138,12 +143,22 @@ def smoke(root, commit):
             invoke(['project', 'agent', 'create', '--validate-body', '--api-url', origin, '--file', '-'], json.dumps(valid_body))
             if Pages.writes != 1 or Pages.validation_reads != 5:
                 raise ValueError('packaged request validation/write counts differ')
+            parameter_preflight = invoke(['validate-input', '--command', 'runtime agent sessions', '--validate-parameters', '--path-param', 'agent_id=a', '--query', 'project_id=p', '--query', 'limit=1', '--api-url', origin])
+            if parameter_preflight['data']['path_query_validation'] != 'supported_schema_subset' or parameter_preflight['data']['body_validation'] != 'not_evaluated':
+                raise ValueError('parameter-only preflight incorrectly reports its scope')
+            pages_before = len(Pages.requests)
+            invoke(['runtime', 'agent', 'sessions', 'a', '--project', 'p', '--api-url', origin, '--query', 'limit=101', '--validate-parameters'], code=2)
+            if len(Pages.requests) != pages_before:
+                raise ValueError('invalid query caused a resource read')
+            invoke(['runtime', 'agent', 'sessions', 'a', '--project', 'p', '--api-url', origin, '--limit', '1', '--all', '--validate-parameters'])
+            if len(Pages.requests) != pages_before + 2:
+                raise ValueError('validated packaged pagination did not consume both pages')
         finally:
             server.shutdown()
             server.server_close()
             thread.join(timeout=5)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
-            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write'],
+            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination'],
             'backend_acceptance': 'not_evaluated', 'credential_provider_acceptance': 'not_evaluated'}
 
 
