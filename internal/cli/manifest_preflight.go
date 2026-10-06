@@ -55,6 +55,24 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 				failed(s.ID, e)
 				continue
 			}
+			parameterStatus := "not_evaluated"
+			if a.ValidateParameters {
+				resolved, e := manifest.ResolveStep(s, map[string]any{})
+				if e != nil {
+					complete = false
+					rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "deferred_dependency_result", "path_query_validation": "deferred_dependency_result", "write_executed": false})
+					continue
+				}
+				values, query, e := a.manifestParameterValues(op, resolved)
+				if e == nil {
+					e = validateOperationParameters(doc, op, values, query)
+				}
+				if e != nil {
+					failed(s.ID, e)
+					continue
+				}
+				parameterStatus = "supported_schema_subset"
+			}
 			var body any
 			if len(s.Body) > 0 {
 				dec := json.NewDecoder(bytes.NewReader(s.Body))
@@ -69,7 +87,7 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 						continue
 					}
 					complete = false
-					rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "deferred_dependency_result", "write_executed": false})
+					rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "deferred_dependency_result", "path_query_validation": parameterStatus, "write_executed": false})
 					continue
 				}
 				s.Body, _ = json.Marshal(body)
@@ -78,9 +96,13 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 				failed(s.ID, e)
 				continue
 			}
-			rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "valid", "write_executed": false})
+			rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "valid", "path_query_validation": parameterStatus, "write_executed": false})
 		}
-		data := map[string]any{"manifest_hash": d.Hash(), "schema_sha256": schemaDigest(doc), "operations": rows, "complete": complete, "authorization": "not_evaluated", "validation_direction": "request", "path_query_validation": "not_evaluated", "executed": false}
+		parameterStatus := "not_evaluated"
+		if a.ValidateParameters {
+			parameterStatus = "per_operation"
+		}
+		data := map[string]any{"manifest_hash": d.Hash(), "schema_sha256": schemaDigest(doc), "operations": rows, "complete": complete, "authorization": "not_evaluated", "validation_direction": "request", "path_query_validation": parameterStatus, "executed": false}
 		if requireComplete && !complete && failure == nil {
 			failure = output.New(9, "dependency body schemas require execution results before complete validation")
 		}

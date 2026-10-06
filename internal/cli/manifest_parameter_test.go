@@ -32,3 +32,21 @@ func TestManifestParameterValidationStopsBeforeWrite(t *testing.T) {
 		t.Fatal(v)
 	}
 }
+
+func TestManifestPreflightIncludesParameterEvidence(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/openapi.json" {
+			t.Error("write attempted")
+		}
+		w.Write([]byte(`{"openapi":"3.1.0","paths":{"/ai/agents/{agent_id}":{"patch":{"parameters":[{"name":"agent_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object"}}}}}}}}`))
+	}))
+	defer s.Close()
+	code, v := invoke(t, []string{"manifest", "preflight", "--file", "-", "--api-url", s.URL, "--validate-parameters"}, `{"schema_version":"1","steps":[{"id":"a","command":"project agent update","args":["550e8400-e29b-41d4-a716-446655440000"],"body":{"name":"A"}}]}`)
+	if code != 0 {
+		t.Fatal(code, v)
+	}
+	row := v["data"].(map[string]any)["operations"].([]any)[0].(map[string]any)
+	if row["path_query_validation"] != "supported_schema_subset" || row["write_executed"] != false {
+		t.Fatal(v)
+	}
+}
