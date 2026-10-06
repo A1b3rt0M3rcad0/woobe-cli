@@ -225,6 +225,7 @@ Generated from discovery: 241 executable entries, including 190 HTTP operations.
 | `workspace authority category clone` | `http` | `POST /identity/workspaces/{workspace_id}/authority-categories/{category_id}/clone` | `proposed` | — | — |
 | `workspace authority category create` | `http` | `POST /identity/workspaces/{workspace_id}/authority-categories` | `proposed` | — | — |
 | `workspace authority category delete` | `http` | `DELETE /identity/workspaces/{workspace_id}/authority-categories/{category_id}` | `proposed` | — | — |
+| `workspace authority category diff` | `composition` | — | `server-dependent` | — | — |
 | `workspace authority category get` | `http` | `GET /identity/workspaces/{workspace_id}/authority-categories/{category_id}` | `proposed` | — | — |
 | `workspace authority category history` | `http` | `GET /identity/workspaces/{workspace_id}/authority-categories/{category_id}/versions` | `proposed` | — | `revision-complete` |
 | `workspace authority category list` | `http` | `GET /identity/workspaces/{workspace_id}/authority-categories` | `proposed` | — | `cursor-complete` |
@@ -244,5 +245,3 @@ Generated from discovery: 241 executable entries, including 190 HTTP operations.
 | `workspace member remove` | `http` | `DELETE /identity/workspaces/{workspace_id}/members/{user_id}` | `observed` | — | — |
 | `workspace project-access list` | `http` | `GET /core/workspaces/{workspace_id}/project-access` | `observed` | — | — |
 | `workspace update` | `http` | `PATCH /identity/workspaces/{workspace_id}` | `observed` | — | — |
-
-| `workspace authority category diff` | `composition` | — | `server-dependent` | `read` | `client` |

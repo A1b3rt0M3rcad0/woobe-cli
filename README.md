@@ -14,7 +14,7 @@ Unified discovery exposes 241 executable handlers including 190 HTTP operations,
 
 Validation: `make check`. Distribution: `bash scripts/package.sh VERSION`.
 
-Full-plan delivery completeness: **61.4% (62/101 deliveries)**; partial items receive no credit. See [audited assessment](docs/COMPLETENESS.md) for evidence and real-server acceptance limits.
+Full-plan delivery completeness: **62.4% (63/101 deliveries)**; partial items receive no credit. See [audited assessment](docs/COMPLETENESS.md) for evidence and real-server acceptance limits.
 
 Migration from the inspected Python prototype: [docs/MIGRATION.md](docs/MIGRATION.md). Context integrity and bounded schema validation are documented in [docs/USAGE.md](docs/USAGE.md).
 

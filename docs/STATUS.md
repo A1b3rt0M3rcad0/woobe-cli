@@ -12,7 +12,7 @@ The pagination/backend continuation is `8ab9d13953c1cd77462af85a3a3a957395141edc
 
 ## Delivered client behavior
 
-- Go 1.22 language minimum, Go 1.27.1 toolchain and pinned runtime SDK; 240 executable handlers including 190 HTTP operations.
+- Go 1.22 language minimum, Go 1.27.1 toolchain and pinned runtime SDK; 241 executable handlers including 190 HTTP operations.
 - Explicit Workspace/Project contexts and separate administrative/runtime credential selection; cookie/CSRF sessions and POSIX credential fallback. Native protected providers and Windows protected sessions remain open.
 - Registry-derived help, flags and invocation schemas; server OpenAPI discovery and bounded request-body validation, read-only manifest preflight and opt-in validation before writes.
 - Workspace/Project administration; Agent/Network configuration and release lifecycle; Tools HTTP/MCP, Knowledge, providers/models, Skills, ChatSurfaces, key lifecycle, runtime and diagnostics.
@@ -50,3 +50,26 @@ are not a substitute for the required live gate. Full input validation remains
 partial: arbitrary dialects/compositions, object/content parameter serialization,
 header/cookie coverage and DTO/controller custom validation remain unqualified.
 The full-plan delivery count remains 62/101 (61.4%).
+
+
+## Workspace category continuation — 2026-10-05
+
+AuthorityCategory definitions now compile/import without requiring a Project,
+while mixed documents require every kind's owning scope. Configuration-only
+imports do not assign authority; edits require explicit ID/ETag. Selective capture
+and immutable revision diff are implemented. Permission/condition order is ignored
+for category comparison; identity, Workspace and strong ETag bind skip-unchanged.
+Checkpoints suppress completed creates, but do not infer lost writes by name.
+
+`make check` passed with race tests. Native fixtures now cover Workspace category
+compilation and revision comparison. Backend PR #177 adds required live
+import/preflight/resume/unchanged/capture/pinned-grant scenarios and validation of
+publication and MCP permission inputs; their current head results are maintained
+in that PR. The prior backend head `acb71e17` passed all seven workflows and prior
+CLI `6fdb4663` passed all six jobs. These are prior-revision evidence, not approval
+of this new continuation.
+
+The ledger is now **63/101 (62.4%)**, 36 partial and 2 pending. Category definition
+import closes 8.7; category-applied grant migration stays partial in 4.7. Full
+reconciliation, native protected credentials/sessions, exhaustive schema and
+principal qualification, streams, semantic export and release gates remain.

@@ -236,7 +236,7 @@
       "phase": 2,
       "requirement": "Implementar help JSON e exportação de schemas a partir do registro único, com compatibilidade e efeito das operações.",
       "status": "partial",
-      "evidence": "Cobra-derived discovery includes 240 handlers and 190 HTTP operations. Shared advertised body validation, manifest preflight, opt-in before-write checks and snapshot digest pin are delivered; full schema/DTO/path/query semantics remain partial. Request-direction validation now rejects supplied readOnly fields and supports required read-only omission through property references/allOf; UUID/date/date-time formats and advertised dialects are checked, with invalid inputs stopped before mutation. Full path/query, arbitrary directional composition and DTO coverage remain partial."
+      "evidence": "Cobra-derived discovery includes 240 handlers and 190 HTTP operations. Shared advertised body validation, manifest preflight, opt-in before-write checks and snapshot digest pin are delivered; full schema/DTO/path/query semantics remain partial. Request-direction validation now rejects supplied readOnly fields and supports required read-only omission through property references/allOf; UUID/date/date-time formats and advertised dialects are checked, with invalid inputs stopped before mutation. Full path/query, arbitrary directional composition and DTO coverage remain partial. Workspace category import/capture/immutable diff and additional Tool/MCP/Knowledge/publication DTO schemas are implemented; required new live gate is tracked in PR #177."
     },
     {
       "id": "3.1",
@@ -347,8 +347,8 @@
       "id": "4.7",
       "phase": 4,
       "requirement": "Plan/diff de atualização de categoria aplicada.",
-      "status": "pending",
-      "evidence": "Woobe PR #177 at 77c53832f0e5b35488d1574b3cf62777486f5189: seven backend workflows passed; draft remains unmerged. Categories can be read by immutable revision and updated explicitly; applied-category plan/diff migration is not yet implemented."
+      "status": "partial",
+      "evidence": "workspace authority category diff compares two explicit immutable definitions, using permission/condition sets and read-only evidence. Category manifests also support supplied-field diff and ETag-bound skip-unchanged. Planning affected issued grants/human assignments and migrating their pinned revisions remain unimplemented."
     },
     {
       "id": "4.8",
@@ -607,7 +607,7 @@
       "phase": 8,
       "requirement": "IDs/revisões esperadas e revalidação antes de mutar.",
       "status": "partial",
-      "evidence": "Expected If-Match forwarded, optional --validate-body checks resolved bodies before write attempts, schema digest pin and read-only preflight exist. Full route/query/DTO/domain/revision semantics and real-backend revalidation remain partial. Request-direction validation now rejects supplied readOnly fields and supports required read-only omission through property references/allOf; UUID/date/date-time formats and advertised dialects are checked, with invalid inputs stopped before mutation. Full path/query, arbitrary directional composition and DTO coverage remain partial."
+      "evidence": "Expected If-Match forwarded, optional --validate-body checks resolved bodies before write attempts, schema digest pin and read-only preflight exist. Full route/query/DTO/domain/revision semantics and real-backend revalidation remain partial. Request-direction validation now rejects supplied readOnly fields and supports required read-only omission through property references/allOf; UUID/date/date-time formats and advertised dialects are checked, with invalid inputs stopped before mutation. Full path/query, arbitrary directional composition and DTO coverage remain partial. Workspace category import/capture/immutable diff and additional Tool/MCP/Knowledge/publication DTO schemas are implemented; required new live gate is tracked in PR #177."
     },
     {
       "id": "8.5",
@@ -627,8 +627,8 @@
       "id": "8.7",
       "phase": 8,
       "requirement": "Importação de categorias sem concessão implícita.",
-      "status": "pending",
-      "evidence": "AuthorityCategory declarative import is unavailable pending canonical server contract."
+      "status": "done",
+      "evidence": "AuthorityCategory resource import compiles explicit Workspace-scoped create/update definitions, requires ETag for edits, rejects grants/assignments/lifecycle fields and retains checkpoints. Offline/unit/native fixture regressions pass; required live import/resume/pinned-reader acceptance is added to PR #177 and its current CI evidence is tracked there. No implicit authority concession, name upsert or lost-checkpoint create replay is promised."
     },
     {
       "id": "8.8",
@@ -670,7 +670,7 @@
       "phase": 9,
       "requirement": "CI do CLI e suites integradas do backend.",
       "status": "partial",
-      "evidence": "CLI code 659baea passed all six jobs in run 37385398090; required live backend/CLI tests passed at 8ab9d139 (run 37386311731). Seven workflow groups passed at prior backend 77c53832. Latest workflow results remain in PR #177; full phase acceptance is not asserted."
+      "evidence": "CLI code 659baea passed all six jobs in run 37385398090; required live backend/CLI tests passed at 8ab9d139 (run 37386311731). Seven workflow groups passed at prior backend 77c53832. Latest workflow results remain in PR #177; full phase acceptance is not asserted. Workspace category import/capture/immutable diff and additional Tool/MCP/Knowledge/publication DTO schemas are implemented; required new live gate is tracked in PR #177."
     },
     {
       "id": "9.4",
