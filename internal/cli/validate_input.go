@@ -16,6 +16,9 @@ func (a *App) validateInputCommand() {
 		if e != nil {
 			return e
 		}
+		if e = validateMCPPermissions(command, b); e != nil {
+			return e
+		}
 		op, doc, _, def, e := a.serverOperation(cmd.Context(), command)
 		if e != nil {
 			return e

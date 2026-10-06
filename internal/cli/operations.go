@@ -156,6 +156,9 @@ func (a *App) register(op Operation) {
 		if e != nil {
 			return e
 		}
+		if e = validateMCPPermissions(op.Command, b); e != nil {
+			return e
+		}
 		if op.QueryScope != "" {
 			id := a.Project
 			if op.QueryScope == "workspace_id" {
