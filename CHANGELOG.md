@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3
+
+- Support Actions installation tokens whose repository metadata omits user-role permissions.
+- Verify repository identity and retain authoritative GitHub write authorization.
+- Show publication errors in check annotations and version tags in run titles.
+
 ## 0.1.1
 
 - Publish the exact validated CLI to GitHub Packages (GHCR), Linux amd64/arm64.

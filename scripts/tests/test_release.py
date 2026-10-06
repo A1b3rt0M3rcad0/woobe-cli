@@ -26,7 +26,7 @@ class ReleaseTests(unittest.TestCase):
 
     def github(self, path, missing=False):
         if path == f'repos/{self.repo}':
-            return {'permissions': {'push': True}}
+            return {'full_name': self.repo}
         if '/releases?' in path:
             return []
         return None
@@ -36,6 +36,13 @@ class ReleaseTests(unittest.TestCase):
              patch.object(release, 'github', side_effect=self.github), \
              patch.object(release, 'run') as command:
             self.assertEqual(release.preflight(self.repo, '0.1.0', self.commit, self.files), (None, set(), False))
+            command.assert_not_called()
+
+    def test_wrong_repository_identity_is_refused_before_writes(self):
+        with patch.object(release, 'github', return_value={'full_name': 'other/repo'}), \
+             patch.object(release, 'run') as command:
+            with self.assertRaisesRegex(ValueError, 'repository identity'):
+                release.publish(self.repo, '0.1.0', self.commit, self.files)
             command.assert_not_called()
 
     def test_unknown_http_error_is_never_absence(self):

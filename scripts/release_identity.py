@@ -122,4 +122,4 @@ if __name__ == '__main__':
         else:
             version, sha = selected
             output.write(f'version={version}\nrevision={sha}\nskip=false\n')
-            print(f'Release v{version} will validate exact master revision {sha}')
+            print(f'Release v{version} will validate exact source revision {sha}')

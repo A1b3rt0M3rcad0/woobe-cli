@@ -75,8 +75,11 @@ def preflight(repo, version, commit, files):
     # Read repository access first: a private-repo/authentication 404 must not
     # be interpreted as a missing tag or release.
     settings = github(f'repos/{repo}')
-    if not settings.get('permissions', {}).get('push'):
-        raise ValueError('GitHub credential lacks repository write permission')
+    if settings.get('full_name', '').lower() != repo.lower():
+        raise ValueError('GitHub repository identity differs from the release target')
+    # Installation tokens (including GITHUB_TOKEN) omit user-role permissions.
+    # Successful lookup establishes repository identity/access; each write is
+    # authorized by GitHub using the job's explicit contents:write permission.
     tag = github(f'repos/{repo}/git/ref/tags/v{version}', missing=True)
     if tag:
         obj = tag['object']
