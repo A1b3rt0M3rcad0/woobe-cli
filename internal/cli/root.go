@@ -76,8 +76,8 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 		}
 		if a.ValidateParameters {
 			op, ok := a.operation(path)
-			if !(path == "validate-input" || ok && op.Kind == "http") {
-				return output.New(9, "--validate-parameters requires a canonical HTTP operation or validate-input")
+			if !(path == "validate-input" || path == "manifest apply" || path == "manifest preflight" || ok && op.Kind == "http") {
+				return output.New(9, "--validate-parameters requires a canonical HTTP operation or manifest apply/preflight or validate-input")
 			}
 		}
 		if a.ValidateBody {

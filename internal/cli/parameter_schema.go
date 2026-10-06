@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/manifest"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/schemacheck"
 )
@@ -359,4 +360,35 @@ func validateOperationParameters(doc map[string]any, op Operation, values map[st
 		}
 	}
 	return validateParameterSchema(doc, path, def, translated, query)
+}
+
+func (a *App) manifestParameterValues(op Operation, s manifest.Step) (map[string]string, url.Values, error) {
+	if len(a.Query) > 0 {
+		return nil, nil, output.New(2, "manifest parameter validation does not accept global query overrides")
+	}
+	values := map[string]string{}
+	for i, name := range op.Params {
+		if i >= len(s.Args) {
+			return nil, nil, output.New(2, "manifest resource argument is missing")
+		}
+		values[name] = s.Args[i]
+	}
+	for _, name := range []string{"workspace_id", "project_id"} {
+		if strings.Contains(op.Path, "{"+name+"}") {
+			value := a.Workspace
+			if name == "project_id" {
+				value = a.Project
+			}
+			values[name] = value
+		}
+	}
+	query := url.Values{}
+	if op.QueryScope != "" {
+		value := a.Project
+		if op.QueryScope == "workspace_id" {
+			value = a.Workspace
+		}
+		query.Set(op.QueryScope, value)
+	}
+	return values, query, nil
 }

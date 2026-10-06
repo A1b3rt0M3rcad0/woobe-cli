@@ -84,7 +84,7 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			return a.emit(map[string]any{"manifest_hash": d.Hash(), "checkpoint": cp, "executed": false, "validation": "local_plan_only"})
 		}
 		var schemaDoc map[string]any
-		if a.ValidateBody {
+		if a.ValidateBody || a.ValidateParameters {
 			schemaDoc, e = a.loadServerSchema(cmd.Context())
 			if e != nil {
 				return notAttempted(e)
@@ -108,6 +108,16 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 				def, e := operationDefinition(schemaDoc, op)
 				if e == nil {
 					e = validateBodySchema(schemaDoc, def, s.Body)
+				}
+				if e != nil {
+					return stopBeforeWrite(path, cp, s.ID, e)
+				}
+			}
+			if a.ValidateParameters {
+				op, _ := a.operation(s.Command)
+				values, query, e := a.manifestParameterValues(op, s)
+				if e == nil {
+					e = validateOperationParameters(schemaDoc, op, values, query)
 				}
 				if e != nil {
 					return stopBeforeWrite(path, cp, s.ID, e)
