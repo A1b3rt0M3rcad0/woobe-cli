@@ -31,7 +31,16 @@ func (a *App) validateManifest(d manifest.Document) error {
 		if found == nil || found.Kind != "http" {
 			return output.New(2, "unknown manifest operation: "+s.Command)
 		}
-		if found.Status == "proposed" {
+		category := found.Command == "workspace authority category create" || found.Command == "workspace authority category update"
+		if category {
+			if d.Workspace == "" {
+				return output.New(2, "category manifest requires workspace_id")
+			}
+			if found.Method == "PATCH" && s.IfMatch == "" {
+				return output.New(2, "category update requires explicit if_match")
+			}
+		}
+		if found.Status == "proposed" && !category {
 			return output.New(9, "manifest uses absent server extension")
 		}
 		if found.Method == "GET" || found.Method == "HEAD" {
