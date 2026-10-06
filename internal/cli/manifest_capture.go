@@ -42,8 +42,11 @@ func (a *App) manifestCaptureCommand(g *cobra.Command) {
 		if e != nil {
 			return e
 		}
-		if selectedContext.Project == "" {
+		if selected.Scope == "project" && selectedContext.Project == "" {
 			return output.New(2, "capture requires explicit selected project")
+		}
+		if selected.Scope == "workspace" && selectedContext.Workspace == "" {
+			return output.New(2, "capture requires explicit selected workspace")
 		}
 		parentIDs := map[string]string{}
 		for _, p := range parents {
@@ -77,6 +80,12 @@ func (a *App) manifestCaptureCommand(g *cobra.Command) {
 		}
 		if scope, ok := obj["project_id"]; ok && scope != a.Project {
 			return output.New(6, "returned resource differs from selected project")
+		}
+		if scope, ok := obj["workspace_id"]; ok && scope != a.Workspace {
+			return output.New(6, "returned resource differs from selected workspace")
+		}
+		if selected.Name == "AuthorityCategory" && meta["etag"] == "" {
+			return output.New(9, "category capture requires observed ETag")
 		}
 		if a.IfMatch != "" {
 			if meta["etag"] == "" {
