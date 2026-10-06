@@ -172,7 +172,7 @@ func (a *App) register(op Operation) {
 			return output.New(2, "operation requires --yes")
 		}
 		if (a.ValidateBody || a.ValidateParameters) && !a.DryRun {
-			_, doc, pathDef, def, e := a.serverOperation(cmd.Context(), op.Command)
+			_, doc, _, def, e := a.serverOperation(cmd.Context(), op.Command)
 			if e != nil {
 				return notAttempted(e)
 			}
@@ -191,7 +191,7 @@ func (a *App) register(op Operation) {
 						return e
 					}
 				}
-				if e = validateParameterSchema(doc, pathDef, def, pathValues, q); e != nil {
+				if e = validateOperationParameters(doc, op, pathValues, q); e != nil {
 					return e
 				}
 			}

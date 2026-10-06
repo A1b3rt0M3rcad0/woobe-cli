@@ -19,11 +19,9 @@ func (a *App) serverOperation(ctx context.Context, command string) (Operation, m
 	if e != nil {
 		return op, nil, nil, nil, e
 	}
-	paths, _ := doc["paths"].(map[string]any)
-	path, _ := paths[op.Path].(map[string]any)
-	definition, ok := path[strings.ToLower(op.Method)].(map[string]any)
-	if !ok {
-		return op, nil, nil, nil, output.New(9, "operation not advertised by server")
+	path, definition, _, e := advertisedOperation(doc, op)
+	if e != nil {
+		return op, nil, nil, nil, e
 	}
 	return op, doc, path, definition, nil
 }
@@ -60,13 +58,42 @@ func (a *App) loadServerSchema(ctx context.Context) (map[string]any, error) {
 	return doc, nil
 }
 func operationDefinition(doc map[string]any, op Operation) (map[string]any, error) {
+	_, def, _, e := advertisedOperation(doc, op)
+	return def, e
+}
+
+// Template names are transport metadata; literal segments and method must match.
+func advertisedOperation(doc map[string]any, op Operation) (map[string]any, map[string]any, string, error) {
 	paths, _ := doc["paths"].(map[string]any)
-	path, _ := paths[op.Path].(map[string]any)
+	selected := op.Path
+	if _, exists := paths[selected]; !exists {
+		selected = ""
+		for candidate, raw := range paths {
+			if placeholders.ReplaceAllString(candidate, "{}") != placeholders.ReplaceAllString(op.Path, "{}") {
+				continue
+			}
+			path, ok := raw.(map[string]any)
+			if !ok {
+				continue
+			}
+			if _, ok := path[strings.ToLower(op.Method)].(map[string]any); !ok {
+				continue
+			}
+			if selected != "" {
+				return nil, nil, "", output.New(9, "ambiguous advertised operation template")
+			}
+			selected = candidate
+		}
+	}
+	path, _ := paths[selected].(map[string]any)
 	def, ok := path[strings.ToLower(op.Method)].(map[string]any)
 	if !ok {
-		return nil, output.New(9, "operation not advertised by server")
+		return nil, nil, "", output.New(9, "operation not advertised by server")
 	}
-	return def, nil
+	if _, exists := path["$ref"]; exists {
+		return nil, nil, "", output.New(9, "referenced OpenAPI path items are not supported")
+	}
+	return path, def, selected, nil
 }
 
 func schemaDigest(doc map[string]any) string {

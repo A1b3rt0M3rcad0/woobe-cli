@@ -85,3 +85,19 @@ func TestQueryArraySerializationAndConstraints(t *testing.T) {
 		t.Fatal("duplicate non-exploded arrays accepted")
 	}
 }
+
+func TestAdvertisedTemplateAliasesRetainCanonicalArgumentNames(t *testing.T) {
+	doc := map[string]any{"paths": map[string]any{"/core/projects/{access_project_id}/access": map[string]any{"post": map[string]any{"parameters": []any{parameter("access_project_id", "path", "string", true)}}}}}
+	op := Operation{Method: "POST", Path: "/core/projects/{project_id}/access"}
+	if e := validateOperationParameters(doc, op, map[string]string{"project_id": "p"}, nil); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := operationDefinition(doc, op); e != nil {
+		t.Fatal(e)
+	}
+	paths := doc["paths"].(map[string]any)
+	paths["/core/projects/{another_id}/access"] = paths["/core/projects/{access_project_id}/access"]
+	if _, e := operationDefinition(doc, op); e == nil || output.Normalize(e).Code != 9 {
+		t.Fatal("ambiguous route accepted", e)
+	}
+}

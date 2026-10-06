@@ -16,7 +16,7 @@ func (a *App) validateInputCommand() {
 		if e != nil {
 			return e
 		}
-		op, doc, path, def, e := a.serverOperation(cmd.Context(), command)
+		op, doc, _, def, e := a.serverOperation(cmd.Context(), command)
 		if e != nil {
 			return e
 		}
@@ -56,7 +56,7 @@ func (a *App) validateInputCommand() {
 			if e != nil {
 				return e
 			}
-			if e = validateParameterSchema(doc, path, def, values, q); e != nil {
+			if e = validateOperationParameters(doc, op, values, q); e != nil {
 				return e
 			}
 			parameterStatus = "supported_schema_subset"

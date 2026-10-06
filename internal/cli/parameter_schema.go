@@ -337,3 +337,26 @@ func parameterSchemaObject(schema any, doc map[string]any, depth int) (map[strin
 	}
 	return nil, output.New(9, "array serialization requires an explicit items schema")
 }
+
+func validateOperationParameters(doc map[string]any, op Operation, values map[string]string, query url.Values) error {
+	path, def, template, e := advertisedOperation(doc, op)
+	if e != nil {
+		return e
+	}
+	canonical := placeholders.FindAllStringSubmatch(op.Path, -1)
+	advertised := placeholders.FindAllStringSubmatch(template, -1)
+	translated := map[string]string{}
+	for k, v := range values {
+		translated[k] = v
+	}
+	for i, p := range canonical {
+		if i >= len(advertised) {
+			return output.New(9, "advertised path parameter count differs")
+		}
+		if value, ok := values[p[1]]; ok {
+			delete(translated, p[1])
+			translated[advertised[i][1]] = value
+		}
+	}
+	return validateParameterSchema(doc, path, def, translated, query)
+}
