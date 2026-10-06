@@ -51,7 +51,7 @@ func (a *App) categoryDiffCommand() {
 		if e != nil {
 			return e
 		}
-		changes, e := fieldChanges(before, desired)
+		changes, e := categoryChanges(before, desired)
 		if e != nil {
 			return e
 		}

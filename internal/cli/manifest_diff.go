@@ -169,7 +169,7 @@ func (a *App) manifestDiff(ctx context.Context, d manifest.Document) ([]map[stri
 			if e != nil {
 				return nil, e
 			}
-			changes, e := fieldChanges(current, desired)
+			changes, e := configurationChanges(s.Command, current, desired)
 			if e != nil {
 				return nil, e
 			}

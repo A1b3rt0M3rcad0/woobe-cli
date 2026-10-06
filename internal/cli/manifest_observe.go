@@ -33,7 +33,7 @@ func (a *App) observeUnchanged(ctx context.Context, s manifest.Step) (any, bool,
 	if e != nil {
 		return nil, false, e
 	}
-	changes, e := fieldChanges(current, desired)
+	changes, e := configurationChanges(s.Command, current, desired)
 	if e != nil {
 		return nil, false, e
 	}
