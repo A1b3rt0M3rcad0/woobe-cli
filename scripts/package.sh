@@ -6,6 +6,8 @@ version="${version#v}"
 python3 scripts/version.py --validate "$version" >/dev/null
 mkdir -p dist
 rm -rf dist/npm
+export TZ=UTC
+task_epoch="$(git show -s --format=%ct HEAD)"
 python3 scripts/third_party_notices.py dist/THIRD_PARTY_NOTICES.txt
 task_schema="$(mktemp)"
 task_resources="$(mktemp)"
@@ -35,11 +37,14 @@ with open(sys.argv[1]) as f: schema=json.load(f)["data"]
 with open(sys.argv[2],"w") as f: json.dump(schema,f,indent=2);f.write("\n")
 PYRESOURCE
     archive="woobe_${version}_${target_os}_${target_arch}"
+    # A retry must produce the same bytes, including archive metadata.
+    find "$task_dir" -type f -exec touch -d "@$task_epoch" {} +
     if [[ "$target_os" == windows ]]; then
       task_archive="$(pwd)/dist/$archive.zip"
-      (cd "$task_dir" && zip -q "$task_archive" "$executable" README.md USAGE.md manifest.schema.json resources.schema.json THIRD_PARTY_NOTICES.txt)
+      rm -f "$task_archive"
+      (cd "$task_dir" && zip -X -q "$task_archive" "$executable" README.md USAGE.md manifest.schema.json resources.schema.json THIRD_PARTY_NOTICES.txt)
     else
-      tar -czf "dist/$archive.tar.gz" -C "$task_dir" "$executable" README.md USAGE.md manifest.schema.json resources.schema.json THIRD_PARTY_NOTICES.txt
+      tar --mtime="@$task_epoch" --owner=0 --group=0 --numeric-owner -cf - -C "$task_dir" "$executable" README.md USAGE.md manifest.schema.json resources.schema.json THIRD_PARTY_NOTICES.txt | gzip -n > "dist/$archive.tar.gz"
     fi
     rm -rf "$task_dir"
   done

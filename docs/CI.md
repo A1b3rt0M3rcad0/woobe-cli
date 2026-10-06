@@ -1,10 +1,10 @@
 # CI do Woobe CLI
 
-O workflow `CLI` roda em PRs, pushes na master e nas branches `feat/**`/`docs/**`, além de execução manual. O conjunto desta entrega foi integrado na master; versões geradas pelo CI continuam sendo builds de desenvolvimento.
+O workflow `CLI` roda em PRs, pushes na master e nas branches `feat/**`/`docs/**`, além de execução manual. Versões geradas pelo CI continuam sendo builds de desenvolvimento.
 
 | Job | Aceite |
 | --- | --- |
-| `test` | Versão canônica/npm e testes de versionamento, gofmt, auditoria de 101 requisitos, módulos, vet, suíte Go com race/coverage, fuzz de schema por 10 segundos com dois workers, build e discovery. |
+| `test` | Versão canônica/npm e testes de versionamento, identidade, conflitos e recuperação de releases, gofmt, auditoria de 101 requisitos, módulos, vet, suíte Go com race/coverage, fuzz de schema por 10 segundos com dois workers, build e discovery. |
 | `package` | Seis arquivos Linux/macOS/Windows × amd64/arm64, pacote npm com os mesmos binários, schemas v1/v2, SHA256SUMS e artifacts.json. Conteúdo, alvos, nomes, permissões executáveis e SHA de origem devem coincidir. |
 | `native-smoke` (três runners) | Baixar os pacotes do mesmo run e executar o alvo correspondente ao host; verificar versão/commit/OS/arch, discovery, schemas, manifest local válido, recusa de JSON inválido, duas páginas por cursor e metadados de coleção parcial em fixture HTTP loopback. Instalar o tarball npm offline com `--ignore-scripts`, executar o comando instalado e `npm exec`, conferir stdin e preservar código de erro do binário. |
 | `ci` | Todos os três grupos anteriores devem terminar em success. Failure, cancelled ou skipped impedem o sucesso deste job agregador. |
@@ -34,7 +34,8 @@ python3 scripts/smoke_npm.py --commit "$(git rev-parse HEAD)" --report npm-smoke
 O smoke exige um host Linux, macOS ou Windows em amd64/arm64 e executa somente seu próprio alvo. A matriz hospedada executa três combinações concretas de OS/arquitetura, que constam nos relatórios; ela não afirma execução nativa de todos os seis alvos. Não há validação de providers de keychain, sessão protegida Windows, login real, permissões do servidor ou runtime remoto. A evidência de backend está no PR #177; providers nativos e a matriz completa permanecem no planejamento.
 
 O workflow também pode ser reutilizado por **Release CLI**, com a versão exata
-de `VERSION`. A publicação depende de todos os gates e usa os artefatos já
+de `VERSION` e o SHA imutável escolhido pelo workflow manual. Retorna o ID do
+artefato e SHA-256 do manifest para o publicador; os smokes baixam esse ID. A publicação depende de todos os gates e usa os artefatos já
 validados. A configuração externa da publicação npm está descrita em
 [INSTALLATION.md](INSTALLATION.md); preparar o PR não publica releases ou pacotes.
 

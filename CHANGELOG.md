@@ -8,9 +8,12 @@
   usable through npm/npx without Go, installation scripts or binary downloads.
 - Linux/macOS/Windows x64 and arm64 archives, shared checksum metadata and
   byte-for-byte verification against the npm package.
-- Tag releases require matching canonical versions and a commit integrated in
-  master, reuse complete CI validation and publish the validated artifacts.
-- Optional npm trusted publishing with provenance after maintainer setup.
+- Manual Actions releases require matching canonical versions and an exact
+  reviewed master commit, reuse complete CI validation and publish both GitHub
+  and npm from the validated immutable artifact ID and manifest digest.
+- All-destination preflight, deterministic archives, conflict refusal, recovery
+  of partial publication and a verified permanent release manifest.
+- npm token bootstrap and subsequent trusted publishing with provenance.
 - Installation, Workspace Control Key and context setup documentation.
 
 The existing CLI operations and functional limitations are described in

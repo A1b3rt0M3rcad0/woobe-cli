@@ -111,41 +111,77 @@ make package
 ```
 
 Update `CHANGELOG.md` and commit the version change in a PR. Existing releases
-are immutable: use a new version for different bytes. Merge and tagging remain
-explicit maintainer actions; the version script does neither.
+are immutable: use a new version for different bytes. Integration remains an
+explicit maintainer action; the version script never merges or creates a tag.
 
-After the reviewed commit is integrated in `master`, tagging that exact commit
-as `v<VERSION>` starts **Release CLI**. The workflow rejects a tag/version
-mismatch or a commit outside `master`, runs the full reusable CI (including
-native and npm installation smoke tests on three OSes), then publishes those
-exact validated artifacts. It does not rebuild them in the publication job.
-`artifacts.json` records the version, commit and SHA-256 of every artifact;
-the npm binaries must match the corresponding native archives byte for byte.
+## Publish from GitHub Actions
 
-CI branch/PR packages use `0.0.0-ci.<run>.<attempt>` and remain Actions artifacts.
-They do not publish tags, GitHub Releases or npm packages.
+The entrypoint follows Woobe's manual release pattern:
 
-## npm registry publication
+1. Review the product and version changes in PRs. They must already be in
+   `master`; the release workflow never merges PRs or changes repository files.
+2. Open **Actions → Release CLI → Run workflow**, choose **master**, enter the
+   canonical version (for example `0.1.0`) and start the run. Optionally pin the
+   exact reviewed 40-character source SHA in `revision`.
+3. The workflow resolves that immutable source, requires matching `VERSION`
+   and npm metadata, and runs the full reusable CI: Go/race/fuzz validation,
+   six cross-builds, and native plus npm installation smoke tests on three OSes.
+4. Publication receives the immutable Actions artifact ID and SHA-256 of its
+   manifest from CI. It verifies the source/version and every file, then checks
+   **both GitHub and npm before writing either destination**. An existing
+   version/tag/asset must match the exact validated bytes or source. Unknown
+   errors, authentication failures and conflicts stop the transaction.
+5. The job publishes the validated npm tarball, downloads and compares the
+   registry's exact bytes and exercises the installed command. It then creates
+   or resumes a draft GitHub Release at the exact commit, uploads missing files
+   without overwriting anything, downloads every asset for comparison, and
+   makes the release public. Final success requires both destinations, the
+   immutable tag and `release-manifest.json` to match.
+
+There are no tag-push or master-push publication triggers. The **Run workflow**
+button appears when this workflow is integrated in the default branch. The old
+**Release binaries** workflow only accepted tag pushes; an empty runs list was
+expected before its first tag.
+
+GitHub Releases contains six native archives, the npm tarball, `SHA256SUMS`,
+`artifacts.json` and the permanent `release-manifest.json`. They are the same
+files exercised by CI; the publication job does not rebuild. Stable versions
+use npm's `latest`; prereleases use `next` and GitHub's prerelease flag.
+New versions must advance the highest published SemVer. A retry of an existing
+version never overwrites an npm version, asset, tag or npm distribution tag.
+
+### First npm publication and authentication
 
 The npm name is `woobe-cli`. The source manifest is private so an accidental
 publish from `packages/woobe-cli` cannot publish a package without binaries.
 Publish only the generated, verified `dist/woobe-cli-<VERSION>.tgz`.
 
-For a new npm package, a maintainer must perform its first registry publication
-with npm authentication after the GitHub Release validation, for example:
+For the **first publication**, configure repository Actions secret **NPM_TOKEN**
+with an npm token authorized to create this public package. If the account's
+2FA policy requires bypass for automation, grant that capability to this token.
+The workflow fails before publication when a new package lacks this credential.
+It does not silently skip npm or report a binaries-only release as complete.
 
-```sh
-npm publish ./dist/woobe-cli-0.1.0.tgz --ignore-scripts --access public
-```
+After the first publication, configure the npm package's **Trusted Publisher**
+for GitHub owner `A1b3rt0M3rcad0`, repository `woobe-cli`, workflow `release.yml`
+(no environment name), then remove the bootstrap token. npm 11 uses the job's
+OIDC identity and provenance for subsequent releases. Registry ownership and
+Trusted Publisher settings remain account configuration. The previous
+`WOOBE_PUBLISH_NPM` switch is no longer used: this release publishes both targets.
 
-Then configure the npm package's **Trusted Publisher** for this GitHub repository
-and workflow file `release.yml`, and set the repository variable
-`WOOBE_PUBLISH_NPM=true`. Later tag releases use npm 11's OIDC trusted publishing
-and provenance, without an npm token stored in the repository. Stable versions
-use npm's `latest` tag; prereleases use `next` and GitHub's prerelease flag.
-If the variable is unset, GitHub binary/tarball publication still works and the
-npm registry job is skipped. Registry ownership/configuration is external to
-this code change; no package or release is published by preparing this PR.
+### Recovery
+
+Re-run failed jobs to reuse the original immutable candidate. For a completely
+new run, enter the same version; an existing Git tag recovers its original
+commit even if master has advanced. Before tag creation (for example, npm
+succeeded but GitHub failed), supply the original `revision` from the failed
+run. A partially uploaded draft is repaired only at that exact revision.
+Packaging normalizes timestamps, owners and compression metadata so a retry
+from the same commit and pinned toolchains produces the same archive bytes.
+Conflicts require a new version, never clobbering a release.
+
+CI branch/PR packages use `0.0.0-ci.<run>.<attempt>` and remain Actions artifacts.
+They do not publish tags, GitHub Releases or npm packages.
 
 This repository currently supplies no software license file. Packaging does
 not introduce a license grant; the npm metadata stays `UNLICENSED`.
