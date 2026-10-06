@@ -23,6 +23,11 @@ func (a *App) observeUnchanged(ctx context.Context, s manifest.Step) (any, bool,
 	if e != nil {
 		return nil, false, e
 	}
+	if s.Command == "workspace authority category update" {
+		if e := verifyCategoryObservation(current, meta, a.Workspace, s.Args[0]); e != nil {
+			return nil, false, e
+		}
+	}
 	if s.IfMatch != "" && meta["etag"] == "" {
 		return nil, false, output.New(9, "skip-unchanged cannot verify if_match without an observed ETag")
 	}

@@ -3,6 +3,8 @@ package cli
 import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 func categoryComparable(v any) (map[string]any, error) {
@@ -83,4 +85,21 @@ func configurationChanges(command string, current any, desired map[string]any) (
 		return categoryChanges(current, desired)
 	}
 	return fieldChanges(current, desired)
+}
+
+func verifyCategoryObservation(current any, meta map[string]string, workspace, id string) error {
+	obj, ok := current.(map[string]any)
+	if !ok || obj["id"] != id || obj["workspace_id"] != workspace {
+		return output.New(6, "observed category differs from selected Workspace/identity")
+	}
+	etag := meta["etag"]
+	prefix := `"category:` + id + `:`
+	if !strings.HasPrefix(etag, prefix) || !strings.HasSuffix(etag, `"`) {
+		return output.New(9, "category observation requires a strong resource ETag")
+	}
+	revision, e := strconv.ParseInt(strings.TrimSuffix(strings.TrimPrefix(etag, prefix), `"`), 10, 64)
+	if e != nil || revision < 1 || revision > 2147483647 || !revisionEqual(obj["revision"], revision) {
+		return output.New(6, "category ETag differs from observed revision")
+	}
+	return nil
 }
