@@ -124,6 +124,9 @@ func (a *App) manifestApplyCommand(g *cobra.Command) {
 			if e != nil {
 				return stopBeforeWrite(path, cp, s.ID, e)
 			}
+			if e = validateMCPPermissions(s.Command, s.Body); e != nil {
+				return stopBeforeWrite(path, cp, s.ID, e)
+			}
 			if a.ValidateBody {
 				op, _ := a.operation(s.Command)
 				def, e := operationDefinition(schemaDoc, op)

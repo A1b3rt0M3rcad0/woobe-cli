@@ -105,6 +105,10 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 				}
 				s.Body, _ = json.Marshal(body)
 			}
+			if e = validateMCPPermissions(s.Command, s.Body); e != nil {
+				failed(s.ID, e, false)
+				continue
+			}
 			if e = validateBodySchema(doc, def, s.Body); e != nil {
 				failed(s.ID, e, false)
 				continue
