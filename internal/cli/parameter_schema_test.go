@@ -63,3 +63,25 @@ func TestNullableAndReferencedParameterSerialization(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestQueryArraySerializationAndConstraints(t *testing.T) {
+	p := parameter("ids", "query", "array", false)
+	p["schema"] = map[string]any{"type": "array", "items": map[string]any{"type": "integer"}, "uniqueItems": true, "maxItems": float64(2)}
+	def := map[string]any{"parameters": []any{p}}
+	for _, tc := range []struct {
+		values []string
+		code   int
+	}{{[]string{"1", "2"}, 0}, {[]string{"1", "1"}, 2}, {[]string{"1", "2", "3"}, 2}, {[]string{"x"}, 2}} {
+		e := validateParameterSchema(map[string]any{}, nil, def, nil, url.Values{"ids": tc.values})
+		if e == nil && tc.code != 0 || e != nil && output.Normalize(e).Code != tc.code {
+			t.Fatal(tc, e)
+		}
+	}
+	p["explode"] = false
+	if e := validateParameterSchema(map[string]any{}, nil, def, nil, url.Values{"ids": {"1,2"}}); e != nil {
+		t.Fatal(e)
+	}
+	if e := validateParameterSchema(map[string]any{}, nil, def, nil, url.Values{"ids": {"1", "2"}}); e == nil {
+		t.Fatal("duplicate non-exploded arrays accepted")
+	}
+}

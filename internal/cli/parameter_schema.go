@@ -157,12 +157,50 @@ func decodeParameter(p advertisedParameter, raw []string, doc map[string]any) (a
 	if p.location == "path" && p.style != "simple" || p.location == "query" && p.style != "form" {
 		return nil, output.New(9, "unsupported parameter serialization style")
 	}
-	if len(raw) != 1 {
-		return nil, output.New(2, "scalar parameter must occur exactly once: "+p.name)
-	}
 	typ, e := parameterType(p.schema, doc, 0)
 	if e != nil {
 		return nil, e
+	}
+	if typ == "array" {
+		obj, e := parameterSchemaObject(p.schema, doc, 0)
+		if e != nil {
+			return nil, e
+		}
+		items, exists := obj["items"]
+		if !exists {
+			return nil, output.New(9, "array parameter items schema is not advertised")
+		}
+		fields := raw
+		if !p.explode || p.location == "path" {
+			if len(raw) != 1 {
+				return nil, output.New(2, "non-exploded array parameter must occur once: "+p.name)
+			}
+			fields = strings.Split(raw[0], ",")
+		}
+		if len(fields) > 10000 {
+			return nil, output.New(2, "array parameter exceeds 10000 items")
+		}
+		values := []any{}
+		for _, field := range fields {
+			item := p
+			item.schema = items
+			itemType, e := parameterType(items, doc, 0)
+			if e != nil {
+				return nil, e
+			}
+			if itemType == "array" || itemType == "object" {
+				return nil, output.New(9, "nested parameter arrays/objects are not supported")
+			}
+			value, e := decodeParameter(item, []string{field}, doc)
+			if e != nil {
+				return nil, e
+			}
+			values = append(values, value)
+		}
+		return values, nil
+	}
+	if len(raw) != 1 {
+		return nil, output.New(2, "scalar parameter must occur exactly once: "+p.name)
 	}
 	switch typ {
 	case "", "string":
@@ -273,4 +311,25 @@ func parameterType(schema any, doc map[string]any, depth int) (string, error) {
 		return "null", nil
 	}
 	return "", nil
+}
+
+func parameterSchemaObject(schema any, doc map[string]any, depth int) (map[string]any, error) {
+	if depth > 16 {
+		return nil, output.New(9, "array parameter reference chain exceeds 16")
+	}
+	obj, ok := schema.(map[string]any)
+	if !ok {
+		return nil, output.New(9, "invalid array parameter schema")
+	}
+	if _, ok := obj["items"]; ok {
+		return obj, nil
+	}
+	if ref, ok := obj["$ref"].(string); ok {
+		target, e := schemacheck.Resolve(doc, ref)
+		if e != nil {
+			return nil, schemaError(e)
+		}
+		return parameterSchemaObject(target, doc, depth+1)
+	}
+	return nil, output.New(9, "array serialization requires an explicit items schema")
 }
