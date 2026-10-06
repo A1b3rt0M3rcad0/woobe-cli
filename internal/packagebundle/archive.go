@@ -3,6 +3,8 @@ package packagebundle
 import (
 	"archive/tar"
 	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"os"
@@ -26,7 +28,8 @@ func (b *Bundle) Archive(writer io.Writer, includeLock bool) error {
 		if err != nil {
 			return err
 		}
-		size, copyErr := io.Copy(archive, io.LimitReader(reader, item.SizeBytes+1))
+		digest := sha256.New()
+		size, copyErr := io.Copy(io.MultiWriter(archive, digest), io.LimitReader(reader, item.SizeBytes+1))
 		closeErr := reader.Close()
 		if copyErr != nil {
 			return copyErr
@@ -34,7 +37,7 @@ func (b *Bundle) Archive(writer io.Writer, includeLock bool) error {
 		if closeErr != nil {
 			return closeErr
 		}
-		if size != item.SizeBytes {
+		if size != item.SizeBytes || hex.EncodeToString(digest.Sum(nil)) != item.SHA256 {
 			return failure("PACKAGE_FILE_CHANGED", "Captured file changed before transfer", item.Path)
 		}
 	}

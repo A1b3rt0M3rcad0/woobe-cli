@@ -252,6 +252,10 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 	if e == nil {
 		return 0
 	}
+	if failure, ok := e.(*packageOperationFailure); ok {
+		_ = output.WriteWithMeta(a.Out, a.Mode, failure.Operation, map[string]string{"project_id": failure.Operation.ProjectID}, failure.Cause, map[string]any{"complete": false})
+		return failure.Cause.Code
+	}
 	if failure, ok := e.(*packageFailure); ok {
 		code := 2
 		if failure.Diagnostic.Code == "PACKAGE_UNSUPPORTED" {

@@ -1,0 +1,161 @@
+// Package packageapi transports Package operations independently of Manifest.
+package packageapi
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"regexp"
+
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/controlplane"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
+)
+
+var identifier = regexp.MustCompile(`^[A-Za-z0-9_.:-]{1,128}$`)
+
+type Client struct {
+	Control   *controlplane.Client
+	ProjectID string
+}
+
+func New(control *controlplane.Client, project string) (*Client, error) {
+	if control == nil || !identifier.MatchString(project) {
+		return nil, output.New(2, "Package requires a destination project")
+	}
+	return &Client{Control: control, ProjectID: project}, nil
+}
+
+func (c *Client) path(suffix string) string { return "/projects/" + c.ProjectID + "/packages" + suffix }
+
+func (c *Client) request(ctx context.Context, method, suffix string, body any, destination any) error {
+	var encoded []byte
+	if body != nil {
+		var err error
+		encoded, err = json.Marshal(body)
+		if err != nil || len(encoded) > 2<<20 {
+			return output.New(2, "Package request is invalid or exceeds 2 MiB")
+		}
+	}
+	value, _, err := c.Control.Request(ctx, method, c.path(suffix), nil, encoded)
+	if err != nil {
+		return err
+	}
+	envelope, ok := value.(map[string]any)
+	if !ok || envelope["success"] != true {
+		return output.New(9, "Server returned an invalid Package envelope")
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok || data["package_schema_version"] != "1.0" {
+		return output.New(9, "Server does not support Package schema 1.0")
+	}
+	encoded, err = json.Marshal(data)
+	if err != nil || json.Unmarshal(encoded, destination) != nil {
+		return output.New(9, "Server returned an invalid Package result")
+	}
+	return nil
+}
+
+type Capabilities struct {
+	PackageSchemaVersion string   `json:"package_schema_version"`
+	SchemaCatalogSHA256  string   `json:"schema_catalog_sha256"`
+	SupportedOperations  []string `json:"supported_operations"`
+	PrincipalFingerprint string   `json:"principal_fingerprint"`
+}
+
+func (c *Client) Capabilities(ctx context.Context) (Capabilities, error) {
+	var result Capabilities
+	err := c.request(ctx, http.MethodGet, "/capabilities", nil, &result)
+	return result, err
+}
+
+type InventoryItem struct {
+	Component  string `json:"component,omitempty"`
+	Kind       string `json:"kind,omitempty"`
+	Action     string `json:"action,omitempty"`
+	ResourceID string `json:"resource_id,omitempty"`
+}
+type Dependency struct {
+	Component  string `json:"component,omitempty"`
+	Kind       string `json:"kind,omitempty"`
+	State      string `json:"state"`
+	ResourceID string `json:"resource_id,omitempty"`
+}
+type Diagnostic struct {
+	Code string `json:"code"`
+	File string `json:"file,omitempty"`
+	Path string `json:"path,omitempty"`
+}
+type Operation struct {
+	PackageSchemaVersion string          `json:"package_schema_version"`
+	OperationID          string          `json:"operation_id"`
+	ProjectID            string          `json:"project_id"`
+	ArtifactDigest       string          `json:"artifact_digest"`
+	State                string          `json:"state"`
+	Terminal             bool            `json:"terminal"`
+	Phase                string          `json:"phase,omitempty"`
+	PhasesCompleted      int64           `json:"phases_completed"`
+	PhasesTotal          int64           `json:"phases_total"`
+	Revision             int64           `json:"revision"`
+	NextPollAfterMS      int64           `json:"next_poll_after_ms,omitempty"`
+	LifecycleState       string          `json:"lifecycle_state,omitempty"`
+	ConfigurationReady   bool            `json:"configuration_ready"`
+	ExecutionReady       bool            `json:"execution_ready"`
+	Inventory            []InventoryItem `json:"inventory"`
+	Dependencies         []Dependency    `json:"dependencies"`
+	Diagnostics          []Diagnostic    `json:"diagnostics"`
+}
+
+func (c *Client) operation(ctx context.Context, method, suffix string, body any) (Operation, error) {
+	var result Operation
+	err := c.request(ctx, method, suffix, body, &result)
+	if err != nil {
+		return result, err
+	}
+	states := map[string]bool{"accepted": true, "resolving": true, "materializing": true, "verifying": true, "waiting_dependency": true, "succeeded": true, "failed": true, "cancelling": true, "cancelled": true}
+	terminal := result.State == "succeeded" || result.State == "failed" || result.State == "cancelled"
+	if !identifier.MatchString(result.OperationID) || result.ProjectID != c.ProjectID || !states[result.State] ||
+		terminal != result.Terminal || result.Revision < 1 || result.PhasesCompleted < 0 || result.PhasesTotal < result.PhasesCompleted {
+		return Operation{}, output.New(9, "Server returned inconsistent Package operation evidence")
+	}
+	return result, nil
+}
+
+func (c *Client) Status(ctx context.Context, id string) (Operation, error) {
+	if !identifier.MatchString(id) {
+		return Operation{}, output.New(2, "Invalid Package operation ID")
+	}
+	result, err := c.operation(ctx, http.MethodGet, "/operations/"+id, nil)
+	if err == nil && result.OperationID != id {
+		return Operation{}, output.New(9, "Server returned a different Package operation")
+	}
+	return result, err
+}
+
+func (c *Client) Lookup(ctx context.Context, key string) (Operation, error) {
+	if !identifier.MatchString(key) {
+		return Operation{}, output.New(2, "Invalid Package idempotency key")
+	}
+	return c.operation(ctx, http.MethodPost, "/operations/lookup", map[string]any{"idempotency_key": key})
+}
+
+func (c *Client) Cancel(ctx context.Context, id string) (Operation, error) {
+	if !identifier.MatchString(id) {
+		return Operation{}, output.New(2, "Invalid Package operation ID")
+	}
+	result, err := c.operation(ctx, http.MethodPost, "/operations/"+id+"/cancel", map[string]any{})
+	if err == nil && result.OperationID != id {
+		return Operation{}, output.New(9, "Server returned a different Package operation")
+	}
+	return result, err
+}
+
+func (c *Client) Resume(ctx context.Context, id string, revision int64) (Operation, error) {
+	if !identifier.MatchString(id) || revision < 1 {
+		return Operation{}, output.New(2, "Resume requires an observed operation revision")
+	}
+	result, err := c.operation(ctx, http.MethodPost, "/operations/"+id+"/resume", map[string]any{"expected_revision": revision})
+	if err == nil && result.OperationID != id {
+		return Operation{}, output.New(9, "Server returned a different Package operation")
+	}
+	return result, err
+}
