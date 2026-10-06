@@ -20,6 +20,9 @@ func (a *App) readManifest() (manifest.Document, error) {
 }
 func (a *App) validateManifest(d manifest.Document) error {
 	for _, s := range d.Steps {
+		if len(stepSecretNames(s)) > 0 && !secretConfigurationCommand(s.Command) {
+			return output.New(2, "protected references are supported only for Tool and provider credential configuration")
+		}
 		var found *Operation
 		for _, op := range a.Registry {
 			if op.Command == s.Command {
