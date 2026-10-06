@@ -1,6 +1,6 @@
 # Completude do planejamento integral
 
-**62.4% — 63/101 entregas concluídas; 36 parciais e 2 pendentes.**
+**65.3% — 66/101 entregas concluídas; 34 parciais e 1 pendentes.**
 
 Base: todas as 101 entregas das fases 0–9 do §18 de PLAN.md, com peso igual. Concluída=1; parcial=0; pendente=0. A classificação é uma avaliação de engenharia com evidência por item, não estimativa de esforço, cobertura de código ou certificação de produção.
 
@@ -14,10 +14,10 @@ O denominador inclui backend, CLI, documentação e distribuição. Concluída s
 | 3 | 7 | 2 | 0 | 7/9 |
 | 4 | 8 | 2 | 0 | 8/10 |
 | 5 | 6 | 4 | 0 | 6/10 |
-| 6 | 6 | 4 | 0 | 6/10 |
+| 6 | 7 | 3 | 0 | 7/10 |
 | 7 | 7 | 3 | 0 | 7/10 |
-| 8 | 7 | 2 | 1 | 7/10 |
-| 9 | 5 | 4 | 1 | 5/10 |
+| 8 | 8 | 2 | 0 | 8/10 |
+| 9 | 6 | 3 | 1 | 6/10 |
 
 ## Avaliação item a item
 
@@ -86,7 +86,7 @@ O denominador inclui backend, CLI, documentação e distribuição. Concluída s
 | 5.10 | Diff/export de configurações autorizado. | parcial | Authorized projections/capture/field diff exist; complete semantic export for all configuration is absent. |
 | 6.1 | Tools HTTP/MCP, lifecycle, uso, testes e execução explícita. | concluída | tool.go provides HTTP/MCP lifecycle/test/execute handlers with explicit execution effects. |
 | 6.2 | Discovery/refresh e autenticação MCP suportada. | concluída | Observed MCP discovery/refresh/auth handlers exist; real deployment acceptance remains a separate gate. |
-| 6.3 | Permissões MCP allow/deny/review. | parcial | MCP permission endpoints exist; canonical allow/deny/review conditions are not validated. |
+| 6.3 | Permissões MCP allow/deny/review. | concluída | Canonical allow/deny/review validation is always applied by direct commands, validate-input and resolved manifest writes. DTOs forbid unknown fields, whitespace, duplicate names and unbounded permission lists. Backend refuses undiscovered names atomically and invalid providers; unit tests cover selective/bulk transitions and review exposure. Required live transitions and unknown-name refusal are added to PR #177; exact final CI evidence is maintained there. OAuth discovery/connection success and every-principal phase acceptance are separate gates. |
 | 6.4 | Segredos e credentials com projeção correta. | parcial | Client redaction/secret issuance is tested; server projection and native storage remain unverified. |
 | 6.5 | Collections, Documents, upload/search e Vector Snapshots. | concluída | knowledge.go/upload.go supply collection/document/search/snapshot handlers and multipart fixture. |
 | 6.6 | Providers/models e discovery separado da persistência. | concluída | catalog.go separates observed provider/model discovery/read/write handlers. |
@@ -111,12 +111,12 @@ O denominador inclui backend, CLI, documentação e distribuição. Concluída s
 | 8.5 | Checkpoint e retomada por reconciliação. | concluída | Locked key/context-bound checkpoint resume, strict bounded reads/saves, exact returned numeric references, plan/result/dependency integrity and explicit-ID reconciliation are delivered. Original-write attribution/server idempotency and human principal binding remain partial. |
 | 8.6 | Relatório parcial/skipped e código de saída próprio. | concluída | Partial reports include checkpoint state/counts, stopped step, save status and cause. not_attempted steps are resumable; committed steps skipped and uncertain attempts require reconciliation. Fixture tests prove dependent validation cannot send a refused write. |
 | 8.7 | Importação de categorias sem concessão implícita. | concluída | AuthorityCategory resource import compiles explicit Workspace-scoped create/update definitions, requires ETag for edits, rejects grants/assignments/lifecycle fields and retains checkpoints. Offline/unit/native fixture regressions pass; required live import/resume/pinned-reader acceptance is added to PR #177 and its current CI evidence is tracked there. No implicit authority concession, name upsert or lost-checkpoint create replay is promised. |
-| 8.8 | Referências protegidas para credenciais. | pendente | Manifests reject literal secrets; protected secret-provider references are not implemented. |
+| 8.8 | Referências protegidas para credenciais. | concluída | Exact {$secret_ref:NAME} objects in Tool/provider credential configuration resolve from the selected POSIX private-file store only during apply. Preflight defers without reading values; compile preserves markers; checkpoint hashes bind values, changed/missing credentials refuse resume, outputs redact echoed values, and uncertain writes cannot replay or reconcile from redacted getters. Unit/native-plan fixtures pass and live provider import/resume is required in PR #177. Native OS keychains and Windows protected storage remain partial in 2.7; environment interpolation/remote secret providers are unsupported. |
 | 8.9 | Nenhuma publicação/prune implícitos. | concluída | Manifest validation rejects publication/execution/key issuance/delete; there is no implicit prune. |
 | 8.10 | Não usar export incompleto como PATCH destrutivo. | concluída | Projection documents are not accepted as manifests; capture selects explicit readable fields and tests preserve omissions/null. |
 | 9.1 | Build do executável Go `woobe` e versão semântica com revisão identificável. | concluída | Go build/version exposes source commit, compiler and OS/architecture; packaging injects release version and commit. |
 | 9.2 | Instalação limpa a partir de binários publicados e `go install` por tag. | pendente | No published tag/release or fresh go install by tag validated. |
-| 9.3 | CI do CLI e suites integradas do backend. | parcial | CLI code 659baea passed all six jobs in run 37385398090; required live backend/CLI tests passed at 8ab9d139 (run 37386311731). Seven workflow groups passed at prior backend 77c53832. Latest workflow results remain in PR #177; full phase acceptance is not asserted. Workspace category import/capture/immutable diff and additional Tool/MCP/Knowledge/publication DTO schemas are implemented; required new live gate is tracked in PR #177. |
+| 9.3 | CI do CLI e suites integradas do backend. | concluída | Audit correction: this item requires CLI CI and integrated backend suites, not acceptance of every phase. CLI c7209fc7 passed all six jobs in run 37399056624, including native Linux/macOS/Windows smoke; backend 747ee0dd passed seven workflow groups, with required live CLI test suite run 37400698617 and Acceptance 37400698427. Backend pins an immutable client SHA and fails when required live CLI evidence is absent. Current expanded gates and exact SHA results remain in PR #177; no full phase acceptance is claimed. |
 | 9.4 | Documentação de cada comando, permissão, exemplo e capacidade mínima. | parcial | Generated catalog/usage exist; all domain examples/effective permission/capability contracts are incomplete. |
 | 9.5 | Completion e smoke de help. | concluída | Cobra completion/help discovery and native build smoke pass. |
 | 9.6 | Matriz de compatibilidade cliente/servidor/protocolo. | parcial | Woobe PR #177 at 77c53832f0e5b35488d1574b3cf62777486f5189: seven backend workflows passed; draft remains unmerged. Backend 77c53832 and CLI a9c6ace are proven compatible by required live tests; broader client/server version matrix remains. |

@@ -459,8 +459,8 @@
       "id": "6.3",
       "phase": 6,
       "requirement": "Permissões MCP allow/deny/review.",
-      "status": "partial",
-      "evidence": "MCP permission endpoints exist; canonical allow/deny/review conditions are not validated."
+      "status": "done",
+      "evidence": "Canonical allow/deny/review validation is always applied by direct commands, validate-input and resolved manifest writes. DTOs forbid unknown fields, whitespace, duplicate names and unbounded permission lists. Backend refuses undiscovered names atomically and invalid providers; unit tests cover selective/bulk transitions and review exposure. Required live transitions and unknown-name refusal are added to PR #177; exact final CI evidence is maintained there. OAuth discovery/connection success and every-principal phase acceptance are separate gates."
     },
     {
       "id": "6.4",
@@ -634,8 +634,8 @@
       "id": "8.8",
       "phase": 8,
       "requirement": "Referências protegidas para credenciais.",
-      "status": "pending",
-      "evidence": "Manifests reject literal secrets; protected secret-provider references are not implemented."
+      "status": "done",
+      "evidence": "Exact {$secret_ref:NAME} objects in Tool/provider credential configuration resolve from the selected POSIX private-file store only during apply. Preflight defers without reading values; compile preserves markers; checkpoint hashes bind values, changed/missing credentials refuse resume, outputs redact echoed values, and uncertain writes cannot replay or reconcile from redacted getters. Unit/native-plan fixtures pass and live provider import/resume is required in PR #177. Native OS keychains and Windows protected storage remain partial in 2.7; environment interpolation/remote secret providers are unsupported."
     },
     {
       "id": "8.9",
@@ -669,8 +669,8 @@
       "id": "9.3",
       "phase": 9,
       "requirement": "CI do CLI e suites integradas do backend.",
-      "status": "partial",
-      "evidence": "CLI code 659baea passed all six jobs in run 37385398090; required live backend/CLI tests passed at 8ab9d139 (run 37386311731). Seven workflow groups passed at prior backend 77c53832. Latest workflow results remain in PR #177; full phase acceptance is not asserted. Workspace category import/capture/immutable diff and additional Tool/MCP/Knowledge/publication DTO schemas are implemented; required new live gate is tracked in PR #177."
+      "status": "done",
+      "evidence": "Audit correction: this item requires CLI CI and integrated backend suites, not acceptance of every phase. CLI c7209fc7 passed all six jobs in run 37399056624, including native Linux/macOS/Windows smoke; backend 747ee0dd passed seven workflow groups, with required live CLI test suite run 37400698617 and Acceptance 37400698427. Backend pins an immutable client SHA and fails when required live CLI evidence is absent. Current expanded gates and exact SHA results remain in PR #177; no full phase acceptance is claimed."
     },
     {
       "id": "9.4",
@@ -725,14 +725,14 @@
   "backend_evidence": {
     "repository": "A1b3rt0M3rcad0/woobe",
     "pr": 177,
-    "commit": "77c53832f0e5b35488d1574b3cf62777486f5189",
-    "cli_commit": "a9c6ace053ea1f3e57abbb5d372f77010211ad56",
+    "commit": "747ee0ddcead7fda22ffc6aa7da5f277db0bee50",
+    "cli_commit": "c7209fc7c9026ff03c1d71fd8f9a6459556a212a",
     "state": "draft, unmerged",
     "workflow_count": 7
   },
   "client_evidence": {
-    "code_commit": "659baea23458380b84bc7059d2a544c9c06fc1f5",
-    "ci_run": 37385398090,
+    "code_commit": "c7209fc7c9026ff03c1d71fd8f9a6459556a212a",
+    "ci_run": 37399056624,
     "native_os": [
       "linux",
       "darwin",
@@ -745,5 +745,17 @@
     "cli_commit": "659baea23458380b84bc7059d2a544c9c06fc1f5",
     "catalog_revision": "2026-10-05.2",
     "required_live_cli_run": 37386311731
+  },
+  "current_continuation": {
+    "previous_validated_backend": "747ee0ddcead7fda22ffc6aa7da5f277db0bee50",
+    "previous_validated_cli": "c7209fc7c9026ff03c1d71fd8f9a6459556a212a",
+    "local_backend_tests": 1340,
+    "required_live_contract": "tests/integration/cli/test_control_plane_workflow.py",
+    "current_head_ci_evidence": "https://github.com/A1b3rt0M3rcad0/woobe/pull/177",
+    "new_completed_items": [
+      "6.3",
+      "8.8"
+    ],
+    "audit_corrected_item": "9.3"
   }
 }

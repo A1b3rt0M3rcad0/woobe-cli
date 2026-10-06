@@ -23,7 +23,7 @@ The pagination/backend continuation is `8ab9d13953c1cd77462af85a3a3a957395141edc
 
 ## Remaining work
 
-Native credential providers and sessions, full declarative observe/plan/apply reconciliation, complete input schema/dialect/route/query coverage, stream reconnect/replay/gaps, complete semantic export/import and protected manifest secret references remain. Pagination is implemented for all four reviewed body-paginated administrative routes, but full semantic export remains partial and unknown endpoint protocols are not inferred.
+Native credential providers and sessions, full declarative observe/plan/apply reconciliation, complete input schema/dialect/route/query coverage, stream reconnect/replay/gaps, complete semantic export/import remain. Pagination is implemented for all four reviewed body-paginated administrative routes, but full semantic export remains partial and unknown endpoint protocols are not inferred.
 
 The [101-item audit](COMPLETENESS.md) now includes the separately delivered backend evidence. Its percentage measures delivered roadmap items, not effort or production readiness. No full phase acceptance is asserted merely from individual tests.
 
@@ -73,3 +73,28 @@ The ledger is now **63/101 (62.4%)**, 36 partial and 2 pending. Category definit
 import closes 8.7; category-applied grant migration stays partial in 4.7. Full
 reconciliation, native protected credentials/sessions, exhaustive schema and
 principal qualification, streams, semantic export and release gates remain.
+
+
+## Protected references and MCP permission continuation — 2026-10-05
+
+Thirty additional commits span CLI and the existing backend draft PR. Protected
+manifest references now support Tool/provider configuration through the POSIX
+private-file store, with deferred preflight, in-memory wire values, hash-bound
+checkpoints, echo redaction and explicit refusal of uncertain secret reconciliation
+or skip-unchanged. Native keychains and Windows protection remain partial.
+
+MCP permission inputs are canonical in every direct write and resolved manifest
+write. The backend refuses ambiguous/undiscovered remote names before changing
+anything and validates MCP provider discovery. Reviewed read contracts cover
+Agents, providers, Knowledge, Tools, message paging and Skills; Skills import and
+six MCP OAuth operation bodies use their existing DTOs. Backend local validation
+passed 1340 tests; CLI make check passed. Expanded live gates and current CI SHA
+evidence belong in PR #177; previous pair 747ee0dd/c7209fc7 passed all seven
+backend workflow groups and all six CLI jobs.
+
+The ledger is **66/101 (65.3%)**, 34 partial and 1 pending. Items 6.3 and 8.8
+are newly delivered. Item 9.3 is an audit correction: its CI/integrated-suite
+criterion is met; full phase acceptance is a distinct criterion and remains
+unverified. Grant/assignment migration, exhaustive reconciliation, native
+credentials/sessions, full DTO/dialect coverage, stream recovery, semantic
+export and tagged installation/release remain open.
