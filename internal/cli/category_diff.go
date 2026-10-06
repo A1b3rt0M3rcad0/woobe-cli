@@ -21,6 +21,15 @@ func (a *App) categoryDiffCommand() {
 		if _, e := a.resolve(); e != nil {
 			return e
 		}
+		if a.Workspace == "" {
+			return output.New(2, "category diff requires selected Workspace")
+		}
+		if e := resourceID(args[0]); e != nil {
+			return e
+		}
+		if a.DryRun {
+			return a.emit(map[string]any{"category_id": args[0], "workspace_id": a.Workspace, "from_revision": from, "to_revision": to, "comparison": "not_evaluated_dry_run", "executed": false, "grants_changed": false, "schema_fetched": false})
+		}
 		op, _ := a.operation("workspace authority category get")
 		if e := a.requireAdvertised(cmd.Context(), op); e != nil {
 			return e

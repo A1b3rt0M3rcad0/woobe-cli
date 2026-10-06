@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from discovery: 240 executable entries, including 190 HTTP operations. Route advertisement does not grant authority. Use `manifest kinds` for 13 declared resource kinds and `COMPLETENESS.md` for roadmap delivery evidence. Reviewed pagination is described in [PAGINATION.md](PAGINATION.md).
+Generated from discovery: 241 executable entries, including 190 HTTP operations. Route advertisement does not grant authority. Use `manifest kinds` for 14 declared resource kinds and `COMPLETENESS.md` for roadmap delivery evidence. Reviewed pagination is described in [PAGINATION.md](PAGINATION.md).
 
 | Command | Kind | HTTP | Availability | Permission hint | Pagination |
 | --- | --- | --- | --- | --- | --- |
@@ -244,3 +244,5 @@ Generated from discovery: 240 executable entries, including 190 HTTP operations.
 | `workspace member remove` | `http` | `DELETE /identity/workspaces/{workspace_id}/members/{user_id}` | `observed` | — | — |
 | `workspace project-access list` | `http` | `GET /core/workspaces/{workspace_id}/project-access` | `observed` | — | — |
 | `workspace update` | `http` | `PATCH /identity/workspaces/{workspace_id}` | `observed` | — | — |
+
+| `workspace authority category diff` | `composition` | — | `server-dependent` | `read` | `client` |

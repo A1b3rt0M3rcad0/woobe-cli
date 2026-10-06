@@ -267,3 +267,44 @@ that depend on prior step results and records parameter/body evidence separately
 Manifest parameter validation uses each operation's context-derived query scope;
 global `--query` overrides are refused because they are not propagated to steps.
 Unknown server query keys are never approved by guessing their semantics.
+
+
+## Workspace category definitions
+
+`AuthorityCategory` is a Workspace-owned resource kind. A category-only resource
+manifest requires `workspace_id`; `project_id` is optional. Mixed documents still
+require the owning scope of every kind. Creating a definition does not issue keys
+or assign authority. Editing a definition requires an explicit ID and strong
+`if_match`; it does not migrate existing grants to the new revision.
+
+```json
+{
+  "schema_version": "2",
+  "workspace_id": "WORKSPACE_UUID",
+  "resources": [{
+    "key": "reader", "kind": "AuthorityCategory", "action": "create",
+    "spec": {"name": "custom-reader", "scope": "project", "permissions": ["agent:read"]}
+  }]
+}
+```
+
+```sh
+woobe manifest preflight --workspace WORKSPACE_UUID --file category.json --validate-parameters --require-complete
+woobe manifest apply --workspace WORKSPACE_UUID --file category.json --checkpoint category.checkpoint.json --validate-body --validate-parameters --yes
+woobe workspace authority category diff CATEGORY_UUID --workspace WORKSPACE_UUID --from-revision 1 --to-revision 2
+woobe manifest capture --kind AuthorityCategory --id CATEGORY_UUID --workspace WORKSPACE_UUID --field name --field permissions --destination category-edit.json
+```
+
+The diff reads exactly the two selected immutable definitions and reports supplied
+configuration fields. It does not calculate every affected assignment or apply a
+migration. `--dry-run` reports that comparison was not evaluated and performs no
+network requests. Permission/condition order does not create a change; an absent
+restriction and an empty restrictive set remain distinct. Unknown condition
+semantics are unsupported rather than silently compared as understood authority.
+
+Capture copies only selected fields and the observed ETag. Category specs exclude
+assignment, grant, identity, status and revision fields; scope is immutable during
+update. Server OpenAPI advertisement is checked before category writes. A saved
+successful checkpoint resumes without another create; a lost checkpoint does not
+make category creation idempotent or infer existence by name. Full uncertain-write
+reconciliation and applied-category grant migration remain incomplete.

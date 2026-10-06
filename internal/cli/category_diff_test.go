@@ -31,3 +31,13 @@ func TestCategoryRevisionDiffIsReadOnlyAndExplicit(t *testing.T) {
 		t.Fatal(d)
 	}
 }
+
+func TestCategoryRevisionDiffDryRunDoesNotDiscoverOrRead(t *testing.T) {
+	requests := 0
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requests++; w.WriteHeader(500) }))
+	defer s.Close()
+	code, v := invoke(t, []string{"workspace", "authority", "category", "diff", "c", "--from-revision", "1", "--to-revision", "2", "--workspace", "w", "--api-url", s.URL, "--dry-run"}, "")
+	if code != 0 || requests != 0 || v["data"].(map[string]any)["comparison"] != "not_evaluated_dry_run" {
+		t.Fatal(code, v, requests)
+	}
+}

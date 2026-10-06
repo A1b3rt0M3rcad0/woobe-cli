@@ -8,7 +8,7 @@ bin/woobe help --output json
 bin/woobe schema --command "project agent create"
 ```
 
-Unified discovery exposes 240 executable handlers including 190 HTTP operations, explicit context and credential selection, Agent/Network configuration and release operations, upload, remote manifest comparison, explicit-ID checkpoint reconciliation, resource-kind manifests, selective field capture and bounded reviewed body/Link pagination, authoritative input validation and partial resource export.
+Unified discovery exposes 241 executable handlers including 190 HTTP operations, explicit context and credential selection, Agent/Network configuration and release operations, upload, remote manifest comparison, explicit-ID checkpoint reconciliation, resource-kind manifests, selective field capture and bounded reviewed body/Link pagination, authoritative input validation and partial resource export.
 
 **The full design is not complete.** See [implementation status](docs/STATUS.md), [usage](docs/USAGE.md), [operation catalog](docs/OPERATIONS.md) and the [remaining requirements](docs/REMAINING.md) and [canonical design](docs/PLAN.md). Proposed server capabilities require OpenAPI advertisement and return unsupported errors when absent. No permissions are granted by the client.
 
@@ -23,3 +23,5 @@ Canonical HTTP writes and manifest apply can opt into `--validate-body`; `manife
 CI packages six Linux/macOS/Windows amd64/arm64 targets, verifies their source SHA/checksums/schemas and exercises packaged executables on three native runner OSes. Distribution archives and verification reports are stored in Actions artifacts; these development builds are not tagged releases. See [CI contract](docs/CI.md).
 
 Backend authority and live Agent/Network acceptance are delivered in [Woobe PR #177](https://github.com/A1b3rt0M3rcad0/woobe/pull/177), which remains draft for user approval. Reviewed pagination contracts and explicit collection evidence are documented in [PAGINATION.md](docs/PAGINATION.md).
+
+Workspace category definition manifests, selective capture and explicit immutable revision diffs are documented in [USAGE.md](docs/USAGE.md). Existing grants remain revision-pinned.
