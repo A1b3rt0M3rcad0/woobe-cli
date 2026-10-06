@@ -32,7 +32,7 @@ func TestAllResourceKindsCompileExplicitActions(t *testing.T) {
 					r.ResourceID = "p"
 				}
 			}
-			d := ResourceDocument{SchemaVersion: "2", Project: "p", Resources: []Resource{r}}
+			d := ResourceDocument{SchemaVersion: "2", Workspace: "w", Project: "p", Resources: []Resource{r}}
 			_, e := d.Compile()
 			supported := action == "create" && k.Create != "" || action == "update" && k.Update != ""
 			if (e == nil) != supported {

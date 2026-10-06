@@ -11,7 +11,7 @@ import (
 type ResourceDocument struct {
 	SchemaVersion string     `json:"schema_version"`
 	Workspace     string     `json:"workspace_id,omitempty"`
-	Project       string     `json:"project_id"`
+	Project       string     `json:"project_id,omitempty"`
 	Resources     []Resource `json:"resources"`
 }
 type Resource struct {
@@ -39,6 +39,7 @@ func Kinds() []Kind {
 	for i := range kinds {
 		kinds[i].Scope = "project"
 	}
+	kinds = append(kinds, Kind{Name: "AuthorityCategory", Scope: "workspace", Create: "workspace authority category create", Update: "workspace authority category update", Parents: []string{}})
 	return kinds
 }
 
@@ -88,8 +89,8 @@ func parseResources(b []byte) (Document, error) {
 }
 func (d ResourceDocument) Compile() (Document, error) {
 	out := Document{SchemaVersion: "1", Workspace: d.Workspace, Project: d.Project, SourceVersion: "2"}
-	if d.SchemaVersion != "2" || d.Project == "" || len(d.Resources) == 0 || len(d.Resources) > 1000 {
-		return out, fmt.Errorf("resource manifest requires schema_version 2, project_id and 1 to 1000 resources")
+	if d.SchemaVersion != "2" || len(d.Resources) == 0 || len(d.Resources) > 1000 {
+		return out, fmt.Errorf("resource manifest requires schema_version 2 and 1 to 1000 resources")
 	}
 	declared := map[string]string{}
 	for _, r := range d.Resources {
@@ -106,6 +107,12 @@ func (d ResourceDocument) Compile() (Document, error) {
 		k, ok := catalog[r.Kind]
 		if !ok {
 			return out, fmt.Errorf("unsupported resource kind %s", r.Kind)
+		}
+		if k.Scope == "workspace" && d.Workspace == "" {
+			return out, fmt.Errorf("workspace_id required for %s", r.Kind)
+		}
+		if k.Scope == "project" && d.Project == "" {
+			return out, fmt.Errorf("project_id required for %s", r.Kind)
 		}
 		if r.Kind == "Project" && r.ResourceID != d.Project {
 			return out, fmt.Errorf("Project resource_id must equal document project_id")
