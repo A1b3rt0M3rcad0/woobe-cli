@@ -160,53 +160,117 @@ func decodeParameter(p advertisedParameter, raw []string, doc map[string]any) (a
 	if len(raw) != 1 {
 		return nil, output.New(2, "scalar parameter must occur exactly once: "+p.name)
 	}
-	schema := p.schema
-	for depth := 0; depth < 16; depth++ {
-		obj, ok := schema.(map[string]any)
-		if !ok {
-			if b, ok := schema.(bool); ok && b {
-				return raw[0], nil
-			}
-			return nil, output.New(9, "unsupported parameter schema")
+	typ, e := parameterType(p.schema, doc, 0)
+	if e != nil {
+		return nil, e
+	}
+	switch typ {
+	case "", "string":
+		return raw[0], nil
+	case "boolean":
+		if raw[0] == "true" {
+			return true, nil
 		}
-		if ref, ok := obj["$ref"].(string); ok {
-			var e error
-			schema, e = schemacheck.Resolve(doc, ref)
-			if e != nil {
-				return nil, schemaError(e)
-			}
-			continue
+		if raw[0] == "false" {
+			return false, nil
 		}
-		typ, _ := obj["type"].(string)
-		switch typ {
-		case "", "string":
-			return raw[0], nil
-		case "boolean":
-			if raw[0] == "true" {
-				return true, nil
-			}
-			if raw[0] == "false" {
-				return false, nil
-			}
-			return nil, output.New(2, "boolean parameter must be true or false: "+p.name)
-		case "integer", "number":
-			d := json.NewDecoder(strings.NewReader(raw[0]))
-			d.UseNumber()
-			var value any
-			if e := d.Decode(&value); e != nil {
-				return nil, output.New(2, "invalid numeric parameter: "+p.name)
-			}
-			if _, ok := value.(json.Number); !ok {
-				return nil, output.New(2, "invalid numeric parameter: "+p.name)
-			}
-			var extra any
-			if d.Decode(&extra) != io.EOF {
-				return nil, output.New(2, "ambiguous numeric parameter: "+p.name)
-			}
-			return value, nil
-		default:
-			return nil, output.New(9, "unsupported parameter schema type")
+		return nil, output.New(2, "boolean parameter must be true or false: "+p.name)
+	case "integer", "number":
+		d := json.NewDecoder(strings.NewReader(raw[0]))
+		d.UseNumber()
+		var value any
+		if e := d.Decode(&value); e != nil {
+			return nil, output.New(2, "invalid numeric parameter: "+p.name)
+		}
+		if _, ok := value.(json.Number); !ok {
+			return nil, output.New(2, "invalid numeric parameter: "+p.name)
+		}
+		var extra any
+		if d.Decode(&extra) != io.EOF {
+			return nil, output.New(2, "ambiguous numeric parameter: "+p.name)
+		}
+		return value, nil
+	default:
+		return nil, output.New(9, "unsupported parameter schema type")
+	}
+
+}
+
+// Infer serialization only when all non-null declarations agree on one type.
+func parameterType(schema any, doc map[string]any, depth int) (string, error) {
+	if depth > 16 {
+		return "", output.New(9, "parameter schema composition exceeds 16")
+	}
+	if b, ok := schema.(bool); ok {
+		if b {
+			return "string", nil
+		}
+		return "", output.New(9, "false parameter schema")
+	}
+	obj, ok := schema.(map[string]any)
+	if !ok {
+		return "", output.New(9, "invalid parameter schema")
+	}
+	types := map[string]bool{}
+	add := func(t string) {
+		if t != "null" && t != "" {
+			types[t] = true
 		}
 	}
-	return nil, output.New(9, "parameter reference chain exceeds 16")
+	if raw, exists := obj["type"]; exists {
+		switch t := raw.(type) {
+		case string:
+			add(t)
+		case []any:
+			for _, v := range t {
+				name, ok := v.(string)
+				if !ok {
+					return "", output.New(9, "invalid parameter type")
+				}
+				add(name)
+			}
+		default:
+			return "", output.New(9, "invalid parameter type")
+		}
+	}
+	if ref, exists := obj["$ref"]; exists {
+		name, ok := ref.(string)
+		if !ok {
+			return "", output.New(9, "invalid parameter reference")
+		}
+		target, e := schemacheck.Resolve(doc, name)
+		if e != nil {
+			return "", schemaError(e)
+		}
+		typ, e := parameterType(target, doc, depth+1)
+		if e != nil {
+			return "", e
+		}
+		add(typ)
+	}
+	for _, key := range []string{"allOf", "anyOf", "oneOf"} {
+		if raw, exists := obj[key]; exists {
+			branches, ok := raw.([]any)
+			if !ok || len(branches) == 0 || len(branches) > 128 {
+				return "", output.New(9, "invalid parameter composition")
+			}
+			for _, branch := range branches {
+				typ, e := parameterType(branch, doc, depth+1)
+				if e != nil {
+					return "", e
+				}
+				add(typ)
+			}
+		}
+	}
+	if len(types) > 1 {
+		return "", output.New(9, "ambiguous parameter serialization type")
+	}
+	for typ := range types {
+		return typ, nil
+	}
+	if obj["type"] == "null" {
+		return "null", nil
+	}
+	return "", nil
 }

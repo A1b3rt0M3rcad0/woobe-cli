@@ -43,3 +43,23 @@ func TestOperationParameterOverride(t *testing.T) {
 		t.Fatal("duplicate accepted")
 	}
 }
+
+func TestNullableAndReferencedParameterSerialization(t *testing.T) {
+	doc := map[string]any{"openapi": "3.1.0", "components": map[string]any{"schemas": map[string]any{"Limit": map[string]any{"anyOf": []any{map[string]any{"type": "integer", "minimum": float64(1)}, map[string]any{"type": "null"}}}}}}
+	p := parameter("limit", "query", "string", false)
+	p["schema"] = map[string]any{"$ref": "#/components/schemas/Limit"}
+	def := map[string]any{"parameters": []any{p}}
+	for _, tc := range []struct {
+		value string
+		code  int
+	}{{"2", 0}, {"0", 2}, {"null", 2}, {"1 garbage", 2}, {"2.5", 2}} {
+		e := validateParameterSchema(doc, nil, def, nil, url.Values{"limit": {tc.value}})
+		if e == nil && tc.code != 0 || e != nil && output.Normalize(e).Code != tc.code {
+			t.Fatal(tc, e)
+		}
+	}
+	p["schema"] = map[string]any{"type": []any{"integer", "string"}}
+	if e := validateParameterSchema(doc, nil, def, nil, url.Values{"limit": {"2"}}); e == nil || output.Normalize(e).Code != 9 {
+		t.Fatal(e)
+	}
+}
