@@ -77,6 +77,15 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 				}
 				parameterStatus = "supported_schema_subset"
 			}
+			if len(stepSecretNames(s)) > 0 {
+				if check := validateBodySchema(doc, def, []byte("null")); check != nil && output.Normalize(check).Code == 9 {
+					failed(s.ID, check, false)
+					continue
+				}
+				complete = false
+				rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "deferred_protected_credential", "path_query_validation": parameterStatus, "write_executed": false, "secret_values_read": false})
+				continue
+			}
 			var body any
 			if len(s.Body) > 0 {
 				dec := json.NewDecoder(bytes.NewReader(s.Body))
@@ -108,7 +117,7 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 		}
 		data := map[string]any{"manifest_hash": d.Hash(), "schema_sha256": schemaDigest(doc), "operations": rows, "complete": complete, "authorization": "not_evaluated", "validation_direction": "request", "path_query_validation": parameterStatus, "executed": false}
 		if requireComplete && !complete && failure == nil {
-			failure = output.New(9, "dependency body schemas require execution results before complete validation")
+			failure = output.New(9, "dependency results or protected credentials require apply before complete validation")
 		}
 		if failure != nil {
 			return &preflightFailure{Data: data, Cause: failure}
