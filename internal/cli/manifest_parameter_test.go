@@ -50,3 +50,18 @@ func TestManifestPreflightIncludesParameterEvidence(t *testing.T) {
 		t.Fatal(v)
 	}
 }
+
+func TestParameterPreflightFailureDoesNotClaimBodyEvaluation(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"paths":{"/ai/agents/{agent_id}":{"patch":{"parameters":[{"name":"agent_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}]}}}}`))
+	}))
+	defer s.Close()
+	code, v := invoke(t, []string{"manifest", "preflight", "--file", "-", "--api-url", s.URL, "--validate-parameters"}, `{"schema_version":"1","steps":[{"id":"a","command":"project agent update","args":["invalid"],"body":{"name":"A"}}]}`)
+	if code != 2 {
+		t.Fatal(code, v)
+	}
+	row := v["data"].(map[string]any)["operations"].([]any)[0].(map[string]any)
+	if row["body_validation"] != "not_evaluated" || row["path_query_validation"] != "failed" {
+		t.Fatal(v)
+	}
+}

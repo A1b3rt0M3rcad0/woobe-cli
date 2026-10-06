@@ -40,19 +40,23 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 		rows := []map[string]any{}
 		var failure *output.Error
 		complete := true
-		failed := func(id string, e error) {
+		failed := func(id string, e error, parameterFailure bool) {
 			complete = false
 			cause := output.Normalize(e)
 			if failure == nil || cause.Code == 9 {
 				failure = cause
 			}
-			rows = append(rows, map[string]any{"step_id": id, "body_validation": "failed", "error": cause, "write_executed": false})
+			bodyStatus, parameterStatus := "failed", "not_evaluated"
+			if parameterFailure {
+				bodyStatus, parameterStatus = "not_evaluated", "failed"
+			}
+			rows = append(rows, map[string]any{"step_id": id, "body_validation": bodyStatus, "path_query_validation": parameterStatus, "error": cause, "write_executed": false})
 		}
 		for _, s := range steps {
 			op, _ := a.operation(s.Command)
 			def, e := operationDefinition(doc, op)
 			if e != nil {
-				failed(s.ID, e)
+				failed(s.ID, e, false)
 				continue
 			}
 			parameterStatus := "not_evaluated"
@@ -68,7 +72,7 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 					e = validateOperationParameters(doc, op, values, query)
 				}
 				if e != nil {
-					failed(s.ID, e)
+					failed(s.ID, e, true)
 					continue
 				}
 				parameterStatus = "supported_schema_subset"
@@ -83,7 +87,7 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 				body, e = manifest.Resolve(body, map[string]any{})
 				if e != nil {
 					if check := validateBodySchema(doc, def, []byte("null")); check != nil && output.Normalize(check).Code == 9 {
-						failed(s.ID, check)
+						failed(s.ID, check, false)
 						continue
 					}
 					complete = false
@@ -93,7 +97,7 @@ func (a *App) manifestPreflightCommand(g *cobra.Command) {
 				s.Body, _ = json.Marshal(body)
 			}
 			if e = validateBodySchema(doc, def, s.Body); e != nil {
-				failed(s.ID, e)
+				failed(s.ID, e, false)
 				continue
 			}
 			rows = append(rows, map[string]any{"step_id": s.ID, "body_validation": "valid", "path_query_validation": parameterStatus, "write_executed": false})
