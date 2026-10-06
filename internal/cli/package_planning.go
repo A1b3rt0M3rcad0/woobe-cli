@@ -88,7 +88,7 @@ func (a *App) packagePlanningCommands(group *cobra.Command) {
 			return packageError(err)
 		}
 		if a.DryRun {
-			return a.emit(map[string]any{"package_schema_version": "1.0", "artifact_digest": bundle.ArtifactDigest, "inventory": bundle.Inventory, "bindings": bindings, "lifecycle": lifecycle, "materialization_order": bundle.Graph.Order, "executed": false, "authorization": "not_evaluated", "semantic_validation": "server_required"})
+			return a.emit(packagePublic(map[string]any{"package_schema_version": "1.0", "artifact_digest": bundle.ArtifactDigest, "inventory": bundle.Inventory, "bindings": bindings, "lifecycle": lifecycle, "materialization_order": bundle.Graph.Order, "executed": false, "authorization": "not_evaluated", "semantic_validation": "server_required"}))
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), deadline)
 		defer cancel()
@@ -152,7 +152,7 @@ func (a *App) packagePlanningCommands(group *cobra.Command) {
 				return err
 			}
 		}
-		return a.emit(approved)
+		return a.emit(packagePublic(approved))
 	}}
 	command.Flags().StringVar(&bindingsPath, "bindings", "", "Destination ImportBindings file; protected references remain unresolved")
 	command.Flags().StringArrayVar(&shortcuts, "bind", nil, "Bind credential.ALIAS=UUID without overriding another binding")

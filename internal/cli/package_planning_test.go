@@ -114,3 +114,16 @@ func TestPackagePlanUploadsCapturedClosureAndSavesPrivateReceipt(t *testing.T) {
 		t.Fatal("receipt overwrote approved destination")
 	}
 }
+
+func TestPackagePublicPlanDoesNotExposeProtectedAliases(t *testing.T) {
+	plan := map[string]any{"bindings": map[string]any{"spec": map[string]any{"credentials": map[string]any{"primary": map[string]any{"protected_ref": "private-store-reference"}}}}, "artifact_digest": "public-artifact"}
+	result := packagePublic(plan)
+	encoded, _ := json.Marshal(result)
+	if strings.Contains(string(encoded), "private-store-reference") || !strings.Contains(string(encoded), "public-artifact") {
+		t.Fatal("unsafe public plan")
+	}
+	original, _ := json.Marshal(plan)
+	if !strings.Contains(string(original), "private-store-reference") {
+		t.Fatal("changed private approved bindings")
+	}
+}

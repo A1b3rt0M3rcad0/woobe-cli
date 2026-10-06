@@ -77,14 +77,14 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 		}
 		if a.ValidateParameters {
 			op, ok := a.operation(path)
-			if !(path == "package plan" || path == "package import" || path == "validate-input" || path == "manifest apply" || path == "manifest preflight" || ok && op.Kind == "http") {
+			if !(packageHTTPCommand(path) || path == "validate-input" || path == "manifest apply" || path == "manifest preflight" || ok && op.Kind == "http") {
 				return output.New(9, "--validate-parameters requires a canonical HTTP operation or manifest apply/preflight or validate-input")
 			}
 		}
 		if a.ValidateBody {
 			path := strings.TrimPrefix(cmd.CommandPath(), "woobe ")
 			op, ok := a.operation(path)
-			if !(path == "package plan" || path == "package import" || path == "manifest apply" || path == "manifest preflight" || path == "validate-input" || (ok && op.Kind == "http" && op.Method != "GET" && op.Method != "HEAD")) {
+			if !(packageHTTPCommand(path) || path == "manifest apply" || path == "manifest preflight" || path == "validate-input" || (ok && op.Kind == "http" && op.Method != "GET" && op.Method != "HEAD")) {
 				return output.New(9, "--validate-body requires a canonical HTTP write or manifest apply/preflight")
 			}
 		}

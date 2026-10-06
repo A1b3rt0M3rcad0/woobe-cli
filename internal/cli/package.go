@@ -63,7 +63,7 @@ func (a *App) packageCommands() {
 		Use: "validate SOURCE", Short: "Validate a portable package locally without credentials or HTTP",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := packageFlags(cmd); err != nil {
+			if err := packageFlags(cmd, "yes"); err != nil {
 				return err
 			}
 			bundle, err := loadPackage(args[0], locked)
@@ -85,4 +85,13 @@ func (a *App) packageCommands() {
 	a.packageOperationCommands(group)
 	a.packagePlanningCommands(group)
 	a.packageImportCommands(group)
+	a.packageExportCommands(group)
+}
+
+func packageHTTPCommand(path string) bool {
+	switch path {
+	case "package plan", "package import", "package export agent", "package export network", "package status", "package resume", "package cancel":
+		return true
+	}
+	return false
 }

@@ -19,7 +19,7 @@ func LoadBindings(path string, shortcuts []string, graph *Graph) (map[string]any
 		if err != nil || !info.Mode().IsRegular() || info.Size() > 2<<20 {
 			return nil, &Diagnostic{Code: "PACKAGE_BINDINGS_INVALID", Message: "Bindings must be a bounded regular file"}
 		}
-		file, err := os.Open(path)
+		file, err := openBindingsRead(path)
 		if err != nil {
 			return nil, &Diagnostic{Code: "PACKAGE_BINDINGS_INVALID", Message: "Bindings file is unavailable"}
 		}

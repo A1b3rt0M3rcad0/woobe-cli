@@ -3,6 +3,8 @@ package packagecheckpoint
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/url"
@@ -58,7 +60,7 @@ func (c Checkpoint) Validate() error {
 		return fail()
 	}
 	origin, err := url.Parse(c.APIOrigin)
-	if err != nil || origin.Host == "" || origin.User != nil || origin.RawQuery != "" || origin.Fragment != "" || (origin.Scheme != "https" && origin.Scheme != "http") {
+	if err != nil || origin.Host == "" || origin.User != nil || origin.RawQuery != "" || origin.Fragment != "" || origin.Path != "" && origin.Path != "/" || (origin.Scheme != "https" && origin.Scheme != "http") {
 		return fail()
 	}
 	for _, value := range []string{c.ArtifactDigest, c.PlanDigest, c.PrincipalFingerprint, c.RequestIdentity} {
@@ -136,6 +138,8 @@ func (c *Checkpoint) Move(next State) error {
 type Store struct {
 	Path string
 	lock *os.File
+	root *os.Root
+	name string
 }
 
 func Open(path string) (*Store, error) {
@@ -149,25 +153,38 @@ func Open(path string) (*Store, error) {
 	if err = os.MkdirAll(filepath.Dir(absolute), 0700); err != nil {
 		return nil, err
 	}
-	lock, err := lockCheckpoint(absolute + ".lock")
+	root, err := os.OpenRoot(filepath.Dir(absolute))
 	if err != nil {
 		return nil, err
 	}
-	return &Store{Path: absolute, lock: lock}, nil
+	name := filepath.Base(absolute)
+	lock, err := lockCheckpoint(root, name+".lock")
+	if err != nil {
+		root.Close()
+		return nil, err
+	}
+	return &Store{Path: absolute, lock: lock, root: root, name: name}, nil
 }
 
-func (s *Store) Close() error { return s.lock.Close() }
+func (s *Store) Close() error {
+	err := s.lock.Close()
+	rootErr := s.root.Close()
+	if err != nil {
+		return err
+	}
+	return rootErr
+}
 
 func (s *Store) Read() (Checkpoint, error) {
 	var empty Checkpoint
-	info, err := os.Lstat(s.Path)
+	info, err := s.root.Lstat(s.name)
 	if err != nil {
 		return empty, err
 	}
 	if !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 || info.Size() > 1<<20 {
 		return empty, output.New(3, "package checkpoint must be a bounded private regular file")
 	}
-	file, err := openPrivateRead(s.Path)
+	file, err := openConfinedRead(s.root, s.name)
 	if err != nil {
 		return empty, err
 	}
@@ -210,11 +227,16 @@ func (s *Store) Save(checkpoint Checkpoint) error {
 	if err != nil {
 		return err
 	}
-	file, err := os.CreateTemp(filepath.Dir(s.Path), ".woobe-package-checkpoint-")
+	nonce := make([]byte, 16)
+	if _, err = rand.Read(nonce); err != nil {
+		return err
+	}
+	temporaryName := ".woobe-package-checkpoint-" + hex.EncodeToString(nonce)
+	file, err := s.root.OpenFile(temporaryName, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		return err
 	}
-	defer os.Remove(file.Name())
+	defer s.root.Remove(temporaryName)
 	if err = file.Chmod(0600); err == nil {
 		_, err = file.Write(data)
 	}
@@ -229,14 +251,14 @@ func (s *Store) Save(checkpoint Checkpoint) error {
 		return closeErr
 	}
 	if existing {
-		err = os.Rename(file.Name(), s.Path)
+		err = s.root.Rename(temporaryName, s.name)
 	} else {
-		err = os.Link(file.Name(), s.Path)
+		err = s.root.Link(temporaryName, s.name)
 	}
 	if err != nil {
 		return err
 	}
-	parent, err := os.Open(filepath.Dir(s.Path))
+	parent, err := s.root.Open(".")
 	if err != nil {
 		return err
 	}

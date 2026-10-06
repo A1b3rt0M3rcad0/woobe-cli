@@ -149,3 +149,51 @@ func FuzzCheckpointStrictParsing(f *testing.F) {
 		}
 	})
 }
+
+func TestCheckpointUsesCapturedParentAfterReplacement(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.Skip("native protection")
+	}
+	base := t.TempDir()
+	parent := filepath.Join(base, "chosen")
+	if err := os.Mkdir(parent, 0700); err != nil {
+		t.Fatal(err)
+	}
+	store, err := Open(filepath.Join(parent, "import.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	cp := fixture()
+	if err = store.Save(cp); err != nil {
+		t.Fatal(err)
+	}
+	captured := filepath.Join(base, "captured")
+	if err = os.Rename(parent, captured); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Mkdir(parent, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(filepath.Join(parent, "import.json"), []byte("unrelated"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = cp.Move(RequestInFlight); err != nil {
+		t.Fatal(err)
+	}
+	if err = store.Save(cp); err != nil {
+		t.Fatal(err)
+	}
+	wrong, err := os.ReadFile(filepath.Join(parent, "import.json"))
+	if err != nil || string(wrong) != "unrelated" {
+		t.Fatal("changed replacement parent", err)
+	}
+	data, err := os.ReadFile(filepath.Join(captured, "import.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	recovered, err := Parse(data)
+	if err != nil || recovered.State != RequestInFlight {
+		t.Fatal("lost captured checkpoint", err)
+	}
+}

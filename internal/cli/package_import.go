@@ -118,6 +118,8 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), deadline)
 		defer cancel()
+		var sequence int64
+		var progressSecrets map[string]string
 		client, err := a.packageClient(ctx, "apply")
 		if err != nil {
 			return err
@@ -144,7 +146,12 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 					return err
 				}
 				if wait {
-					result, err = client.Wait(ctx, result, func(next packageapi.Operation) error { return savePackageObservation(store, &cp, next) })
+					result, err = client.Wait(ctx, result, func(next packageapi.Operation) error {
+						if err := savePackageObservation(store, &cp, next); err != nil {
+							return err
+						}
+						return a.packageProgress(next, &sequence, progressSecrets)
+					})
 				}
 				return a.emitPackageOperation(result, err)
 			}
@@ -243,6 +250,7 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 		if err != nil {
 			return err
 		}
+		progressSecrets = values
 		request := packageapi.ApplyRequest{PlanID: plan.PlanID, PlanDigest: plan.PlanDigest, UploadID: plan.UploadID, ArtifactDigest: plan.ArtifactDigest, Bindings: plan.Bindings, ProtectedBindings: values, Lifecycle: plan.Lifecycle, ReleaseNotes: plan.ReleaseNotes, Reason: plan.Reason}
 		if schema != nil {
 			if err = a.validatePackageRequest(schema, "POST", "/apply", map[string]string{"project_id": client.ProjectID}, nil, request); err != nil {
@@ -266,8 +274,16 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 		if err = savePackageObservation(store, &cp, result); err != nil {
 			return err
 		}
+		if err = a.packageProgress(result, &sequence, progressSecrets); err != nil {
+			return err
+		}
 		if wait {
-			result, err = client.Wait(ctx, result, func(next packageapi.Operation) error { return savePackageObservation(store, &cp, next) })
+			result, err = client.Wait(ctx, result, func(next packageapi.Operation) error {
+				if err := savePackageObservation(store, &cp, next); err != nil {
+					return err
+				}
+				return a.packageProgress(next, &sequence, progressSecrets)
+			})
 		}
 		// Provider text and identifiers are untrusted after protected resolution.
 		encoded, _ := json.Marshal(result)

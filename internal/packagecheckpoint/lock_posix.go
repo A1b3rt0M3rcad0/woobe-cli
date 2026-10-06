@@ -10,12 +10,12 @@ import (
 
 func supportedProtection() error { return nil }
 
-func lockCheckpoint(path string) (*os.File, error) {
-	fd, err := unix.Open(path, unix.O_RDWR|unix.O_CREAT|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0600)
+func lockCheckpoint(root *os.Root, name string) (*os.File, error) {
+	file, err := root.OpenFile(name, os.O_RDWR|os.O_CREATE|unix.O_NOFOLLOW|unix.O_NONBLOCK|unix.O_CLOEXEC, 0600)
 	if err != nil {
 		return nil, output.New(3, "package checkpoint lock is unavailable")
 	}
-	file := os.NewFile(uintptr(fd), path)
+	fd := int(file.Fd())
 	info, err := file.Stat()
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 {
 		file.Close()
@@ -34,4 +34,8 @@ func openPrivateRead(path string) (*os.File, error) {
 		return nil, err
 	}
 	return os.NewFile(uintptr(fd), path), nil
+}
+
+func openConfinedRead(root *os.Root, name string) (*os.File, error) {
+	return root.OpenFile(name, os.O_RDONLY|unix.O_NOFOLLOW|unix.O_NONBLOCK|unix.O_CLOEXEC, 0)
 }

@@ -47,6 +47,8 @@ func (a *App) completeDiscovery() {
 					availability = "observed"
 				case path == "package plan":
 					kind, effect, availability = "package-http", "planning", "server-dependent"
+				case path == "package export agent" || path == "package export network":
+					kind, effect, availability = "package-http", "export", "server-dependent"
 				case path == "package import":
 					kind, effect, availability = "package-http", "mutation", "server-dependent"
 				case path == "package status":
