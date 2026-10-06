@@ -308,3 +308,49 @@ update. Server OpenAPI advertisement is checked before category writes. A saved
 successful checkpoint resumes without another create; a lost checkpoint does not
 make category creation idempotent or infer existence by name. Full uncertain-write
 reconciliation and applied-category grant migration remain incomplete.
+
+## Protected manifest credentials
+
+Sensitive values may use an exact object `{"$secret_ref":"NAME"}` in Tool or
+provider-credential configuration. Import the value with `woobe auth credential import
+--name NAME --stdin < PRIVATE_INPUT` first; lookup uses the protected store beside the
+selected config. The delivered provider is the POSIX private-file store. Windows
+returns unsupported; native keychains remain a separate pending qualification.
+Environment-variable interpolation, prefixes, remote stores and step-result
+secrets are not supported. The stored value is the complete field value.
+
+```json
+{"schema_version":"1","project_id":"PROJECT_UUID","steps":[
+  {"id":"provider","command":"project provider-credential create","body":{
+    "project_id":"PROJECT_UUID","provider":"custom","name":"Provider",
+    "secret":{"$secret_ref":"provider-secret"},"metadata":{}}}
+]}
+```
+
+Compile and plan preserve reference markers without resolving them. Preflight
+reports `deferred_protected_credential`; `--require-complete` refuses that deferred
+state. Apply resolves a private in-memory snapshot, then validates the wire body
+when `--validate-body` is selected. Checkpoints bind reference names to value
+fingerprints and contain no resolved values. Changed, unavailable or added
+credentials refuse resume before writes; use the original snapshot to finish an
+existing checkpoint. Dry-run does not resolve these values or save a checkpoint.
+
+Successful steps resume without another write. Uncertain protected writes remain
+uncertain: redacted getters cannot certify their secret values. Reconciliation
+and `--skip-unchanged` refuse them. Output and checkpoint results redact resolved
+values even when a response echoes them under an unrelated field. This does not
+make unsupported server creates idempotent after losing a checkpoint.
+
+## Canonical MCP permission inputs
+
+`project tool mcp set` and `bulk` always validate `allow`, `deny` or `review`, UUID
+provider identity, bounded names/list sizes, duplicate names, surrounding
+whitespace and unknown fields. This check also runs for dry-run, validate-input
+and resolved manifest writes; invalid inputs stop before writes. Server schemas
+remain optional additional validation and authorization remains on the backend.
+
+The backend rejects undiscovered remote tool names before applying any part of a
+selective update and requires a valid MCP discovery. Bulk affects only that
+provider's discovered tools. `review` keeps a tool unavailable; it does not create
+a per-call approval dialog. Rediscovery preserves saved modes by remote name and
+new tools start in review. Existing immutable release snapshots are unaffected.
