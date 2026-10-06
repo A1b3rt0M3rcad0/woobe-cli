@@ -1,27 +1,27 @@
 # Installation and automatic CLI releases
 
 The CLI stays in this repository and is versioned independently of the Woobe
-backend. Distribution uses **GitHub Releases**: six native archives for Linux,
+backend. Distribution uses **GitHub Releases** and **GitHub Packages (GHCR)**: six native archives for Linux,
 macOS and Windows, in amd64/x64 and arm64. Go, Node.js and npm are not required
 to use the binaries. npm distribution is deferred.
 
-The initial release floor is **0.1.0**. Source changes alone do not publish a
-release: the automatic workflow must be integrated into `master`, pass all
-validation and complete publication first.
+The initial release floor is **0.1.0**. Publication requires the complete CI
+gate. Master pushes calculate the next version automatically; an explicit
+`v<VERSION>` tag also releases its exact source without requiring a merge.
 
 ## Download and run
 
 Open [the latest release](https://github.com/A1b3rt0M3rcad0/woobe-cli/releases/latest)
 and download your platform archive plus `SHA256SUMS`.
 
-| Platform | Initial archive |
+| Platform | Example archive |
 | --- | --- |
-| Linux x64 | `woobe_0.1.0_linux_amd64.tar.gz` |
-| Linux arm64 | `woobe_0.1.0_linux_arm64.tar.gz` |
-| macOS Intel | `woobe_0.1.0_darwin_amd64.tar.gz` |
-| macOS Apple Silicon | `woobe_0.1.0_darwin_arm64.tar.gz` |
-| Windows x64 | `woobe_0.1.0_windows_amd64.zip` |
-| Windows arm64 | `woobe_0.1.0_windows_arm64.zip` |
+| Linux x64 | `woobe_0.1.1_linux_amd64.tar.gz` |
+| Linux arm64 | `woobe_0.1.1_linux_arm64.tar.gz` |
+| macOS Intel | `woobe_0.1.1_darwin_amd64.tar.gz` |
+| macOS Apple Silicon | `woobe_0.1.1_darwin_arm64.tar.gz` |
+| Windows x64 | `woobe_0.1.1_windows_amd64.zip` |
+| Windows arm64 | `woobe_0.1.1_windows_arm64.zip` |
 
 Verify the downloaded file's SHA-256 against `SHA256SUMS` before extraction.
 Use `sha256sum` on Linux, `shasum -a 256` on macOS or
@@ -65,25 +65,40 @@ never pushes changes into `master`.
    and calculate the version from existing immutable `v*` tags and commit history.
 2. Run the full reusable CI: Go/race/fuzz checks, six cross-builds, archive/schema/
    license/checksum validation, and native smoke tests on Linux/macOS/Windows.
-3. Receive the immutable Actions artifact ID and manifest SHA-256 from CI.
-   Publication downloads this exact candidate and verifies every file; it does
-   not rebuild. GitHub-only preflight refuses conflicting tags/assets and treats
-   authentication/network errors as failures rather than missing releases.
-4. Reserve `v<VERSION>` on the validated source, create or resume a draft Release,
-   generate release notes and download links, and upload only missing files
-   without overwriting existing bytes. Download
-   and compare every asset, then execute the verified native executable again.
-5. Make the Release public and verify its complete terminal state. Success
-   requires all six archives, SHA256SUMS, artifacts.json, release-manifest.json
-   and the immutable source tag. A resumed older release cannot move `latest`
-   backwards.
+3. Download the immutable Actions artifact ID and verify its manifest SHA-256.
+   Extract the tested Linux binaries into a non-root, multi-platform GHCR image
+   for `linux/amd64` and `linux/arm64`, without rebuilding the executables.
+   Verify its digest, platforms and CLI behavior before publication.
+4. Preflight both destinations and refuse conflicting tags, assets or image
+   digests. Reserve `v<VERSION>` on the exact validated source, promote the image
+   to `<VERSION>`, and create or resume a draft GitHub Release. Upload only
+   missing files; existing bytes are never overwritten.
+5. Download and compare every asset, execute the native CLI again, publish the
+   Release and verify all six archives, checksums, artifacts.json and
+   release-manifest.json. The permanent manifest records the package digest.
+   Promote the verified stable image to `latest`; older recovery cannot move
+   either destination's latest version backwards.
 
-Only the built-in **GITHUB_TOKEN**, with job permission `contents: write`, is
-used. Repository/organization policies must allow that permission and tag
-creation. Branch protection and any approval policy remain repository settings.
-The workflow has no tag-push publication trigger, so its own tag cannot start a
-second release. Ordinary master CI is provided by the reusable validation in
-Release CLI; there is no duplicate standalone CLI run for the same master push.
+The workflow uses the built-in **GITHUB_TOKEN** with job permissions
+`contents: write` and `packages: write`. No additional token or npm account is
+required. Repository policies must allow these permissions and tag creation.
+Explicit owner-created version tags trigger the same gates. Tags created by the
+workflow's GITHUB_TOKEN do not trigger another workflow run.
+
+### GitHub Packages
+
+The repository package is `ghcr.io/a1b3rt0m3rcad0/woobe-cli`. After publication:
+
+```sh
+docker run --rm ghcr.io/a1b3rt0m3rcad0/woobe-cli:0.1.1 version
+docker run --rm ghcr.io/a1b3rt0m3rcad0/woobe-cli:latest help
+```
+
+Use a volume at `/data` to persist credentials and contexts. The image runs as
+UID 10001, so the directory must be writable by that UID. Package visibility is
+a GitHub setting: new GHCR packages may start private even for public repositories.
+The owner can change visibility in the package settings; private pulls require
+GitHub authentication. Native release downloads are public independently.
 
 ### Automatic version calculation
 
@@ -111,6 +126,10 @@ later pushes. A rerun for an already tagged source recovers the same version,
 even when master has advanced. A pending push superseded by a newer tagged
 source is skipped. Tags reserved by a failed upload are never reused for a
 later commit; the next push advances the version.
+
+To publish an explicitly selected source without merging, create and push an
+annotated `v<VERSION>` tag pointing to it. The tag must match the selected source
+and version floor. Never move or reuse an existing tag.
 
 For recovery or an explicit prerelease, **Actions → Release CLI → Run workflow**
 remains available on `master`. Leave both fields empty to release its current

@@ -53,14 +53,16 @@ def bump(version, messages):
     return f'{major}.{minor}.{patch + 1}'
 
 
-def select(version='', revision=''):
+def select(version='', revision='', trusted_tag=False):
     if revision and not re.fullmatch(r'[a-f0-9]{40}', revision):
         raise ValueError('revision must be a full lowercase commit SHA')
     if version:
         validate(version)
     versions = tags()
     sha = revision or versions.get(version) or git('rev-parse', 'HEAD')
-    if not ancestor(sha, 'origin/master'):
+    if trusted_tag and versions.get(version) != sha:
+        raise ValueError('tagged publication must match an existing immutable source tag')
+    if not trusted_tag and not ancestor(sha, 'origin/master'):
         raise ValueError('release source must already be integrated in master')
     floor = source_floor(sha)
     if version in versions:
@@ -93,8 +95,8 @@ def select(version='', revision=''):
     return version, sha
 
 
-def resolve(version, revision):
-    selected = select(version, revision)
+def resolve(version, revision, trusted_tag=False):
+    selected = select(version, revision, trusted_tag)
     if selected != (version, revision):
         raise ValueError('candidate does not match the immutable release identity')
     return revision
@@ -104,9 +106,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', default='')
     parser.add_argument('--revision', default='')
+    parser.add_argument('--tag', default='')
     parser.add_argument('--output', type=pathlib.Path, required=True)
     args = parser.parse_args()
-    selected = select(args.version, args.revision)
+    if args.tag:
+        tagged_version = validate(args.tag[1:])
+        if args.tag != 'v' + tagged_version or (args.version and args.version != tagged_version):
+            parser.error('source tag and requested version differ')
+        args.version = tagged_version
+    selected = select(args.version, args.revision, bool(args.tag))
     with args.output.open('a') as output:
         if selected is None:
             output.write('skip=true\n')

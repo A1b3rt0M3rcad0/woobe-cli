@@ -16,9 +16,10 @@ woobe help
 Linux, macOS and Windows support x64 and arm64. Go, Node.js and npm are not
 required to use the binaries. npm distribution is deferred.
 Each update integrated into `master` automatically calculates a Semantic Version,
-validates the six archives and publishes the exact tested files to GitHub.
-The first prepared version is **0.1.0**, independent of the backend. Installation
-URLs become available only after a successful publication. See
+validates the six archives and publishes the exact tested files to GitHub Releases
+and a Linux amd64/arm64 package to GHCR. Explicit version tags use the same
+gates and allow release without merging. The source version floor is **0.1.0**,
+independent of the backend. See
 [installation, Workspace setup and automatic releases](docs/INSTALLATION.md).
 
 ## Build from source

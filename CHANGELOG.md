@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.1.0 (prepared, unreleased)
+## 0.1.1
+
+- Publish the exact validated CLI to GitHub Packages (GHCR), Linux amd64/arm64.
+- Gate image promotion and GitHub Release on source, digest and native smoke checks.
+- Explicit version tags enable a first release without merging into master.
+
+## 0.1.0 (distribution foundation)
 
 - Automatic GitHub release on every master push, with immutable source identity
   and SemVer increments calculated from tags and conventional commit history.

@@ -13,6 +13,7 @@ import urllib.error
 import urllib.request
 from version import validate, SEMVER, semver_key
 from release_identity import resolve
+import registry_image
 
 
 def run(*args, capture=False):
@@ -100,12 +101,15 @@ def preflight(repo, version, commit, files):
     return release, assets, bool(tag)
 
 
-def publish(repo, version, commit, files, preflight_only=False):
+def publish(repo, version, commit, files, preflight_only=False, image=None):
     release, assets, reserved = preflight(repo, version, commit, files)
+    image_exists = registry_image.preflight(image['ref'], version, image['digest']) if image else False
     if preflight_only:
         print('GitHub native release passed preflight; no publication requested')
         return
     tag = f'v{version}'
+    if image and not image_exists:
+        registry_image.promote(image['ref'], version, image['digest'])
     if not reserved:
         # Reserve the validated identity before uploading. A failed upload can
         # be retried; later pushes will not reuse this version for other bytes.
@@ -119,6 +123,9 @@ def publish(repo, version, commit, files, preflight_only=False):
                          'Download your platform archive, verify SHA256SUMS, extract\n'
                          'and put woobe (woobe.exe on Windows) on PATH. Run `woobe version`.\n'
                          'No Go, Node.js or npm installation is required.\n\n' + links + '\n')
+        if image:
+            with notes.open('a') as output:
+                output.write(f'\nGitHub Packages: `docker run --rm {image["ref"]}:{version} version`\n')
         flags = ['--prerelease'] if '-' in version else []
         run('gh', 'release', 'create', tag, '--repo', repo, '--target', commit,
             '--verify-tag', '--draft', '--generate-notes', '--title', f'Woobe CLI {tag}', '--notes-file', str(notes), *flags)
@@ -139,16 +146,22 @@ def publish(repo, version, commit, files, preflight_only=False):
     terminal, terminal_assets, terminal_tag = preflight(repo, version, commit, files)
     if terminal['draft'] or terminal_assets != set(files) or not terminal_tag:
         raise ValueError('release transaction did not complete')
+    if image:
+        if not registry_image.preflight(image['ref'], version, image['digest']):
+            raise ValueError('versioned GHCR package is missing after publication')
+        stable = [v for v in published_versions(repo) if '-' not in v]
+        if '-' not in version and (not stable or semver_key(version) >= max(map(semver_key, stable))):
+            registry_image.promote(image['ref'], 'latest', image['digest'])
     print(f'Published {tag}: six native archives, immutable tag and permanent release manifest verified')
 
 
-def candidate(version, commit, manifest_sha256):
+def candidate(version, commit, manifest_sha256, trusted_tag=False, image=None):
     validate(version)
     if not re.fullmatch(r'[a-f0-9]{40}', commit) or not re.fullmatch(r'[a-f0-9]{64}', manifest_sha256):
         raise ValueError('invalid candidate identity')
     if run('git', 'rev-parse', 'HEAD', capture=True) != commit:
         raise ValueError('checkout differs from validated source')
-    resolve(version, commit)
+    resolve(version, commit, trusted_tag)
     manifest_path = pathlib.Path('dist/artifacts.json')
     if hashlib.sha256(manifest_path.read_bytes()).hexdigest() != manifest_sha256:
         raise ValueError('candidate manifest differs from successful CI output')
@@ -159,6 +172,8 @@ def candidate(version, commit, manifest_sha256):
     record = dict(schema_version='1', version=version, commit=commit,
                   candidate_manifest_sha256=manifest_sha256, compiler=manifest['compiler'],
                   artifacts=manifest['artifacts'])
+    if image:
+        record['image'] = dict(image, version=version, platforms=['linux/amd64', 'linux/arm64'])
     permanent = pathlib.Path('dist/release-manifest.json')
     permanent.write_text(json.dumps(record, indent=2) + '\n')
     names = [item['name'] for item in manifest['artifacts']]
@@ -173,8 +188,16 @@ if __name__ == '__main__':
     parser.add_argument('--manifest-sha256', required=True)
     parser.add_argument('--repo', default=os.environ.get('GITHUB_REPOSITORY', 'A1b3rt0M3rcad0/woobe-cli'))
     parser.add_argument('--preflight-only', action='store_true')
+    parser.add_argument('--tagged-source', action='store_true')
+    parser.add_argument('--image-ref')
+    parser.add_argument('--image-digest')
     args = parser.parse_args()
     if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', args.repo):
         parser.error('invalid GitHub repository')
-    files = candidate(args.version, args.commit, args.manifest_sha256)
-    publish(args.repo, args.version, args.commit, files, args.preflight_only)
+    if bool(args.image_ref) != bool(args.image_digest):
+        parser.error('both image ref and digest are required together')
+    image = dict(ref=args.image_ref, digest=args.image_digest) if args.image_ref else None
+    if image and image['ref'] != 'ghcr.io/' + args.repo.lower():
+        parser.error('GHCR image must belong to this CLI repository')
+    files = candidate(args.version, args.commit, args.manifest_sha256, args.tagged_source, image)
+    publish(args.repo, args.version, args.commit, files, args.preflight_only, image)

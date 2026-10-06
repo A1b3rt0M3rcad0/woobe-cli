@@ -180,6 +180,15 @@ class ReleaseTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'highest published'):
                 release.preflight(self.repo, '0.1.0', self.commit, self.files)
 
+    def test_ghcr_conflict_blocks_release_writes(self):
+        with patch.object(release, 'preflight', return_value=(None, set(), False)), \
+             patch.object(release.registry_image, 'preflight', side_effect=ValueError('immutable registry conflict')), \
+             patch.object(release, 'run') as command:
+            with self.assertRaises(ValueError):
+                release.publish(self.repo, '0.1.0', self.commit, self.files,
+                                image={'ref': 'ghcr.io/owner/woobe-cli', 'digest': 'sha256:' + 'a' * 64})
+            command.assert_not_called()
+
 
 class IdentityTests(unittest.TestCase):
     def setUp(self):
@@ -298,7 +307,17 @@ class IdentityTests(unittest.TestCase):
         pathlib.Path('packages/woobe-cli/package.json').write_text('{"version":"0.2.0"}')
         self.commit('chore: inconsistent source')
         with self.assertRaisesRegex(ValueError, 'differ'):
-            identity.select()
+                identity.select()
+
+    def test_owner_tag_can_release_without_merging_but_must_pin_exact_source(self):
+        self.git('checkout', '-b', 'release-feature')
+        sha = self.commit('fix: package publication', integrated=False)
+        self.git('tag', 'v0.1.1')
+        self.assertEqual(identity.select('0.1.1', sha, trusted_tag=True), ('0.1.1', sha))
+        with self.assertRaisesRegex(ValueError, 'existing immutable source tag'):
+            identity.select('0.1.2', sha, trusted_tag=True)
+        with self.assertRaisesRegex(ValueError, 'integrated in master'):
+            identity.select('0.1.1', sha)
 
     def test_prerelease_becomes_stable_without_changing_source(self):
         self.git('tag', 'v0.2.0-rc.1')

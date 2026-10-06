@@ -37,8 +37,13 @@ versão, fixa o SHA e reutiliza este workflow. Retorna o ID imutável do artefat
 e SHA-256 do manifest ao publicador. A execução de release não é cancelada por
 novos pushes e substitui o run standalone na master, evitando dois CI completos.
 Depois dos gates, o publicador reserva a tag e publica somente os seis arquivos
-nativos e seus metadados no GitHub Releases, com verificação posterior. Usa apenas
-GITHUB_TOKEN. npm, Node.js, instalação npm, registry, NPM_TOKEN e OIDC não fazem
+nativos e seus metadados no GitHub Releases, com verificação posterior. O job
+`image` cria o pacote GHCR Linux amd64/arm64 a partir dos mesmos binários
+validados, verifica digest e comportamento antes do job `publish`. Esse job
+promove a versão no GHCR, publica o Release e atualiza `latest`. Tags explícitas
+`v*` passam pelos mesmos gates e permitem publicar sem merge. Usa apenas
+GITHUB_TOKEN com contents:write e packages:write. npm, Node.js, instalação npm,
+registry npm, NPM_TOKEN e OIDC não fazem
 parte desse fluxo; os helpers npm permanecem adiados.
 
 Veja [INSTALLATION.md](INSTALLATION.md) para cálculo de versões e recuperação.
