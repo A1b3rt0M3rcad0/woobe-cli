@@ -63,7 +63,7 @@ func (a *App) packagePlanningCommands(group *cobra.Command) {
 	var locked bool
 	var deadline time.Duration
 	command := &cobra.Command{Use: "plan SOURCE", Short: "Plan native Package effects and destination bindings without materializing resources", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
-		if err := packageFlags(cmd, "validate-body", "validate-parameters", "schema-sha256"); err != nil {
+		if err := packageFlags(cmd, "yes", "validate-body", "validate-parameters", "schema-sha256"); err != nil {
 			return err
 		}
 		if err := packageLifecycle(lifecycle, notes, reason); err != nil {
@@ -80,6 +80,9 @@ func (a *App) packagePlanningCommands(group *cobra.Command) {
 			return err
 		}
 		defer bundle.Close()
+		if err = excludePackageOperationalFiles(args[0], bundle, bindingsPath, savePath); err != nil {
+			return err
+		}
 		bindings, err := packagefmt.LoadBindings(bindingsPath, shortcuts, bundle.Graph)
 		if err != nil {
 			return packageError(err)

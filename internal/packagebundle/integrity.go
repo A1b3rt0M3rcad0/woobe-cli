@@ -28,6 +28,12 @@ func InventoryDigest(inventory []InventoryFile) string {
 	if err := encoder.Encode(tuples); err != nil {
 		panic(err)
 	}
-	digest := sha256.Sum256(append([]byte("woobe-package@1.0\n"), bytes.TrimSuffix(data.Bytes(), []byte("\n"))...))
+	canonical := bytes.TrimSuffix(data.Bytes(), []byte("\n"))
+	// encoding/json always escapes JavaScript line separators, even with HTML
+	// escaping disabled. Inventory paths forbid backslashes, so restoring these
+	// two literals is unambiguous and matches the backend's canonical UTF-8 JSON.
+	canonical = bytes.ReplaceAll(canonical, []byte(`\u2028`), []byte("\u2028"))
+	canonical = bytes.ReplaceAll(canonical, []byte(`\u2029`), []byte("\u2029"))
+	digest := sha256.Sum256(append([]byte("woobe-package@1.0\n"), canonical...))
 	return hex.EncodeToString(digest[:])
 }

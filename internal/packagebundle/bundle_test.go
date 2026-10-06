@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -152,4 +153,12 @@ func FuzzPortablePath(f *testing.F) {
 			}
 		}
 	})
+}
+
+func TestInventoryCanonicalUTF8MatchesBackendForLineSeparators(t *testing.T) {
+	inventory := []InventoryFile{{Path: "notes/line\u2028separator\u2029.md", SizeBytes: 3, SHA256: strings.Repeat("0", 64)}}
+	const expected = "e6743f6ed9c9a1de959e987a7fec303a5559b4bf9972e273438c6426378ec890"
+	if InventoryDigest(inventory) != expected {
+		t.Fatal("cross-language canonical UTF-8 digest mismatch")
+	}
 }
