@@ -58,7 +58,7 @@ func inspect(raw, doc any, p string, depth int, refs map[string]bool, budget *in
 }
 
 func inspectSiblings(s map[string]any, doc any, p string, depth int, refs map[string]bool, budget *int, request, predicate, modern bool) error {
-	for _, k := range []string{"properties", "dependentSchemas", "patternProperties"} {
+	for _, k := range []string{"$defs", "properties", "dependentSchemas", "patternProperties"} {
 		if m, ok := s[k].(map[string]any); ok {
 			for name, sub := range m {
 				if e := inspect(sub, doc, p+"."+name, depth+1, refs, budget, request, predicate, modern); e != nil {

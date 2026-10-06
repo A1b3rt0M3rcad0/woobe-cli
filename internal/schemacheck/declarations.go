@@ -72,6 +72,11 @@ func declarations(s map[string]any, p string) error {
 			return e
 		}
 	}
+	if v, ok := s["$defs"]; ok {
+		if _, ok := v.(map[string]any); !ok {
+			return unsupported(p, "invalid $defs")
+		}
+	}
 	if v, ok := s["properties"]; ok {
 		if _, ok := v.(map[string]any); !ok {
 			return unsupported(p, "invalid properties")
@@ -165,7 +170,7 @@ func schemaHeader(s map[string]any, p string) error {
 		return e
 	}
 	allowed := map[string]bool{}
-	for _, k := range strings.Fields("$schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type format nullable required properties additionalProperties items prefixItems contains minContains maxContains minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not if then else") {
+	for _, k := range strings.Fields("$defs $schema $id title description default examples example deprecated readOnly writeOnly discriminator xml externalDocs type format nullable required properties additionalProperties items prefixItems contains minContains maxContains minItems maxItems minProperties maxProperties dependentRequired dependentSchemas propertyNames patternProperties uniqueItems minLength maxLength pattern minimum maximum exclusiveMinimum exclusiveMaximum multipleOf enum const $ref allOf anyOf oneOf not if then else") {
 		allowed[k] = true
 	}
 	for k := range s {
