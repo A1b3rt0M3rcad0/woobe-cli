@@ -25,6 +25,7 @@ type Resource struct {
 	IfMatch    string            `json:"if_match,omitempty"`
 }
 type Kind struct {
+	Scope       string            `json:"scope"`
 	ParentKinds map[string]string `json:"parent_kinds,omitempty"`
 	Name        string            `json:"kind"`
 	Create      string            `json:"create_command,omitempty"`
@@ -34,7 +35,11 @@ type Kind struct {
 
 // Only verified configuration routes belong here. No inferred upsert, publication or secrets.
 func Kinds() []Kind {
-	return []Kind{{Name: "Agent", Create: "project agent create", Update: "project agent update", Parents: []string{}}, {Name: "Network", Create: "project network create", Update: "project network update", Parents: []string{}}, {Name: "AgentPrompt", Create: "project agent prompt create", Parents: []string{"agent"}, ParentKinds: map[string]string{"agent": "Agent"}}, {Name: "AgentContract", Create: "project agent contract create", Update: "project agent contract update", Parents: []string{"agent"}, ParentKinds: map[string]string{"agent": "Agent"}}, {Name: "AgentModelConfig", Create: "project agent model-config create", Parents: []string{"agent"}, ParentKinds: map[string]string{"agent": "Agent"}}, {Name: "Project", Update: "project update", Parents: []string{}}, {Name: "Tool", Create: "project tool create", Update: "project tool update", Parents: []string{}}, {Name: "KnowledgeCollection", Create: "project knowledge collection create", Update: "project knowledge collection update", Parents: []string{}}, {Name: "KnowledgeDocument", Create: "project knowledge document create", Parents: []string{}}, {Name: "Skill", Create: "project skill create", Parents: []string{}}, {Name: "SkillVersion", Create: "project skill version create", Parents: []string{"skill"}, ParentKinds: map[string]string{"skill": "Skill"}}, {Name: "ChatSurface", Create: "project surface create", Update: "project surface update", Parents: []string{}}, {Name: "NetworkDraft", Update: "project network draft update", Parents: []string{}}}
+	kinds := []Kind{{Name: "Agent", Create: "project agent create", Update: "project agent update", Parents: []string{}}, {Name: "Network", Create: "project network create", Update: "project network update", Parents: []string{}}, {Name: "AgentPrompt", Create: "project agent prompt create", Parents: []string{"agent"}, ParentKinds: map[string]string{"agent": "Agent"}}, {Name: "AgentContract", Create: "project agent contract create", Update: "project agent contract update", Parents: []string{"agent"}, ParentKinds: map[string]string{"agent": "Agent"}}, {Name: "AgentModelConfig", Create: "project agent model-config create", Parents: []string{"agent"}, ParentKinds: map[string]string{"agent": "Agent"}}, {Name: "Project", Update: "project update", Parents: []string{}}, {Name: "Tool", Create: "project tool create", Update: "project tool update", Parents: []string{}}, {Name: "KnowledgeCollection", Create: "project knowledge collection create", Update: "project knowledge collection update", Parents: []string{}}, {Name: "KnowledgeDocument", Create: "project knowledge document create", Parents: []string{}}, {Name: "Skill", Create: "project skill create", Parents: []string{}}, {Name: "SkillVersion", Create: "project skill version create", Parents: []string{"skill"}, ParentKinds: map[string]string{"skill": "Skill"}}, {Name: "ChatSurface", Create: "project surface create", Update: "project surface update", Parents: []string{}}, {Name: "NetworkDraft", Update: "project network draft update", Parents: []string{}}}
+	for i := range kinds {
+		kinds[i].Scope = "project"
+	}
+	return kinds
 }
 
 var resourceReference = regexp.MustCompile(`^\$\{resources\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_.-]+)\}$`)
