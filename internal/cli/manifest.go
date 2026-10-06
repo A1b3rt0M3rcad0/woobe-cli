@@ -58,6 +58,15 @@ func (a *App) validateManifest(d manifest.Document) error {
 				return output.New(2, "manifest configuration body must be an object")
 			}
 		}
+		if category && len(s.Body) > 0 {
+			var spec map[string]any
+			if e := json.Unmarshal(s.Body, &spec); e != nil {
+				return output.New(2, "invalid category definition")
+			}
+			if e := manifest.ValidateCategorySpec(spec, found.Method == "POST"); e != nil {
+				return output.New(2, e.Error())
+			}
+		}
 		if found.Body && len(s.Body) == 0 {
 			return output.New(2, "manifest operation requires body")
 		}

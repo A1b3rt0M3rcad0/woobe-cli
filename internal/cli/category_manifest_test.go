@@ -18,3 +18,12 @@ func TestCategoryManifestOfflineCompilationAndScope(t *testing.T) {
 		t.Fatal(code)
 	}
 }
+
+func TestStepCategoryManifestCannotBypassDefinitionBoundary(t *testing.T) {
+	for _, field := range []string{"grants", "workspace_id", "category_id", "system", "status"} {
+		code, _ := invoke(t, []string{"manifest", "validate", "--file", "-"}, `{"schema_version":"1","workspace_id":"w","steps":[{"id":"c","command":"workspace authority category create","body":{"`+field+`":"value"}}]}`)
+		if code != 2 {
+			t.Fatal(field, code)
+		}
+	}
+}

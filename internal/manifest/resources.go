@@ -176,19 +176,14 @@ func (d ResourceDocument) Compile() (Document, error) {
 			return out, fmt.Errorf("resource spec must be an object")
 		}
 		if r.Kind == "AuthorityCategory" {
-			allowed := map[string]bool{"name": true, "description": true, "permissions": true, "conditions": true, "catalog_revision": true}
-			if r.Action == "create" {
-				allowed["scope"] = true
-			}
-			for field := range spec {
-				if !allowed[field] {
-					return out, fmt.Errorf("category spec field %s is not configuration", field)
-				}
+			if e := ValidateCategorySpec(spec, r.Action == "create"); e != nil {
+				return out, e
 			}
 			if r.Action == "update" && r.IfMatch == "" {
 				return out, fmt.Errorf("category update requires explicit if_match")
 			}
 		}
+
 		if scope, ok := spec["project_id"]; ok && scope != d.Project {
 			return out, fmt.Errorf("resource project_id differs from document scope")
 		}
@@ -207,4 +202,18 @@ func (d ResourceDocument) Compile() (Document, error) {
 	}
 	_, e := out.Order()
 	return out, e
+}
+
+// ValidateCategorySpec excludes assignment, identity and lifecycle fields from imports.
+func ValidateCategorySpec(spec map[string]any, create bool) error {
+	allowed := map[string]bool{"name": true, "description": true, "permissions": true, "conditions": true, "catalog_revision": true}
+	if create {
+		allowed["scope"] = true
+	}
+	for field := range spec {
+		if !allowed[field] {
+			return fmt.Errorf("category spec field %s is not configuration", field)
+		}
+	}
+	return nil
 }
