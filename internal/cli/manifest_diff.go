@@ -73,6 +73,9 @@ func (a *App) readResource(ctx context.Context, op Operation, args []string) (an
 	if op.Kind != "http" || op.Method != "GET" || len(args) != len(op.Params) {
 		return nil, nil, output.New(2, "read operation and exact resource arguments required")
 	}
+	return a.readResourceQuery(ctx, op, args, nil)
+}
+func (a *App) readResourceQuery(ctx context.Context, op Operation, args []string, query url.Values) (any, map[string]string, error) {
 	c, e := a.client()
 	if e != nil {
 		return nil, nil, e
@@ -93,6 +96,9 @@ func (a *App) readResource(ctx context.Context, op Operation, args []string) (an
 		path = strings.ReplaceAll(path, "{"+p+"}", url.PathEscape(args[i]))
 	}
 	q := url.Values{}
+	for name, values := range query {
+		q[name] = append([]string(nil), values...)
+	}
 	if op.QueryScope != "" {
 		id := a.Project
 		if op.QueryScope == "workspace_id" {

@@ -18,4 +18,5 @@ func (a *App) permissionCommands() {
 	} {
 		a.register(op)
 	}
+	a.categoryDiffCommand()
 }
