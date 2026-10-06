@@ -253,8 +253,12 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 		return 0
 	}
 	if failure, ok := e.(*packageFailure); ok {
-		_ = output.Write(a.Out, a.Mode, map[string]any{"package_schema_version": "1.0", "valid": false, "diagnostics": []*packagefmt.Diagnostic{failure.Diagnostic}, "executed": false}, nil, output.New(2, failure.Diagnostic.Message))
-		return 2
+		code := 2
+		if failure.Diagnostic.Code == "PACKAGE_UNSUPPORTED" {
+			code = 9
+		}
+		_ = output.Write(a.Out, a.Mode, map[string]any{"package_schema_version": "1.0", "valid": false, "diagnostics": []*packagefmt.Diagnostic{failure.Diagnostic}, "executed": false}, nil, output.New(code, failure.Diagnostic.Message))
+		return code
 	}
 	if p, ok := e.(*preflightFailure); ok {
 		_ = a.emitPreflight(p.Data, p.Cause)

@@ -13,6 +13,7 @@ import (
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"golang.org/x/text/cases"
+	"golang.org/x/text/unicode/norm"
 )
 
 const MaxFiles = 1024
@@ -35,7 +36,7 @@ func (b *Bundle) Lock() map[string]any {
 func failure(code, message, file string) error {
 	return &packagefmt.Diagnostic{Code: code, Message: message, File: file}
 }
-func fold(value string) string { return cases.Fold().String(value) }
+func fold(value string) string { return norm.NFC.String(cases.Fold().String(value)) }
 
 func confinedOpen(root *os.Root, path string) (*os.File, error) {
 	parts := strings.Split(path, "/")
