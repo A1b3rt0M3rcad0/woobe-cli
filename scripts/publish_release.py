@@ -199,5 +199,12 @@ if __name__ == '__main__':
     image = dict(ref=args.image_ref, digest=args.image_digest) if args.image_ref else None
     if image and image['ref'] != 'ghcr.io/' + args.repo.lower():
         parser.error('GHCR image must belong to this CLI repository')
-    files = candidate(args.version, args.commit, args.manifest_sha256, args.tagged_source, image)
-    publish(args.repo, args.version, args.commit, files, args.preflight_only, image)
+    try:
+        files = candidate(args.version, args.commit, args.manifest_sha256, args.tagged_source, image)
+        publish(args.repo, args.version, args.commit, files, args.preflight_only, image)
+    except Exception as error:
+        # Surface the exact cause through the Checks API even when log storage
+        # is unavailable to the caller; preserve the original traceback/exit.
+        message = str(error).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+        print(f'::error title=CLI publication failed::{type(error).__name__}: {message}', file=sys.stderr)
+        raise
