@@ -110,7 +110,7 @@
       "phase": 1,
       "requirement": "Resolver todos os tipos de ID ao Project proprietário.",
       "status": "partial",
-      "evidence": "Woobe PR #177 at 77c53832f0e5b35488d1574b3cf62777486f5189: seven backend workflows passed; draft remains unmerged. Ownership resolver covers reviewed route resources and cross-tenant matrix; exhaustive ID variants remain a phase gate."
+      "evidence": "Woobe PR #177 at 77c53832f0e5b35488d1574b3cf62777486f5189: seven backend workflows passed; draft remains unmerged. Ownership resolver covers reviewed route resources and cross-tenant matrix; exhaustive ID variants remain a phase gate. Continuation: opt-in path/query validation and inline DTO definitions delivered; full DTO/custom-rule/dialect/serialization qualification remains partial."
     },
     {
       "id": "1.6",

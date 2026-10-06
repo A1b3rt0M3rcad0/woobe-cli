@@ -30,3 +30,23 @@ The [101-item audit](COMPLETENESS.md) now includes the separately delivered back
 ## Request validation continuation — 2026-10-05
 
 Shared request-body validation now enforces readOnly/writeOnly request direction, validates UUID/date/date-time formats and refuses unsupported advertised OpenAPI/JSON Schema dialects. Regressions exercise validate-input, opt-in HTTP writes, manifest preflight/apply and checkpoint evidence. Native package smoke also checks valid/invalid UUID and timestamps, read-only refusal and write counts. Path/query and full DTO/dialect/composition coverage remain partial; no roadmap item is promoted solely for this narrower delivery.
+
+## Path/query and DTO continuation — 2026-10-05
+
+Opt-in parameter validation now covers canonical HTTP reads/writes, standalone
+read-only validate-input and manifest preflight/apply. It enforces advertised
+required fields, primitive formats/types, nullable/composed types, scalar
+multiplicity and form arrays; preserves context/route aliases; refuses unknown
+parameters and unsupported styles. Inline DTO `$defs` are inspected with valid
+document-relative references. Native package smoke checks preflight and validated
+pagination, and adversarial parameter fuzzing ran 33,051 cases locally.
+
+The backend continuation adds advertised DTO body contracts to Agent,
+provider/model, prompt/contract, model configuration/release-test, Knowledge,
+Tools, session/message/job and identity operations, plus consumed Agent-session
+query filters. The live acceptance workflow now requires this client validation.
+Final remote backend validation is tracked in PR #177; local unit/schema checks
+are not a substitute for the required live gate. Full input validation remains
+partial: arbitrary dialects/compositions, object/content parameter serialization,
+header/cookie coverage and DTO/controller custom validation remain unqualified.
+The full-plan delivery count remains 62/101 (61.4%).

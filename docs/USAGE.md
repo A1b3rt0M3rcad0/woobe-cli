@@ -231,3 +231,39 @@ HTTP responses reject duplicate fields/nesting ambiguity. Canonical resource IDs
 The default administrative transport pools read connections but sends mutations over fresh HTTP/1 connections with replay disabled, including requests carrying Idempotency-Key. This trades write connection reuse for predictable single-attempt behavior; idempotency remains a server feature, not a retry instruction. Runtime SDK calls inherit this HTTP client. Replacing the HTTP transport in an embedding application requires preserving this guarantee explicitly. Checkpoint writes also enforce 32 MiB before replacing an existing file; a committed remote write followed by a failed checkpoint save remains a partial outcome requiring recovery.
 
 State comparisons in `manifest diff`, `apply --skip-unchanged` and `reconcile` use exact decimal JSON number semantics: `1`, `1.0` and `1e0` are equal, including inside supplied objects/arrays. Large integers remain distinct without conversion to floating point. Array order, missing fields, explicit nulls and string/number types remain significant. Nested supplied objects are compared in full; this is not a recursive partial PATCH interpretation. Comparison shares a 100,000-node budget across supplied fields, supports depth 128 and numbers of at most 4096 characters with exponent magnitude at most 4096. Unsupported comparisons return exit 9; they never justify an unchanged checkpoint or reconciliation. Expected `if_match` in diff also requires an observed matching ETag. These observations do not lock subsequent server state or establish original-write attribution.
+
+## Advertised path/query validation
+
+`--validate-parameters` validates the selected canonical HTTP operation's path
+and query values against its advertised OpenAPI 3.1 schema before the operation.
+It can be combined with `--validate-body` for writes; neither changes authority.
+Dry-run remains network-free and performs neither advertised validation.
+
+```sh
+woobe project agent update AGENT_UUID --file agent.json --validate-body --validate-parameters
+woobe runtime agent sessions AGENT_UUID --project PROJECT_UUID --query environment=staging --limit 1 --all --validate-parameters
+woobe validate-input --command 'project agent get' --validate-parameters --path-param agent_id=AGENT_UUID
+woobe manifest preflight --file resources.json --validate-parameters --require-complete
+woobe manifest apply --file resources.json --checkpoint apply.json --yes --validate-body --validate-parameters
+```
+
+Parameter-only `validate-input` does not require a body and explicitly reports
+`body_validation: not_evaluated`. The parameter subset supports strings,
+UUID/date/date-time formats, exact JSON numbers, booleans and form arrays
+(repeated values for explode=true; one comma-separated value for explode=false).
+Path-level parameters are replaced by operation-level declarations with the
+same name/location. Local references and unambiguous nullable/composed primitive
+types are supported. Canonical/server template names may differ when method and
+literal path segments match exactly and identify only one advertised route.
+
+Missing required parameters, duplicate scalar values and invalid values return
+exit 2. Unadvertised parameters, unsupported serialization/types/dialects and
+ambiguous templates return exit 9. Header/cookie schemas and authorization are
+not evaluated by this flag. Schema digests can pin the discovery snapshot.
+
+Manifest apply validates resolved parameters before recording an in-flight
+write; failures retain `not_attempted` checkpoints. Preflight defers parameters
+that depend on prior step results and records parameter/body evidence separately.
+Manifest parameter validation uses each operation's context-derived query scope;
+global `--query` overrides are refused because they are not propagated to steps.
+Unknown server query keys are never approved by guessing their semantics.
