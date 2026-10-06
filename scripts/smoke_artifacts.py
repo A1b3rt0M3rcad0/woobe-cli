@@ -70,6 +70,14 @@ def smoke(root, commit):
         if category['document']['workspace_id'] != 'w' or category['executed'] is not False:
             raise ValueError('packaged category compilation lost its Workspace')
         invoke(['manifest', 'validate', '--file', '-'], '{', code=2)
+        protected_plan = json.dumps({'schema_version': '2', 'project_id': 'p', 'resources': [{'key': 'tool', 'kind': 'Tool', 'action': 'create', 'spec': {'config': {'headers': [{'name': 'Authorization', 'value': {'$secret_ref': 'tool-auth'}}]}}}]})
+        protected = invoke(['manifest', 'compile', '--file', '-'], protected_plan)['data']['document']
+        if protected['steps'][0]['body']['config']['headers'][0]['value'] != {'$secret_ref': 'tool-auth'}:
+            raise ValueError('packaged compilation lost protected credential reference')
+        invoke(['project', 'tool', 'mcp', 'bulk', '--project', 'p', '--file', '-', '--dry-run'], json.dumps({'tool_id': '11111111-1111-4111-8111-111111111111', 'mode': 'invalid'}), code=2)
+        for permission_mode in ['allow', 'deny', 'review']:
+            invoke(['project', 'tool', 'mcp', 'bulk', '--project', 'p', '--file', '-', '--dry-run'], json.dumps({'tool_id': '11111111-1111-4111-8111-111111111111', 'mode': permission_mode}))
+
         # A loopback fixture verifies the packaged client's body pagination on
         # each native OS; real Woobe policy remains the separate backend gate.
         class Pages(http.server.BaseHTTPRequestHandler):
@@ -174,7 +182,7 @@ def smoke(root, commit):
             server.server_close()
             thread.join(timeout=5)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
-            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff'],
+            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff', 'protected-reference-compile', 'canonical-mcp-permissions'],
             'backend_acceptance': 'not_evaluated', 'credential_provider_acceptance': 'not_evaluated'}
 
 

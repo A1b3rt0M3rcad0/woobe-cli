@@ -78,7 +78,7 @@ func (a *App) manifestSecretSnapshot(d manifest.Document) (map[string]string, ma
 			}
 			value, e := a.store().Get(name)
 			if e != nil {
-				return nil, nil, output.New(3, "protected manifest credential unavailable")
+				return nil, nil, output.New(output.Normalize(e).Code, "protected manifest credential unavailable")
 			}
 			values[name] = value
 			sum := sha256.Sum256([]byte(value))
