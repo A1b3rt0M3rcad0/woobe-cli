@@ -55,7 +55,7 @@ def smoke(root, commit):
             raise ValueError('packaged binary identity differs from archive metadata')
         discovery = invoke(['help'])['data']
         commands = {row['command'] for row in discovery}
-        if not {'manifest validate', 'manifest apply', 'manifest reconcile', 'runtime target run', 'version'} <= commands:
+        if not {'manifest validate', 'manifest apply', 'manifest reconcile', 'runtime target run', 'version', 'workspace authority category diff'} <= commands:
             raise ValueError('discovery is missing essential executable commands')
         for revision, identity in [('1', 'urn:woobe:manifest:steps:1'), ('2', 'urn:woobe:manifest:resources:2')]:
             schema = invoke(['schema', '--command', 'manifest validate', '--kind', 'document', '--manifest-version', revision])['data']
@@ -65,6 +65,10 @@ def smoke(root, commit):
         validation = invoke(['manifest', 'validate', '--file', '-', '--project', 'p'], body)['data']
         if validation['valid'] is not True or validation['source_schema_version'] != '2' or len(validation['manifest_hash']) != 64:
             raise ValueError('local manifest validation has incorrect semantics')
+        category_body = json.dumps({'schema_version': '2', 'workspace_id': 'w', 'resources': [{'key': 'reader', 'kind': 'AuthorityCategory', 'action': 'create', 'spec': {'name': 'reader', 'permissions': ['agent:read']}}]})
+        category = invoke(['manifest', 'compile', '--file', '-'], category_body)['data']
+        if category['document']['workspace_id'] != 'w' or category['executed'] is not False:
+            raise ValueError('packaged category compilation lost its Workspace')
         invoke(['manifest', 'validate', '--file', '-'], '{', code=2)
         # A loopback fixture verifies the packaged client's body pagination on
         # each native OS; real Woobe policy remains the separate backend gate.
@@ -89,10 +93,19 @@ def smoke(root, commit):
                         {'name': 'project_id', 'in': 'query', 'required': True, 'schema': {'type': 'string'}},
                         {'name': 'limit', 'in': 'query', 'schema': {'type': 'integer', 'minimum': 1, 'maximum': 100}},
                         {'name': 'cursor', 'in': 'query', 'schema': {'type': 'string'}}]}}
+                    schema['paths']['/identity/workspaces/{workspace_id}/authority-categories/{category_id}'] = {'get': {'operationId': 'get_category'}}
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
                     self.wfile.write(json.dumps(schema).encode())
+                    return
+                if route.path == '/identity/workspaces/w/authority-categories/c':
+                    revision = int(query['revision'][0])
+                    payload = {'data': {'id': 'c', 'workspace_id': 'w', 'revision': revision, 'name': 'reader', 'description': None, 'scope': 'project', 'permissions': ['agent:read'] if revision == 1 else ['agent:write', 'agent:read'], 'conditions': {}, 'catalog_revision': 'fixture'}}
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps(payload).encode())
                     return
                 self.requests.append(query)
                 if route.path != '/runtime/agents/a/sessions' or query.get('project_id') != ['p'] or query.get('limit') != ['1']:
@@ -153,12 +166,15 @@ def smoke(root, commit):
             invoke(['runtime', 'agent', 'sessions', 'a', '--project', 'p', '--api-url', origin, '--limit', '1', '--all', '--validate-parameters'])
             if len(Pages.requests) != pages_before + 2:
                 raise ValueError('validated packaged pagination did not consume both pages')
+            category_diff = invoke(['workspace', 'authority', 'category', 'diff', 'c', '--workspace', 'w', '--from-revision', '1', '--to-revision', '2', '--api-url', origin])['data']
+            if category_diff['grants_changed'] is not False or category_diff['executed'] is not False or [row['field'] for row in category_diff['changes']] != ['permissions']:
+                raise ValueError('packaged category diff has incorrect authority semantics')
         finally:
             server.shutdown()
             server.server_close()
             thread.join(timeout=5)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
-            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination'],
+            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff'],
             'backend_acceptance': 'not_evaluated', 'credential_provider_acceptance': 'not_evaluated'}
 
 
