@@ -1,20 +1,92 @@
-name: Release binaries
+name: Release CLI
 on:
   push:
     tags: ['v*']
 permissions:
-  contents: write
+  contents: read
+concurrency:
+  group: release-cli-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
-  release:
+  identity:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      npm_tag: ${{ steps.version.outputs.npm_tag }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
         with:
-          go-version: '1.27.1'
-      - run: go test ./...
-      - run: bash scripts/package.sh "$GITHUB_REF_NAME"
-      - run: python3 scripts/verify_artifacts.py
-      - run: gh release create "$GITHUB_REF_NAME" dist/*.tar.gz dist/*.zip dist/SHA256SUMS dist/artifacts.json --generate-notes
+          fetch-depth: 0
+      - id: version
+        name: Require the canonical version and a commit integrated in master
+        shell: bash
+        run: |
+          task_version="$(python3 scripts/version.py)"
+          test "$GITHUB_REF_NAME" = "v$task_version"
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/master
+          echo "version=$task_version" >> "$GITHUB_OUTPUT"
+          if [[ "$task_version" == *-* ]]; then
+            echo 'npm_tag=next' >> "$GITHUB_OUTPUT"
+          else
+            echo 'npm_tag=latest' >> "$GITHUB_OUTPUT"
+          fi
+  validate:
+    needs: identity
+    uses: ./.github/workflows/ci.yml
+    with:
+      version: ${{ needs.identity.outputs.version }}
+  release:
+    needs: [identity, validate]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: woobe-distribution
+          path: dist
+      - name: Verify the validated distribution
+        env:
+          CLI_VERSION: ${{ needs.identity.outputs.version }}
+        run: python3 scripts/verify_artifacts.py --commit "$GITHUB_SHA" --version "$CLI_VERSION"
+      - name: Publish the exact validated files
         env:
           GH_TOKEN: ${{ github.token }}
+          CLI_VERSION: ${{ needs.identity.outputs.version }}
+          NPM_TAG: ${{ needs.identity.outputs.npm_tag }}
+        shell: bash
+        run: |
+          task_flags=()
+          if [[ "$NPM_TAG" == next ]]; then task_flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" \
+            dist/woobe_"${CLI_VERSION}"_*.tar.gz dist/woobe_"${CLI_VERSION}"_*.zip \
+            "dist/woobe-cli-${CLI_VERSION}.tgz" dist/SHA256SUMS dist/artifacts.json \
+            --verify-tag --generate-notes "${task_flags[@]}"
+  npm:
+    needs: [identity, release]
+    if: vars.WOOBE_PUBLISH_NPM == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: woobe-distribution
+          path: dist
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+      - run: npm install --global npm@11
+      - name: Verify the exact npm release
+        env:
+          CLI_VERSION: ${{ needs.identity.outputs.version }}
+        run: python3 scripts/verify_artifacts.py --commit "$GITHUB_SHA" --version "$CLI_VERSION"
+      - name: Publish with npm trusted publishing
+        env:
+          CLI_VERSION: ${{ needs.identity.outputs.version }}
+          NPM_TAG: ${{ needs.identity.outputs.npm_tag }}
+        run: npm publish "dist/woobe-cli-${CLI_VERSION}.tgz" --ignore-scripts --provenance --access public --tag "$NPM_TAG"

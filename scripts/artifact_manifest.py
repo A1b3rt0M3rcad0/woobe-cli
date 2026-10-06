@@ -10,6 +10,9 @@ for system in ('linux', 'darwin', 'windows'):
         artifacts.append(dict(name=path.name, os=system, arch=arch,
                               bytes=path.stat().st_size,
                               sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
+npm_path = pathlib.Path('dist') / f'woobe-cli-{version}.tgz'
+npm = dict(name=npm_path.name, bytes=npm_path.stat().st_size,
+           sha256=hashlib.sha256(npm_path.read_bytes()).hexdigest())
 pathlib.Path('dist/artifacts.json').write_text(json.dumps(dict(
     schema_version='1', version=version, commit=commit, compiler=compiler,
-    artifacts=artifacts), indent=2) + '\n')
+    artifacts=artifacts, npm=npm), indent=2) + '\n')

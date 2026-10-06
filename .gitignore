@@ -3,3 +3,5 @@
 *.test
 coverage.out
 .woobe/
+__pycache__/
+*.pyc
