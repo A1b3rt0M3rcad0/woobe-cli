@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""Publish the exact CI candidate after preflighting GitHub and npm together."""
+"""Publish the exact CI native candidate to GitHub, without npm or extra secrets."""
 import argparse
-import base64
 import hashlib
 import json
 import os
@@ -12,10 +11,8 @@ import sys
 import tempfile
 import urllib.error
 import urllib.request
-from version import validate, SEMVER
+from version import validate, SEMVER, semver_key
 from release_identity import resolve
-
-REGISTRY = 'https://registry.npmjs.org/woobe-cli'
 
 
 def run(*args, capture=False):
@@ -29,10 +26,7 @@ def fetch(url, token=None, missing=False):
         headers['Authorization'] = f'Bearer {token}'
     try:
         with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=60) as response:
-            payload = response.read(80 * 1024 * 1024 + 1)
-            if len(payload) > 80 * 1024 * 1024:
-                raise ValueError('registry response exceeds distribution limit')
-            return payload
+            return response.read()
     except urllib.error.HTTPError as error:
         if missing and error.code == 404:
             return None
@@ -44,38 +38,17 @@ def github(path, missing=False):
     return json.loads(payload) if payload is not None else None
 
 
-def registry():
-    payload = fetch(REGISTRY, missing=True)
-    return json.loads(payload) if payload is not None else None
-
-
-def semver_key(value):
-    validate(value)
-    core, separator, prerelease = value.partition('-')
-    identifiers = tuple((0, int(part)) if part.isdigit() else (1, part)
-                        for part in prerelease.split('.')) if separator else ()
-    return (*map(int, core.split('.')), 0 if separator else 1, identifiers)
-
-
-def assert_advances(version, published):
-    known = [value for value in published if SEMVER.fullmatch(value)]
-    if known and semver_key(version) <= max(map(semver_key, known)):
-        raise ValueError('new releases must advance the highest published Semantic Version')
-
-
-def verify_npm(packument, version, package):
-    entry = packument.get('versions', {}).get(version) if packument else None
-    if entry is None:
-        return False
-    integrity = 'sha512-' + base64.b64encode(hashlib.sha512(package.read_bytes()).digest()).decode()
-    if entry.get('dist', {}).get('integrity') != integrity:
-        raise ValueError('immutable npm version already exists with different bytes')
-    url = entry['dist']['tarball']
-    if not url.startswith('https://registry.npmjs.org/woobe-cli/-/'):
-        raise ValueError('unexpected npm distribution URL')
-    if fetch(url) != package.read_bytes():
-        raise ValueError('published npm tarball differs from the validated candidate')
-    return True
+def published_versions(repo):
+    versions = []
+    page = 1
+    while True:
+        releases = github(f'repos/{repo}/releases?per_page=100&page={page}')
+        versions.extend(item['tag_name'][1:] for item in releases
+                        if not item['draft'] and item['tag_name'].startswith('v')
+                        and SEMVER.fullmatch(item['tag_name'][1:]))
+        if len(releases) < 100:
+            return versions
+        page += 1
 
 
 def verify_assets(repo, release, files):
@@ -97,9 +70,9 @@ def verify_assets(repo, release, files):
     return set(names)
 
 
-def preflight(repo, version, commit, files, package):
-    # Verify repository access first: an unauthenticated/private-repo 404 is
-    # never interpreted as an absent release or tag.
+def preflight(repo, version, commit, files):
+    # Read repository access first: a private-repo/authentication 404 must not
+    # be interpreted as a missing tag or release.
     settings = github(f'repos/{repo}')
     if not settings.get('permissions', {}).get('push'):
         raise ValueError('GitHub credential lacks repository write permission')
@@ -120,68 +93,53 @@ def preflight(repo, version, commit, files, package):
     if release and release['prerelease'] != ('-' in version):
         raise ValueError('existing GitHub Release has a conflicting prerelease flag')
     assets = verify_assets(repo, release, files)
-    packument = registry()
-    npm_exists = verify_npm(packument, version, package)
-    if not npm_exists:
-        published = list((packument or {}).get('versions', {}))
-        page = 1
-        while True:
-            releases = github(f'repos/{repo}/releases?per_page=100&page={page}')
-            published.extend(item['tag_name'][1:] for item in releases
-                             if not item['draft'] and item['tag_name'].startswith('v')
-                             and item['tag_name'] != f'v{version}')
-            if len(releases) < 100:
-                break
-            page += 1
-        assert_advances(version, published)
-        if packument is None and not os.environ.get('NODE_AUTH_TOKEN'):
-            raise ValueError('first npm publication requires repository secret NPM_TOKEN; then configure Trusted Publisher for release.yml')
-        if os.environ.get('NODE_AUTH_TOKEN'):
-            run('npm', 'whoami', '--registry=https://registry.npmjs.org', capture=True)
-        elif not os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL'):
-            raise ValueError('npm publication requires NPM_TOKEN or GitHub Actions Trusted Publisher')
-    return release, assets, npm_exists
+    if not tag and not release:
+        versions = published_versions(repo)
+        if versions and semver_key(version) <= max(map(semver_key, versions)):
+            raise ValueError('new releases must advance the highest published Semantic Version')
+    return release, assets, bool(tag)
 
 
-def publish(repo, version, commit, files, package, preflight_only=False):
-    release, assets, npm_exists = preflight(repo, version, commit, files, package)
+def publish(repo, version, commit, files, preflight_only=False):
+    release, assets, reserved = preflight(repo, version, commit, files)
     if preflight_only:
-        print('Both destinations passed preflight; no publication requested')
+        print('GitHub native release passed preflight; no publication requested')
         return
     tag = f'v{version}'
-    npm_tag = 'next' if '-' in version else 'latest'
-    if not npm_exists:
-        run('npm', 'publish', str(package), '--ignore-scripts', '--provenance',
-            '--access', 'public', '--tag', npm_tag, '--registry=https://registry.npmjs.org')
-    # npm is immutable and verified before creating the permanent GitHub record.
-    if not verify_npm(registry(), version, package):
-        raise ValueError('npm publication is missing after publish')
-    run(sys.executable, 'scripts/smoke_npm.py', '--commit', commit,
-        '--report', 'dist/published-npm-smoke.json')
+    if not reserved:
+        # Reserve the validated identity before uploading. A failed upload can
+        # be retried; later pushes will not reuse this version for other bytes.
+        run('gh', 'api', f'repos/{repo}/git/refs', '--method', 'POST',
+            '-f', f'ref=refs/tags/{tag}', '-f', f'sha={commit}')
     if release is None:
         notes = pathlib.Path('dist/release-notes.md')
+        links = '\n'.join(f'- [{name}](https://github.com/{repo}/releases/download/{tag}/{name})'
+                          for name in files if name.endswith(('.tar.gz', '.zip')))
         notes.write_text(f'Woobe CLI {version}\n\nSource: {commit}\n\n'
-                         f'Install: `npm install --global woobe-cli@{version}`\n\n'
-                         f'Run: `npx --package=woobe-cli@{version} woobe version`\n\n'
-                         'Native archives: Linux, macOS and Windows; amd64 and arm64.\n'
-                         'Verify downloads with SHA256SUMS and release-manifest.json.\n')
+                         'Download your platform archive, verify SHA256SUMS, extract\n'
+                         'and put woobe (woobe.exe on Windows) on PATH. Run `woobe version`.\n'
+                         'No Go, Node.js or npm installation is required.\n\n' + links + '\n')
         flags = ['--prerelease'] if '-' in version else []
         run('gh', 'release', 'create', tag, '--repo', repo, '--target', commit,
-            '--draft', '--title', f'Woobe CLI {tag}', '--notes-file', str(notes), *flags)
-    # Upload missing bytes only. Never --clobber an immutable release asset.
+            '--verify-tag', '--draft', '--generate-notes', '--title', f'Woobe CLI {tag}', '--notes-file', str(notes), *flags)
     for name, path in files.items():
         if name not in assets:
             run('gh', 'release', 'upload', tag, str(path), '--repo', repo)
     release = github(f'repos/{repo}/releases/tags/{tag}')
     if verify_assets(repo, release, files) != set(files):
         raise ValueError('GitHub publication is incomplete')
+    # Remote files have just been compared byte for byte with this candidate.
+    run(sys.executable, 'scripts/smoke_artifacts.py', '--commit', commit,
+        '--report', 'dist/published-native-smoke.json')
     if release['draft']:
-        run('gh', 'release', 'edit', tag, '--repo', repo, '--draft=false')
-    # Repeat all lookups after publication, including the tag and npm bytes.
-    terminal, terminal_assets, terminal_npm = preflight(repo, version, commit, files, package)
-    if terminal['draft'] or terminal_assets != set(files) or not terminal_npm:
+        stable = [v for v in published_versions(repo) if '-' not in v]
+        latest = '-' not in version and (not stable or semver_key(version) >= max(map(semver_key, stable)))
+        run('gh', 'release', 'edit', tag, '--repo', repo, '--draft=false',
+            f'--latest={str(latest).lower()}')
+    terminal, terminal_assets, terminal_tag = preflight(repo, version, commit, files)
+    if terminal['draft'] or terminal_assets != set(files) or not terminal_tag:
         raise ValueError('release transaction did not complete')
-    print(f'Published {tag}: all six native archives, npm and the permanent release manifest verified')
+    print(f'Published {tag}: six native archives, immutable tag and permanent release manifest verified')
 
 
 def candidate(version, commit, manifest_sha256):
@@ -196,17 +154,16 @@ def candidate(version, commit, manifest_sha256):
         raise ValueError('candidate manifest differs from successful CI output')
     run(sys.executable, 'scripts/verify_artifacts.py', '--commit', commit, '--version', version)
     manifest = json.loads(manifest_path.read_text())
-    package = pathlib.Path('dist') / manifest['npm']['name']
-    integrity = 'sha512-' + base64.b64encode(hashlib.sha512(package.read_bytes()).digest()).decode()
+    if 'npm' in manifest:
+        raise ValueError('this release accepts native-only candidates; npm distribution is deferred')
     record = dict(schema_version='1', version=version, commit=commit,
-                  candidate_manifest_sha256=manifest_sha256, artifacts=manifest['artifacts'],
-                  npm=dict(package='woobe-cli', version=version, integrity=integrity,
-                           sha256=manifest['npm']['sha256']))
+                  candidate_manifest_sha256=manifest_sha256, compiler=manifest['compiler'],
+                  artifacts=manifest['artifacts'])
     permanent = pathlib.Path('dist/release-manifest.json')
     permanent.write_text(json.dumps(record, indent=2) + '\n')
     names = [item['name'] for item in manifest['artifacts']]
-    names.extend([package.name, 'SHA256SUMS', 'artifacts.json', permanent.name])
-    return {name: pathlib.Path('dist') / name for name in names}, package
+    names.extend(['SHA256SUMS', 'artifacts.json', permanent.name])
+    return {name: pathlib.Path('dist') / name for name in names}
 
 
 if __name__ == '__main__':
@@ -219,5 +176,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', args.repo):
         parser.error('invalid GitHub repository')
-    files, package = candidate(args.version, args.commit, args.manifest_sha256)
-    publish(args.repo, args.version, args.commit, files, package, args.preflight_only)
+    files = candidate(args.version, args.commit, args.manifest_sha256)
+    publish(args.repo, args.version, args.commit, files, args.preflight_only)

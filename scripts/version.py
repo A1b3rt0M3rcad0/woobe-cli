@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep the independent CLI version and its npm manifest synchronized."""
+"""Keep the independent source release floor and reserved npm metadata synchronized."""
 import argparse
 import json
 import pathlib
@@ -17,6 +17,14 @@ def validate(value):
     if not SEMVER.fullmatch(value):
         raise ValueError('expected X.Y.Z or X.Y.Z-prerelease (no v prefix or build metadata)')
     return value
+
+
+def semver_key(value):
+    validate(value)
+    core, separator, prerelease = value.partition('-')
+    identifiers = tuple((0, int(part)) if part.isdigit() else (1, part)
+                        for part in prerelease.split('.')) if separator else ()
+    return (*map(int, core.split('.')), 0 if separator else 1, identifiers)
 
 
 def check():

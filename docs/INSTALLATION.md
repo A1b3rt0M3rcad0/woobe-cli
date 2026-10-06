@@ -1,52 +1,20 @@
-# Installation and CLI releases
+# Installation and automatic CLI releases
 
-The CLI stays in this repository and has its own Semantic Version, independent
-of the Woobe backend. `VERSION` is authoritative; the npm manifest mirrors it.
-The first prepared version is **0.1.0**. A prepared version is not a published
-release: the commands below that use npm or GitHub URLs become available after
-publication. Build and install locally until then.
+The CLI stays in this repository and is versioned independently of the Woobe
+backend. Distribution uses **GitHub Releases**: six native archives for Linux,
+macOS and Windows, in amd64/x64 and arm64. Go, Node.js and npm are not required
+to use the binaries. npm distribution is deferred.
 
-## Install with npm
+The initial release floor is **0.1.0**. Source changes alone do not publish a
+release: the automatic workflow must be integrated into `master`, pass all
+validation and complete publication first.
 
-Requires Node.js 22 or newer; Go is not required.
+## Download and run
 
-```sh
-npm install --global woobe-cli
-woobe version
-woobe help
-```
+Open [the latest release](https://github.com/A1b3rt0M3rcad0/woobe-cli/releases/latest)
+and download your platform archive plus `SHA256SUMS`.
 
-Without a global installation:
-
-```sh
-npx --package=woobe-cli woobe version
-```
-
-For reproducible automation, pin the package:
-
-```sh
-npx --package=woobe-cli@0.1.0 woobe version
-```
-
-The tarball contains Linux, macOS and Windows binaries for x64 and arm64. It has
-no dependencies or installation scripts and does not download executables at
-installation or runtime. `npm install --ignore-scripts` is supported.
-
-GitHub Releases also contains the npm tarball. It can be installed before a
-registry publication is configured:
-
-```sh
-npm install --global https://github.com/A1b3rt0M3rcad0/woobe-cli/releases/download/v0.1.0/woobe-cli-0.1.0.tgz
-woobe version
-```
-
-## Download without Node or Go
-
-Open [GitHub Releases](https://github.com/A1b3rt0M3rcad0/woobe-cli/releases) and
-select your platform. The executable is `woobe` on Linux/macOS and `woobe.exe`
-on Windows. `amd64` means x64; Apple Silicon uses `darwin_arm64`.
-
-| Platform | Archive for 0.1.0 |
+| Platform | Initial archive |
 | --- | --- |
 | Linux x64 | `woobe_0.1.0_linux_amd64.tar.gz` |
 | Linux arm64 | `woobe_0.1.0_linux_arm64.tar.gz` |
@@ -55,13 +23,18 @@ on Windows. `amd64` means x64; Apple Silicon uses `darwin_arm64`.
 | Windows x64 | `woobe_0.1.0_windows_amd64.zip` |
 | Windows arm64 | `woobe_0.1.0_windows_arm64.zip` |
 
-Download `SHA256SUMS` with the archive and compare its SHA-256 before extraction
-(`sha256sum` on Linux, `shasum -a 256` on macOS, `Get-FileHash -Algorithm SHA256`
-on Windows). Extract the archive, put the executable in a directory on `PATH`,
-then run `woobe version`. The archives also contain usage instructions and the
-two manifest schemas. No administrator privileges are required.
-All archives and the npm package include the pinned dependencies' and Go
-toolchain's license notices in `THIRD_PARTY_NOTICES.txt`.
+Verify the downloaded file's SHA-256 against `SHA256SUMS` before extraction.
+Use `sha256sum` on Linux, `shasum -a 256` on macOS or
+`Get-FileHash -Algorithm SHA256` in PowerShell. Extract, place `woobe` or
+`woobe.exe` in a directory on `PATH`, then run:
+
+```sh
+woobe version
+woobe help
+```
+
+The archives also contain usage instructions, both manifest schemas and pinned
+dependency/toolchain license notices. No administrator privileges are required.
 
 ## Connect Woobe
 
@@ -77,111 +50,98 @@ woobe context set --workspace WORKSPACE_ID --project PROJECT_ID
 woobe project agent list
 ```
 
-Use the backend API URL, not the frontend URL. Runtime credentials are separate.
-See [usage](USAGE.md) for secret handling, runtime and manifests. Packaging does
-not change the [functional coverage](STATUS.md) or server authorization rules.
+Use the backend API URL. Runtime credentials are separate. See [USAGE.md](USAGE.md)
+for secret handling, runtime and manifests. Distribution does not change server
+authorization or the [functional coverage](STATUS.md).
 
-## Build locally
+## Automatic release
+
+**Every push to `master` starts Release CLI**, including a maintainer's merge of
+a reviewed PR. No manual version update, tag push, release button, npm account
+or additional release token is required. The workflow never merges PRs and
+never pushes changes into `master`.
+
+1. Pin the source to the push's exact SHA, require it to belong to `master`,
+   and calculate the version from existing immutable `v*` tags and commit history.
+2. Run the full reusable CI: Go/race/fuzz checks, six cross-builds, archive/schema/
+   license/checksum validation, and native smoke tests on Linux/macOS/Windows.
+3. Receive the immutable Actions artifact ID and manifest SHA-256 from CI.
+   Publication downloads this exact candidate and verifies every file; it does
+   not rebuild. GitHub-only preflight refuses conflicting tags/assets and treats
+   authentication/network errors as failures rather than missing releases.
+4. Reserve `v<VERSION>` on the validated source, create or resume a draft Release,
+   generate release notes and download links, and upload only missing files
+   without overwriting existing bytes. Download
+   and compare every asset, then execute the verified native executable again.
+5. Make the Release public and verify its complete terminal state. Success
+   requires all six archives, SHA256SUMS, artifacts.json, release-manifest.json
+   and the immutable source tag. A resumed older release cannot move `latest`
+   backwards.
+
+Only the built-in **GITHUB_TOKEN**, with job permission `contents: write`, is
+used. Repository/organization policies must allow that permission and tag
+creation. Branch protection and any approval policy remain repository settings.
+The workflow has no tag-push publication trigger, so its own tag cannot start a
+second release. Ordinary master CI is provided by the reusable validation in
+Release CLI; there is no duplicate standalone CLI run for the same master push.
+
+### Automatic version calculation
+
+`VERSION` is the reviewed **minimum release version**, initially `0.1.0`.
+The reserved private npm source manifest mirrors this floor for future work.
+Published versions are authoritative in Git tags and permanent artifact
+manifests; automatic increments do not rewrite source files.
+
+- No previous version: use `VERSION`.
+- A `feat:` or `feat(scope):` commit since the latest tag: increment MINOR.
+- A conventional `type!:` / `type(scope)!:` subject or `BREAKING CHANGE:` /
+  `BREAKING-CHANGE:` footer: increment MAJOR; before 1.0, increment MINOR.
+- Other changes: increment PATCH. A previous prerelease becomes its stable core
+  version when no feature/breaking bump is needed.
+- If a reviewed increase in `VERSION` is higher than the calculated version,
+  use that floor. No source version edit is needed for ordinary releases.
+
+Examples: `0.1.0` + `fix(cli): ...` → `0.1.1`; `feat(cli): ...` → `0.2.0`;
+`1.2.3` + `fix(api)!: ...` → `2.0.0`.
+
+### Retries and manual recovery
+
+Release transactions are serialized and active publication is not cancelled by
+later pushes. A rerun for an already tagged source recovers the same version,
+even when master has advanced. A pending push superseded by a newer tagged
+source is skipped. Tags reserved by a failed upload are never reused for a
+later commit; the next push advances the version.
+
+For recovery or an explicit prerelease, **Actions → Release CLI → Run workflow**
+remains available on `master`. Leave both fields empty to release its current
+source automatically. To repair a specific release, enter its existing version
+without `v`; its tag recovers the source. An optional full `revision` can pin the
+original SHA. New explicit versions must advance all reserved versions and
+respect the source floor. Every recovery still passes the complete CI gate.
+
+Archive timestamps, owners and compression metadata are normalized. Rebuilding
+the same source/version with pinned toolchains yields the same bytes. A
+conflicting tag or asset is never overwritten; use a new version instead.
+
+## Local build
 
 ```sh
 make build
 bin/woobe version
 make package
-npm install --global ./dist/woobe-cli-0.1.0.tgz
-woobe version
+python3 scripts/verify_artifacts.py --commit "$(git rev-parse HEAD)"
+python3 scripts/smoke_artifacts.py --commit "$(git rev-parse HEAD)" --report native-smoke.json
 ```
 
-Building requires the Go toolchain declared in `go.mod`, Python 3, Node.js/npm,
-and the existing archive tools (`tar`, `zip`, `sha256sum`). `make build` embeds
-the canonical version and source commit. A bare `go build` retains the `dev`
-version for an unversioned development build.
+Requires the Go toolchain in `go.mod`, Python 3, GNU tar, gzip, zip and sha256sum.
+`make build` and `make package` use the source floor locally. Release CI passes
+its automatically calculated version into packaging and embeds that version and
+the exact source SHA in every binary. A bare `go build` keeps the `dev` version.
+Development PR/branch packages use `0.0.0-ci.<run>.<attempt>` and are Actions
+artifacts, not public releases.
 
-## Prepare the next version
-
-Use `MAJOR.MINOR.PATCH`, or a prerelease such as `0.2.0-rc.1`. Build metadata and
-the `v` prefix are not part of canonical `VERSION`. Increment PATCH for fixes,
-MINOR for additions and MAJOR for incompatible public changes; before 1.0,
-incompatible changes increment MINOR and must be documented in the changelog.
-
-```sh
-python3 scripts/version.py --set 0.1.1
-python3 scripts/version.py
-make check
-make package
-```
-
-Update `CHANGELOG.md` and commit the version change in a PR. Existing releases
-are immutable: use a new version for different bytes. Integration remains an
-explicit maintainer action; the version script never merges or creates a tag.
-
-## Publish from GitHub Actions
-
-The entrypoint follows Woobe's manual release pattern:
-
-1. Review the product and version changes in PRs. They must already be in
-   `master`; the release workflow never merges PRs or changes repository files.
-2. Open **Actions → Release CLI → Run workflow**, choose **master**, enter the
-   canonical version (for example `0.1.0`) and start the run. Optionally pin the
-   exact reviewed 40-character source SHA in `revision`.
-3. The workflow resolves that immutable source, requires matching `VERSION`
-   and npm metadata, and runs the full reusable CI: Go/race/fuzz validation,
-   six cross-builds, and native plus npm installation smoke tests on three OSes.
-4. Publication receives the immutable Actions artifact ID and SHA-256 of its
-   manifest from CI. It verifies the source/version and every file, then checks
-   **both GitHub and npm before writing either destination**. An existing
-   version/tag/asset must match the exact validated bytes or source. Unknown
-   errors, authentication failures and conflicts stop the transaction.
-5. The job publishes the validated npm tarball, downloads and compares the
-   registry's exact bytes and exercises the installed command. It then creates
-   or resumes a draft GitHub Release at the exact commit, uploads missing files
-   without overwriting anything, downloads every asset for comparison, and
-   makes the release public. Final success requires both destinations, the
-   immutable tag and `release-manifest.json` to match.
-
-There are no tag-push or master-push publication triggers. The **Run workflow**
-button appears when this workflow is integrated in the default branch. The old
-**Release binaries** workflow only accepted tag pushes; an empty runs list was
-expected before its first tag.
-
-GitHub Releases contains six native archives, the npm tarball, `SHA256SUMS`,
-`artifacts.json` and the permanent `release-manifest.json`. They are the same
-files exercised by CI; the publication job does not rebuild. Stable versions
-use npm's `latest`; prereleases use `next` and GitHub's prerelease flag.
-New versions must advance the highest published SemVer. A retry of an existing
-version never overwrites an npm version, asset, tag or npm distribution tag.
-
-### First npm publication and authentication
-
-The npm name is `woobe-cli`. The source manifest is private so an accidental
-publish from `packages/woobe-cli` cannot publish a package without binaries.
-Publish only the generated, verified `dist/woobe-cli-<VERSION>.tgz`.
-
-For the **first publication**, configure repository Actions secret **NPM_TOKEN**
-with an npm token authorized to create this public package. If the account's
-2FA policy requires bypass for automation, grant that capability to this token.
-The workflow fails before publication when a new package lacks this credential.
-It does not silently skip npm or report a binaries-only release as complete.
-
-After the first publication, configure the npm package's **Trusted Publisher**
-for GitHub owner `A1b3rt0M3rcad0`, repository `woobe-cli`, workflow `release.yml`
-(no environment name), then remove the bootstrap token. npm 11 uses the job's
-OIDC identity and provenance for subsequent releases. Registry ownership and
-Trusted Publisher settings remain account configuration. The previous
-`WOOBE_PUBLISH_NPM` switch is no longer used: this release publishes both targets.
-
-### Recovery
-
-Re-run failed jobs to reuse the original immutable candidate. For a completely
-new run, enter the same version; an existing Git tag recovers its original
-commit even if master has advanced. Before tag creation (for example, npm
-succeeded but GitHub failed), supply the original `revision` from the failed
-run. A partially uploaded draft is repaired only at that exact revision.
-Packaging normalizes timestamps, owners and compression metadata so a retry
-from the same commit and pinned toolchains produces the same archive bytes.
-Conflicts require a new version, never clobbering a release.
-
-CI branch/PR packages use `0.0.0-ci.<run>.<attempt>` and remain Actions artifacts.
-They do not publish tags, GitHub Releases or npm packages.
-
-This repository currently supplies no software license file. Packaging does
-not introduce a license grant; the npm metadata stays `UNLICENSED`.
+The private npm wrapper and opt-in packaging helpers are retained for future
+work. Current CI and Release CLI do not build, install or publish npm packages,
+access an npm registry, use OIDC or require NPM_TOKEN. This repository currently
+supplies no software license file; packaging adds dependency notices without
+introducing a software license grant.

@@ -1,14 +1,16 @@
 name: Release CLI
-run-name: Release CLI v${{ inputs.version }}
+run-name: Release CLI ${{ inputs.version || github.sha }}
 on:
+  push:
+    branches: [master]
   workflow_dispatch:
     inputs:
       version:
-        description: Reviewed canonical VERSION (without v prefix)
-        required: true
+        description: Optional exact version for recovery or prerelease; empty calculates automatically
+        required: false
         type: string
       revision:
-        description: Optional exact master commit; retries otherwise recover the release tag
+        description: Optional exact master commit for recovery
         required: false
         type: string
 permissions:
@@ -23,6 +25,7 @@ jobs:
     outputs:
       version: ${{ steps.identity.outputs.version }}
       revision: ${{ steps.identity.outputs.revision }}
+      skip: ${{ steps.identity.outputs.skip }}
     steps:
       - name: Require the canonical workflow source
         env:
@@ -30,27 +33,28 @@ jobs:
         run: test "$SOURCE_REF" = refs/heads/master
       - uses: actions/checkout@v4
         with:
-          ref: master
+          ref: ${{ github.sha }}
           fetch-depth: 0
       - id: identity
         name: Resolve an immutable reviewed release revision
         env:
           CLI_VERSION: ${{ inputs.version }}
-          CLI_REVISION: ${{ inputs.revision }}
+          CLI_REVISION: ${{ inputs.revision || (github.event_name == 'push' && github.sha) || '' }}
         run: python3 scripts/release_identity.py --version "$CLI_VERSION" --revision "$CLI_REVISION" --output "$GITHUB_OUTPUT"
   validate:
     needs: identity
+    if: needs.identity.outputs.skip != 'true'
     uses: ./.github/workflows/ci.yml
     with:
       version: ${{ needs.identity.outputs.version }}
       revision: ${{ needs.identity.outputs.revision }}
   publish:
     needs: [identity, validate]
+    if: needs.identity.outputs.skip != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: write
-      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,15 +65,9 @@ jobs:
           artifact-ids: ${{ needs.validate.outputs.artifact_id }}
           merge-multiple: true
           path: dist
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          registry-url: https://registry.npmjs.org
-      - run: npm install --global npm@11.9.0
-      - name: Verify, preflight both destinations, publish and check exact bytes
+      - name: Verify native candidate, publish to GitHub and check exact bytes
         env:
           GH_TOKEN: ${{ github.token }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CLI_VERSION: ${{ needs.identity.outputs.version }}
           CLI_REVISION: ${{ needs.identity.outputs.revision }}
           CANDIDATE_SHA256: ${{ needs.validate.outputs.manifest_sha256 }}
@@ -81,7 +79,6 @@ jobs:
         run: |
           {
             echo "Released woobe-cli $CLI_VERSION from $CLI_REVISION"
-            echo "npm install --global woobe-cli@$CLI_VERSION"
-            echo "npx --package=woobe-cli@$CLI_VERSION woobe version"
+            echo "Download the archive for your platform, verify SHA256SUMS, extract and run woobe version."
             echo "https://github.com/$GITHUB_REPOSITORY/releases/tag/v$CLI_VERSION"
           } >> "$GITHUB_STEP_SUMMARY"

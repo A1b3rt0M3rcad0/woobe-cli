@@ -17,8 +17,11 @@ if options.commit:
     assert manifest['commit'] == options.commit, 'artifact source commit differs from expected checkout'
 assert {(a['os'], a['arch']) for a in manifest['artifacts']} == {(s, a) for s in ('linux','darwin','windows') for a in ('amd64','arm64')}
 assert len({a['name'] for a in manifest['artifacts']}) == 6
-checksums = dict(line.split()[::-1] for line in (root / 'SHA256SUMS').read_text().splitlines())
-assert set(checksums) == {a['name'] for a in manifest['artifacts']} | {manifest['npm']['name']}
+checksum_lines = [line.split() for line in (root / 'SHA256SUMS').read_text().splitlines()]
+assert all(len(row) == 2 and re.fullmatch(r'[a-f0-9]{64}', row[0]) for row in checksum_lines)
+checksums = {row[1]: row[0] for row in checksum_lines}
+assert len(checksums) == len(checksum_lines), 'duplicate checksum entry'
+assert set(checksums) == {a['name'] for a in manifest['artifacts']} | ({manifest['npm']['name']} if 'npm' in manifest else set())
 native_binaries = {}
 native_notices = []
 for artifact in manifest['artifacts']:
@@ -47,10 +50,15 @@ for artifact in manifest['artifacts']:
             resources = json.load(archive.extractfile('resources.schema.json'))
             native_binaries[(artifact['os'], artifact['arch'])] = archive.extractfile('woobe').read()
             native_notices.append(archive.extractfile('THIRD_PARTY_NOTICES.txt').read())
+            assert archive.getmember('woobe').mode & 0o111, 'native executable is not executable'
     executable = 'woobe.exe' if artifact['os'] == 'windows' else 'woobe'
     assert names == {executable, 'README.md', 'USAGE.md', 'manifest.schema.json', 'resources.schema.json', 'THIRD_PARTY_NOTICES.txt'}
     assert schema['$id'] == 'urn:woobe:manifest:steps:1'
     assert resources['$id'] == 'urn:woobe:manifest:resources:2'
+if 'npm' not in manifest:
+    assert native_notices[0] and all(value == native_notices[0] for value in native_notices)
+    print('Verified six native archives, schemas, license notices and checksum metadata')
+    raise SystemExit(0)
 npm = manifest['npm']
 assert npm['name'] == f"woobe-cli-{manifest['version']}.tgz"
 npm_path = root / npm['name']

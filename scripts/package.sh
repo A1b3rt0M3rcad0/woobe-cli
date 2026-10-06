@@ -4,6 +4,11 @@ canonical_version="$(python3 scripts/version.py)"
 version="${1:-$canonical_version}"
 version="${version#v}"
 python3 scripts/version.py --validate "$version" >/dev/null
+with_npm="${2:-}"
+if [[ -n "$with_npm" && "$with_npm" != --with-npm ]]; then
+  echo 'usage: package.sh [VERSION] [--with-npm]' >&2
+  exit 2
+fi
 mkdir -p dist
 rm -rf dist/npm
 export TZ=UTC
@@ -20,9 +25,11 @@ for target_os in linux darwin windows; do
     executable=woobe
     if [[ "$target_os" == windows ]]; then executable=woobe.exe; fi
     CGO_ENABLED=0 GOOS="$target_os" GOARCH="$target_arch" go build -trimpath -ldflags="-s -w -X github.com/A1b3rt0M3rcad0/woobe-cli/internal/cli.Version=$version -X github.com/A1b3rt0M3rcad0/woobe-cli/internal/cli.Commit=$(git rev-parse HEAD)" -o "$task_dir/$executable" ./cmd/woobe
-    mkdir -p "dist/npm/vendor/$target_os-$target_arch"
-    cp "$task_dir/$executable" "dist/npm/vendor/$target_os-$target_arch/$executable"
-    chmod 755 "dist/npm/vendor/$target_os-$target_arch/$executable"
+    if [[ "$with_npm" == --with-npm ]]; then
+      mkdir -p "dist/npm/vendor/$target_os-$target_arch"
+      cp "$task_dir/$executable" "dist/npm/vendor/$target_os-$target_arch/$executable"
+      chmod 755 "dist/npm/vendor/$target_os-$target_arch/$executable"
+    fi
     cp README.md "$task_dir/README.md"
     cp dist/THIRD_PARTY_NOTICES.txt "$task_dir/THIRD_PARTY_NOTICES.txt"
  cp docs/USAGE.md "$task_dir/USAGE.md"
@@ -49,6 +56,10 @@ PYRESOURCE
     rm -rf "$task_dir"
   done
 done
-python3 scripts/package_npm.py "$version"
-(cd dist && sha256sum "woobe_${version}_"*.tar.gz "woobe_${version}_"*.zip "woobe-cli-${version}.tgz" > SHA256SUMS)
-python3 scripts/artifact_manifest.py "$version" "$(git rev-parse HEAD)" "$(go version)"
+if [[ "$with_npm" == --with-npm ]]; then
+  python3 scripts/package_npm.py "$version"
+  (cd dist && sha256sum "woobe_${version}_"*.tar.gz "woobe_${version}_"*.zip "woobe-cli-${version}.tgz" > SHA256SUMS)
+else
+  (cd dist && sha256sum "woobe_${version}_"*.tar.gz "woobe_${version}_"*.zip > SHA256SUMS)
+fi
+python3 scripts/artifact_manifest.py "$version" "$(git rev-parse HEAD)" "$(go version)" "$with_npm"

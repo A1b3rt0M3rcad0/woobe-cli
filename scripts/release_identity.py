@@ -1,42 +1,117 @@
 #!/usr/bin/env python3
-"""Resolve a reviewed canonical revision; never merge or change VERSION."""
+"""Choose an automatic immutable CLI version without writing or merging source."""
 import argparse
 import json
 import pathlib
 import re
 import subprocess
-from version import validate
+from version import validate, semver_key
 
 
 def git(*args):
     return subprocess.check_output(['git', *args], text=True).strip()
 
 
-def resolve(version, revision=''):
-    validate(version)
+def ancestor(older, newer):
+    result = subprocess.run(['git', 'merge-base', '--is-ancestor', older, newer])
+    if result.returncode not in (0, 1):
+        raise RuntimeError('cannot determine release ancestry')
+    return result.returncode == 0
+
+
+def source_floor(sha):
+    floor = validate(git('show', f'{sha}:VERSION'))
+    manifest = json.loads(git('show', f'{sha}:packages/woobe-cli/package.json'))
+    if manifest['version'] != floor:
+        raise ValueError('source VERSION and reserved npm manifest differ')
+    return floor
+
+
+def tags():
+    versions = {}
+    for tag in git('tag', '--list', 'v*').splitlines():
+        try:
+            version = validate(tag[1:])
+        except ValueError:
+            continue
+        versions[version] = git('rev-parse', f'refs/tags/{tag}^{{commit}}')
+    return versions
+
+
+def bump(version, messages):
+    major, minor, patch = map(int, version.split('-')[0].split('.'))
+    commits = [message.strip() for message in messages.split('\0') if message.strip()]
+    breaking = any(re.match(r'^[A-Za-z][A-Za-z0-9_-]*(?:\([^\n)]+\))?!:', message)
+                   or re.search(r'(?m)^BREAKING[ -]CHANGE:', message) for message in commits)
+    feature = any(re.match(r'^feat(?:\([^\n)]+\))?:', message) for message in commits)
+    if breaking and major > 0:
+        return f'{major + 1}.0.0'
+    if breaking or feature:
+        return f'{major}.{minor + 1}.0'
+    if '-' in version:
+        return f'{major}.{minor}.{patch}'
+    return f'{major}.{minor}.{patch + 1}'
+
+
+def select(version='', revision=''):
     if revision and not re.fullmatch(r'[a-f0-9]{40}', revision):
         raise ValueError('revision must be a full lowercase commit SHA')
-    tag = f'refs/tags/v{version}'
-    exists = subprocess.run(['git', 'show-ref', '--verify', '--quiet', tag]).returncode == 0
-    tagged = git('rev-parse', f'{tag}^{{commit}}') if exists else ''
-    sha = revision or tagged or git('rev-parse', 'origin/master')
-    if tagged and tagged != sha:
-        raise ValueError('existing immutable tag points to a different commit')
-    subprocess.run(['git', 'merge-base', '--is-ancestor', sha, 'origin/master'], check=True)
-    canonical = git('show', f'{sha}:VERSION')
-    manifest = json.loads(git('show', f'{sha}:packages/woobe-cli/package.json'))
-    if canonical != version or manifest['version'] != version:
-        raise ValueError('review VERSION and npm manifest in a PR first; release does not merge or bump versions')
-    return sha
+    if version:
+        validate(version)
+    versions = tags()
+    sha = revision or versions.get(version) or git('rev-parse', 'HEAD')
+    if not ancestor(sha, 'origin/master'):
+        raise ValueError('release source must already be integrated in master')
+    floor = source_floor(sha)
+    if version in versions:
+        if versions[version] != sha:
+            raise ValueError('existing immutable tag points to a different commit')
+        if semver_key(version) < semver_key(floor):
+            raise ValueError('release version is below the reviewed source VERSION floor')
+        return version, sha
+    if not version:
+        matching = [v for v, commit in versions.items() if commit == sha and semver_key(v) >= semver_key(floor)]
+        if matching:
+            return max(matching, key=semver_key), sha
+    if versions:
+        latest = max(versions, key=semver_key)
+        previous = versions[latest]
+        if not ancestor(previous, sha):
+            if version:
+                raise ValueError('new release source predates the latest reserved release')
+            return None  # A newer source already has a version; skip stale push.
+        if version and semver_key(version) <= semver_key(latest):
+            raise ValueError('new releases must advance the highest reserved Semantic Version')
+        if not version:
+            messages = git('log', '--format=%B%x00', f'{previous}..{sha}')
+            proposed = bump(latest, messages)
+            version = max((floor, proposed), key=semver_key)
+    else:
+        version = version or floor
+    if semver_key(version) < semver_key(floor):
+        raise ValueError('release version is below the reviewed source VERSION floor')
+    return version, sha
+
+
+def resolve(version, revision):
+    selected = select(version, revision)
+    if selected != (version, revision):
+        raise ValueError('candidate does not match the immutable release identity')
+    return revision
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version', required=True)
+    parser.add_argument('--version', default='')
     parser.add_argument('--revision', default='')
     parser.add_argument('--output', type=pathlib.Path, required=True)
     args = parser.parse_args()
-    sha = resolve(args.version, args.revision)
+    selected = select(args.version, args.revision)
     with args.output.open('a') as output:
-        output.write(f'version={args.version}\nrevision={sha}\n')
-    print(f'Release v{args.version} will validate exact master revision {sha}')
+        if selected is None:
+            output.write('skip=true\n')
+            print('Skipping stale push: a newer source already has a release version')
+        else:
+            version, sha = selected
+            output.write(f'version={version}\nrevision={sha}\nskip=false\n')
+            print(f'Release v{version} will validate exact master revision {sha}')

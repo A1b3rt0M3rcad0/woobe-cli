@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Describe exactly the six archives for this release version, without stale files."""
 import hashlib, json, pathlib, sys
-version, commit, compiler = sys.argv[1:]
+version, commit, compiler, with_npm = sys.argv[1:]
 artifacts = []
 for system in ('linux', 'darwin', 'windows'):
     for arch in ('amd64', 'arm64'):
@@ -10,9 +10,11 @@ for system in ('linux', 'darwin', 'windows'):
         artifacts.append(dict(name=path.name, os=system, arch=arch,
                               bytes=path.stat().st_size,
                               sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
-npm_path = pathlib.Path('dist') / f'woobe-cli-{version}.tgz'
-npm = dict(name=npm_path.name, bytes=npm_path.stat().st_size,
-           sha256=hashlib.sha256(npm_path.read_bytes()).hexdigest())
-pathlib.Path('dist/artifacts.json').write_text(json.dumps(dict(
+manifest = dict(
     schema_version='1', version=version, commit=commit, compiler=compiler,
-    artifacts=artifacts, npm=npm), indent=2) + '\n')
+    artifacts=artifacts)
+if with_npm == '--with-npm':
+    npm_path = pathlib.Path('dist') / f'woobe-cli-{version}.tgz'
+    manifest['npm'] = dict(name=npm_path.name, bytes=npm_path.stat().st_size,
+                          sha256=hashlib.sha256(npm_path.read_bytes()).hexdigest())
+pathlib.Path('dist/artifacts.json').write_text(json.dumps(manifest, indent=2) + '\n')
