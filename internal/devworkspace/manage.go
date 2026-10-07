@@ -121,7 +121,9 @@ func (c *Config) Clone(kind, reference, alias, destination string, dryRun bool) 
 		}
 		supports[filepath.ToSlash(name)] = data
 	}
-	return c.Add(resource.Kind, alias, destination, node.Document, supports, dryRun)
+	document := clone(node.Document)
+	packagefmt.Object(document["metadata"])["name"] = alias
+	return c.Add(resource.Kind, alias, destination, document, supports, dryRun)
 }
 
 // Register links an existing descriptor. Files stay in place and metadata is

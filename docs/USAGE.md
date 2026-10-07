@@ -533,7 +533,9 @@ support files, register an existing folder or clone a registered artifact.
 `create` on a managed Agent/Network is the explicit remote creation step and
 rejects an already bound root. `push` updates a bound Draft and never creates
 another root. Names do not determine native identity. Clone retains dependency
-refs and gives only the selected root a new UID; its native identity is unbound.
+refs, gives the selected root a new UID and uses the new alias as its display
+name; edit metadata.name before creation for a different name. Its native identity
+is unbound.
 A moved artifact retains UID, logical refs and native bindings. Only declared
 files move, through a recoverable transaction; unrelated files stay in place.
 Unregister refuses consumers and retains author files and private native bindings;
