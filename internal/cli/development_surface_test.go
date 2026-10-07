@@ -12,7 +12,7 @@ import (
 )
 
 func TestSurfaceCreatePushCASAndUnknownOutcomeCheckpoint(t *testing.T) {
-	for _, scenario := range []string{"success", "stale", "unknown"} {
+	for _, scenario := range []string{"success", "stale", "unknown", "rejected"} {
 		t.Run(scenario, func(t *testing.T) {
 			t.Chdir(t.TempDir())
 			t.Setenv("WOOBE_CONTROL_KEY", "test")
@@ -23,6 +23,11 @@ func TestSurfaceCreatePushCASAndUnknownOutcomeCheckpoint(t *testing.T) {
 				switch r.Method {
 				case "POST":
 					creates++
+					if scenario == "rejected" && creates == 1 {
+						w.WriteHeader(422)
+						_ = json.NewEncoder(w).Encode(map[string]any{"success": false})
+						return
+					}
 					if scenario == "unknown" {
 						w.WriteHeader(503)
 						_ = json.NewEncoder(w).Encode(map[string]any{"success": false, "message": "temporary"})
@@ -73,6 +78,12 @@ func TestSurfaceCreatePushCASAndUnknownOutcomeCheckpoint(t *testing.T) {
 				}
 				return
 			}
+			if scenario == "rejected" {
+				if code != 2 {
+					t.Fatal(code, result)
+				}
+				code, result = invokeAction("create")
+			}
 			if code != 0 {
 				t.Fatal(code, result)
 			}
@@ -95,7 +106,11 @@ func TestSurfaceCreatePushCASAndUnknownOutcomeCheckpoint(t *testing.T) {
 				}
 				return
 			}
-			if code != 0 || creates != 1 || patches != 1 || remote["description"] != "Edited locally" {
+			expectedCreates := 1
+			if scenario == "rejected" {
+				expectedCreates = 2
+			}
+			if code != 0 || creates != expectedCreates || patches != 1 || remote["description"] != "Edited locally" {
 				t.Fatal(code, result, creates, patches, remote)
 			}
 			state, _ = c.ReadState(server.URL, "workspace", "project")

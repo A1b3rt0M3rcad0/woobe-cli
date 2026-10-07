@@ -263,6 +263,16 @@ func (a *App) developmentSurfaceCommands() {
 			}
 			response, _, err := client.Request(cmd.Context(), method, endpoint, nil, data)
 			if err != nil {
+				failure := output.Normalize(err)
+				if action == "create" && failure.Outcome == "rejected" {
+					switch failure.Status {
+					case 400, 401, 403, 404, 405, 409, 412, 422:
+						delete(state.Pending, resource.UID)
+						if saveErr := c.WriteState(state); saveErr != nil {
+							return output.New(10, "Create was rejected but intent cleanup failed; reconcile private state before retrying")
+						}
+					}
+				}
 				return err
 			}
 			remote, err := developmentResponseData(response)
