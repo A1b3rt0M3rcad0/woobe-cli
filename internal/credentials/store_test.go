@@ -45,6 +45,7 @@ func TestSymlinkAndPublicFilesRejected(t *testing.T) {
 	s := Store{Dir: dir}
 	p := filepath.Join(dir, "public.json")
 	_ = os.WriteFile(p, []byte("secret"), 0644)
+	_ = os.Chmod(p, 0644)
 	if _, e := s.Get("public"); e == nil {
 		t.Fatal("public credential accepted")
 	}

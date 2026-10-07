@@ -162,3 +162,46 @@ func TestInventoryCanonicalUTF8MatchesBackendForLineSeparators(t *testing.T) {
 		t.Fatal("cross-language canonical UTF-8 digest mismatch")
 	}
 }
+
+func TestCompleteSharedCompositionFixtureAndInventory(t *testing.T) {
+	data, err := os.ReadFile("../../testdata/package/shared/complete.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture struct {
+		Files map[string]string `json:"files"`
+	}
+	if err = json.Unmarshal(data, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	for relative, content := range fixture.Files {
+		path := filepath.Join(root, filepath.FromSlash(relative))
+		if err = os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err = os.WriteFile(path, []byte(content), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	bundle, err := Load(root, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bundle.Close()
+	if len(bundle.Inventory) != len(fixture.Files) {
+		t.Fatal("full closure was not captured")
+	}
+	var archive bytes.Buffer
+	if err = bundle.Archive(&archive, true); err != nil {
+		t.Fatal(err)
+	}
+	restored, err := ReceiveArchive(bytes.NewReader(archive.Bytes()), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer restored.Close()
+	if restored.ArtifactDigest != bundle.ArtifactDigest {
+		t.Fatal("full fixture changed in locked archive")
+	}
+}

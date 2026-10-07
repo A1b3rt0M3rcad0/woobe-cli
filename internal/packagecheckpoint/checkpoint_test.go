@@ -170,7 +170,25 @@ func TestCheckpointUsesCapturedParentAfterReplacement(t *testing.T) {
 	}
 	captured := filepath.Join(base, "captured")
 	if err = os.Rename(parent, captured); err != nil {
-		t.Fatal(err)
+		if runtime.GOOS != "windows" {
+			t.Fatal(err)
+		}
+		// Windows pins the directory handle against deletion/rename. A blocked
+		// replacement is also confinement: subsequent writes stay in that root.
+		if err = cp.Move(RequestInFlight); err != nil {
+			t.Fatal(err)
+		}
+		if err = store.Save(cp); err != nil {
+			t.Fatal(err)
+		}
+		recovered, err := store.Read()
+		if err != nil || recovered.State != RequestInFlight {
+			t.Fatal("lost pinned checkpoint", err)
+		}
+		if _, err = os.Stat(captured); !os.IsNotExist(err) {
+			t.Fatal("replacement unexpectedly exists", err)
+		}
+		return
 	}
 	if err = os.Mkdir(parent, 0700); err != nil {
 		t.Fatal(err)
