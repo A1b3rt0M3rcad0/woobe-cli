@@ -34,6 +34,7 @@ func (a *App) developmentConfig(required bool) (*devworkspace.Config, error) {
 
 func (a *App) developmentConfigCommands() {
 	a.developmentManageCommands()
+	a.developmentBindCommand()
 	a.developmentBulkCommands()
 	var root string
 	init := &cobra.Command{Use: "init", Short: "Initialize an optional local development registry", Args: cobra.NoArgs, Example: "woobe init --context local --root .woobe", Long: "Create .woobe-config explicitly. Ordinary API, runtime and authentication commands remain independent. Provider files contain public connection intent and credential references only.", RunE: func(cmd *cobra.Command, _ []string) error {
