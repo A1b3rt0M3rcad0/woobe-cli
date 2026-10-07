@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise the downloaded executable for this host, without a backend or secrets."""
 import argparse
+import hashlib
 import json
 import os
 import pathlib
@@ -18,7 +19,7 @@ def smoke(root, commit):
     if manifest['commit'] != commit:
         raise ValueError('artifact source commit differs from expected checkout')
     system = {'Linux': 'linux', 'Darwin': 'darwin', 'Windows': 'windows'}[platform.system()]
-    arch = {'x86_64': 'amd64', 'AMD64': 'amd64', 'arm64': 'arm64', 'aarch64': 'arm64'}[platform.machine()]
+    arch = {'x86_64': 'amd64', 'AMD64': 'amd64', 'arm64': 'arm64', 'ARM64': 'arm64', 'aarch64': 'arm64'}[platform.machine()]
     matches = [a for a in manifest['artifacts'] if a['os'] == system and a['arch'] == arch]
     if len(matches) != 1:
         raise ValueError('exactly one archive must match the native host')
@@ -61,6 +62,29 @@ def smoke(root, commit):
             schema = invoke(['schema', '--command', 'manifest validate', '--kind', 'document', '--manifest-version', revision])['data']
             if schema['$id'] != identity:
                 raise ValueError('packaged manifest schema has incorrect identity')
+        fixture = json.loads((pathlib.Path(__file__).resolve().parent.parent / 'testdata/package/shared/complete.json').read_text())['files']
+        bundle = pathlib.Path(directory) / 'complete-package'
+        bundle.mkdir()
+        for relative, content in fixture.items():
+            destination = bundle / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(content.encode('utf-8'))
+        validated = invoke(['package', 'validate', str(bundle)])['data']
+        if not validated['valid'] or validated['entrypoint']['kind'] != 'Network':
+            raise ValueError('complete Package fixture was not validated offline')
+        inventory = [{'path': relative, 'size_bytes': len(content.encode('utf-8')), 'sha256': hashlib.sha256(content.encode('utf-8')).hexdigest()} for relative, content in sorted(fixture.items())]
+        tuples = [[item['path'], item['size_bytes'], item['sha256']] for item in inventory]
+        digest = hashlib.sha256(b'woobe-package@1.0\n' + json.dumps(tuples, separators=(',', ':'), ensure_ascii=False).encode('utf-8')).hexdigest()
+        if validated['artifact_digest'] != digest or validated['inventory'] != inventory:
+            raise ValueError('native Package inventory differs from Python canonical digest')
+        lock = {'format': 'woobe-package', 'schema_version': '1.0', 'kind': 'PackageLock', 'algorithm': 'sha256', 'inventory': inventory, 'artifact_digest': digest}
+        lock_bytes = json.dumps(lock).encode()
+        (bundle / 'woobe.lock.json').write_bytes(lock_bytes)
+        invoke(['package', 'validate', str(bundle), '--locked'])
+        (bundle / 'agent.yaml').write_bytes(fixture['agent.yaml'].encode() + b'\n')
+        invoke(['package', 'validate', str(bundle), '--locked'], code=2)
+        if (bundle / 'woobe.lock.json').read_bytes() != lock_bytes:
+            raise ValueError('Package validation rewrote an inventory lock')
         body = json.dumps({'schema_version': '2', 'project_id': 'p', 'resources': [{'key': 'a', 'kind': 'Agent', 'action': 'update', 'resource_id': 'a', 'spec': {'name': 'Smoke'}}]})
         validation = invoke(['manifest', 'validate', '--file', '-', '--project', 'p'], body)['data']
         if validation['valid'] is not True or validation['source_schema_version'] != '2' or len(validation['manifest_hash']) != 64:
@@ -182,7 +206,7 @@ def smoke(root, commit):
             server.server_close()
             thread.join(timeout=5)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
-            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff', 'protected-reference-compile', 'canonical-mcp-permissions'],
+            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'complete-package-offline', 'package-python-inventory-parity', 'package-lock-tamper', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff', 'protected-reference-compile', 'canonical-mcp-permissions'],
             'backend_acceptance': 'not_evaluated', 'credential_provider_acceptance': 'not_evaluated'}
 
 

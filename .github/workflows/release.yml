@@ -175,3 +175,43 @@ jobs:
             echo "https://github.com/$GITHUB_REPOSITORY/releases/tag/v$CLI_VERSION"
             echo "GHCR package: ghcr.io/${GITHUB_REPOSITORY,,}:$CLI_VERSION"
           } >> "$GITHUB_STEP_SUMMARY"
+  npm:
+    needs: [identity, validate, publish]
+    if: needs.identity.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.identity.outputs.revision }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          artifact-ids: ${{ needs.validate.outputs.artifact_id }}
+          merge-multiple: true
+          path: dist
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+      - name: Install the OIDC-capable npm client
+        run: npm install --global npm@11.5.1
+      - name: Publish the exact validated npm package
+        env:
+          # Optional bootstrap token. Remove after configuring Trusted Publishing.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CLI_VERSION: ${{ needs.identity.outputs.version }}
+          CLI_REVISION: ${{ needs.identity.outputs.revision }}
+          CANDIDATE_SHA256: ${{ needs.validate.outputs.manifest_sha256 }}
+        run: python3 scripts/publish_npm.py --version "$CLI_VERSION" --commit "$CLI_REVISION" --manifest-sha256 "$CANDIDATE_SHA256"
+      - name: Record npm installation commands
+        env:
+          CLI_VERSION: ${{ needs.identity.outputs.version }}
+        run: |
+          {
+            echo "npm: https://www.npmjs.com/package/woobe-cli/v/$CLI_VERSION"
+            echo "npm install --global woobe-cli@$CLI_VERSION"
+            echo "npx --yes --package=woobe-cli@$CLI_VERSION woobe version"
+          } >> "$GITHUB_STEP_SUMMARY"

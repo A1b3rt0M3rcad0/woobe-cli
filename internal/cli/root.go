@@ -8,6 +8,7 @@ import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/identity"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/spf13/cobra"
 	"io"
 	"net/url"
@@ -22,6 +23,7 @@ var Version = "dev"
 var Commit = "unknown"
 
 type App struct {
+	packageOutputSequence                                                                    int64
 	SchemaSHA                                                                                string
 	Root                                                                                     *cobra.Command
 	In                                                                                       io.Reader
@@ -76,14 +78,14 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 		}
 		if a.ValidateParameters {
 			op, ok := a.operation(path)
-			if !(path == "validate-input" || path == "manifest apply" || path == "manifest preflight" || ok && op.Kind == "http") {
+			if !(packageHTTPCommand(path) || path == "validate-input" || path == "manifest apply" || path == "manifest preflight" || ok && op.Kind == "http") {
 				return output.New(9, "--validate-parameters requires a canonical HTTP operation or manifest apply/preflight or validate-input")
 			}
 		}
 		if a.ValidateBody {
 			path := strings.TrimPrefix(cmd.CommandPath(), "woobe ")
 			op, ok := a.operation(path)
-			if !(path == "manifest apply" || path == "manifest preflight" || path == "validate-input" || (ok && op.Kind == "http" && op.Method != "GET" && op.Method != "HEAD")) {
+			if !(packageHTTPCommand(path) || path == "manifest apply" || path == "manifest preflight" || path == "validate-input" || (ok && op.Kind == "http" && op.Method != "GET" && op.Method != "HEAD")) {
 				return output.New(9, "--validate-body requires a canonical HTTP write or manifest apply/preflight")
 			}
 		}
@@ -115,6 +117,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.authCommands()
 	a.runtimeCommands()
 	a.manifestCommands()
+	a.packageCommands()
 	a.uploadCommands()
 	a.exportCommands()
 	a.projectionCommand()
@@ -249,6 +252,18 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 	e := a.Root.ExecuteContext(ctx)
 	if e == nil {
 		return 0
+	}
+	if failure, ok := e.(*packageOperationFailure); ok {
+		_ = output.WriteWithMeta(a.Out, a.Mode, failure.Operation, map[string]string{"project_id": failure.Operation.ProjectID}, failure.Cause, a.packageFinalMeta(failure.Operation))
+		return failure.Cause.Code
+	}
+	if failure, ok := e.(*packageFailure); ok {
+		code := 2
+		if failure.Diagnostic.Code == "PACKAGE_UNSUPPORTED" {
+			code = 9
+		}
+		_ = output.Write(a.Out, a.Mode, map[string]any{"package_schema_version": "1.0", "valid": false, "diagnostics": []*packagefmt.Diagnostic{failure.Diagnostic}, "executed": false}, nil, output.New(code, failure.Diagnostic.Message))
+		return code
 	}
 	if p, ok := e.(*preflightFailure); ok {
 		_ = a.emitPreflight(p.Data, p.Cause)

@@ -3,7 +3,9 @@
 The CLI stays in this repository and is versioned independently of the Woobe
 backend. Distribution uses **GitHub Releases** and **GitHub Packages (GHCR)**: six native archives for Linux,
 macOS and Windows, in amd64/x64 and arm64. Go, Node.js and npm are not required
-to use the binaries. npm distribution is deferred.
+to use the binaries. The same release also publishes `woobe-cli` to npm, with all
+six executables bundled and no installation scripts or external binary downloads.
+The npm launcher requires Node.js 22 or newer.
 
 The initial release floor is **0.1.0**. Publication requires the complete CI
 gate. Master pushes calculate the next version automatically; an explicit
@@ -57,14 +59,15 @@ authorization or the [functional coverage](STATUS.md).
 ## Automatic release
 
 **Every push to `master` starts Release CLI**, including a maintainer's merge of
-a reviewed PR. No manual version update, tag push, release button, npm account
-or additional release token is required. The workflow never merges PRs and
+a reviewed PR. No manual version update, tag push or release button
+is required. npm needs the one-time publisher setup described below. The workflow never merges PRs and
 never pushes changes into `master`.
 
 1. Pin the source to the push's exact SHA, require it to belong to `master`,
    and calculate the version from existing immutable `v*` tags and commit history.
 2. Run the full reusable CI: Go/race/fuzz checks, six cross-builds, archive/schema/
-   license/checksum validation, and native smoke tests on Linux/macOS/Windows.
+   license/checksum validation, and native binary plus npm install/launcher smoke
+   tests on Linux/macOS/Windows. The npm tarball contains identical binary bytes.
 3. Download the immutable Actions artifact ID and verify its manifest SHA-256.
    Extract the tested Linux binaries into a non-root, multi-platform GHCR image
    for `linux/amd64` and `linux/arm64`, without rebuilding the executables.
@@ -78,10 +81,15 @@ never pushes changes into `master`.
    release-manifest.json. The permanent manifest records the package digest.
    Promote the verified stable image to `latest`; older recovery cannot move
    either destination's latest version backwards.
+6. Publish the exact tested npm tarball with provenance using GitHub Actions OIDC.
+   Compare the registry SHA-512 integrity with the local tarball. An identical
+   retry succeeds without republishing; conflicting bytes fail. Stable versions
+   use `latest`, prereleases use `next`, and older recovery uses `historical`
+   without moving npm `latest` backwards.
 
 The workflow uses the built-in **GITHUB_TOKEN** with job permissions
-`contents: write` and `packages: write`. No additional token or npm account is
-required. Repository policies must allow these permissions and tag creation.
+`contents: write` and `packages: write`. No additional token is required for GitHub/GHCR. npm authorization is configured
+separately below. Repository policies must allow these permissions and tag creation.
 Explicit owner-created version tags trigger the same gates. Tags created by the
 workflow's GITHUB_TOKEN do not trigger another workflow run.
 
@@ -103,7 +111,8 @@ GitHub authentication. Native release downloads are public independently.
 ### Automatic version calculation
 
 `VERSION` is the reviewed **minimum release version**, initially `0.1.0`.
-The reserved private npm source manifest mirrors this floor for future work.
+The private npm source manifest mirrors this floor. Packaging removes `private`
+only from the staged distribution and sets the calculated release version.
 Published versions are authoritative in Git tags and permanent artifact
 manifests; automatic increments do not rewrite source files.
 
@@ -159,8 +168,73 @@ the exact source SHA in every binary. A bare `go build` keeps the `dev` version.
 Development PR/branch packages use `0.0.0-ci.<run>.<attempt>` and are Actions
 artifacts, not public releases.
 
-The private npm wrapper and opt-in packaging helpers are retained for future
-work. Current CI and Release CLI do not build, install or publish npm packages,
-access an npm registry, use OIDC or require NPM_TOKEN. This repository currently
+For a local npm candidate, install Node.js 22+ and npm, then run:
+
+```sh
+bash scripts/package.sh 0.1.4 --with-npm
+python3 scripts/verify_artifacts.py --commit "$(git rev-parse HEAD)"
+python3 scripts/smoke_npm.py --commit "$(git rev-parse HEAD)" --report npm-smoke.json
+```
+
+Use your actual release version instead of the example. The repository currently
 supplies no software license file; packaging adds dependency notices without
 introducing a software license grant.
+
+
+## npm publisher setup (owner, once)
+
+The publishing job runs only in `release.yml`, after all CI gates and the GitHub
+Release/GHCR publication succeed. Pull requests build and install the tarball
+but never publish or request npm credentials. The OIDC job uses a GitHub-hosted
+Ubuntu runner, Node.js 24 and npm 11.5.1, with `id-token: write`. No GitHub
+environment is configured for this job.
+
+### First publication
+
+Trusted Publishing is configured on an existing npm package. If `woobe-cli`
+does not exist yet, confirm that the name is available and your npm account has
+a verified email. Create a short-lived **granular npm access token** with
+read/write publishing permission and **Bypass 2FA**, authorized to create the
+package. Store it in GitHub **woobe-cli → Settings → Secrets and variables →
+Actions → New repository secret**, named **`NPM_TOKEN`**. Do not put it in source
+files, workflow inputs, PR comments, or chat.
+
+After the workflow change is merged, its master push runs Release CLI, creating
+the first npm package with that token. Alternatively, publish the validated
+tarball manually with `npm login` and `npm publish ./dist/woobe-cli-VERSION.tgz
+--access public`, then configure OIDC before the next release.
+
+### Switch to token-free Trusted Publishing
+
+On npm, open **woobe-cli → Settings → Trusted Publisher → GitHub Actions**:
+
+| Setting | Value |
+| --- | --- |
+| Organization or user | `A1b3rt0M3rcad0` |
+| Repository | `woobe-cli` |
+| Workflow filename | `release.yml` |
+| Environment | Leave empty |
+
+Save the publisher, delete the GitHub `NPM_TOKEN` secret and revoke the bootstrap
+token in npm. The next release uses OIDC, without a permanent npm token. The npm
+account must own the package or have publishing permission; GitHub access alone
+does not grant npm ownership.
+
+### Recovery after an npm publication failure
+
+The GitHub release may already be public when npm fails. Do not edit its assets,
+move its tag or choose a new source for the same version. Fix the npm publisher
+configuration and open **Actions → Release CLI → Run workflow**, selecting
+**master** and entering the failed release's exact **version** (without `v`) and
+**revision** (full commit SHA). This revalidates/rebuilds the same source and
+reuses the immutable GitHub/GHCR release before retrying npm. A conflicting npm
+tarball is refused. Automatic master runs may skip an already released source,
+so explicit version/revision inputs are required for this recovery.
+
+Once configured, merge reviewed changes to master for a new automatic release.
+No manual npm login, version-file edit or tag creation is required. Install with:
+
+```sh
+npm install --global woobe-cli
+npx --yes --package=woobe-cli woobe version
+```

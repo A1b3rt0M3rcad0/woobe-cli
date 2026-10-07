@@ -46,6 +46,12 @@ jobs:
       - run: go vet ./...
       - run: go test -race -coverprofile=coverage.out ./...
       - run: go test ./internal/schemacheck -run='^$' -fuzz=FuzzSchemaCheck -fuzztime=10s -parallel=2
+      - run: go test ./internal/packagefmt -run='^$' -fuzz=FuzzDecodePackage -fuzztime=10s -parallel=2
+      - run: go test ./internal/packagebundle -run='^$' -fuzz=FuzzPortablePath -fuzztime=10s -parallel=2
+      - run: go test ./internal/packagefmt -run='^$' -fuzz=FuzzReferenceClosure -fuzztime=5s -parallel=2
+      - run: go test ./internal/packagefmt -run='^$' -fuzz=FuzzPackageLockDocument -fuzztime=5s -parallel=2
+      - run: go test ./internal/packagebundle -run='^$' -fuzz=FuzzLockedArchive -fuzztime=5s -parallel=2
+      - run: go test ./internal/packagecheckpoint -run='^$' -fuzz=FuzzCheckpointStrictParsing -fuzztime=5s -parallel=2
       - run: go build -trimpath -o bin/woobe ./cmd/woobe
       - run: bin/woobe help --output json > discovery.json
       - uses: actions/upload-artifact@v4
@@ -70,11 +76,16 @@ jobs:
         with:
           go-version: '1.27.1'
           cache: true
-      - name: Build six versioned archives
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Pin npm for reproducible distribution tarballs
+        run: npm install --global npm@11.5.1
+      - name: Build six versioned archives and npm package
         env:
           CLI_PACKAGE_VERSION: ${{ inputs.version }}
         shell: bash
-        run: bash scripts/package.sh "${CLI_PACKAGE_VERSION:-0.0.0-ci.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}}"
+        run: bash scripts/package.sh "${CLI_PACKAGE_VERSION:-0.0.0-ci.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}}" --with-npm
       - name: Verify archives and source identity
         run: python3 scripts/verify_artifacts.py --commit "$(git rev-parse HEAD)"
       - id: identity
@@ -88,6 +99,7 @@ jobs:
           path: |
             dist/*.tar.gz
             dist/*.zip
+            dist/*.tgz
             dist/SHA256SUMS
             dist/artifacts.json
   native-smoke:
@@ -95,7 +107,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-latest, macos-latest, windows-latest]
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-15-intel, macos-15, windows-latest, windows-11-arm]
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
     steps:
@@ -107,12 +119,28 @@ jobs:
           artifact-ids: ${{ needs.package.outputs.artifact_id }}
           merge-multiple: true
           path: dist
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Qualify native Package filesystem and checkpoints
+        shell: bash
+        run: |
+          go test ./internal/packagefmt ./internal/packagebundle ./internal/packagecheckpoint ./internal/packageapi
+          go test ./internal/cli -run 'Package'
+          go test ./internal/credentials -run 'WindowsProtection'
       - name: Verify downloaded archives
         shell: bash
         run: python scripts/verify_artifacts.py --commit "$(git rev-parse HEAD)"
       - name: Exercise packaged native executable
         shell: bash
         run: python scripts/smoke_artifacts.py --commit "$(git rev-parse HEAD)" --report native-smoke.json
+      - name: Exercise npm installation and launcher
+        shell: bash
+        run: python scripts/smoke_npm.py --commit "$(git rev-parse HEAD)" --report npm-smoke.json
       - uses: actions/upload-artifact@v4
         with:
           name: native-smoke-${{ matrix.runner }}
@@ -120,6 +148,7 @@ jobs:
           retention-days: 90
           path: |
             native-smoke.json
+            npm-smoke.json
   ci:
     if: always()
     needs: [test, package, native-smoke]
@@ -136,5 +165,5 @@ jobs:
           failed = {name: job['result'] for name, job in groups.items() if job['result'] != 'success'}
           if failed:
               raise SystemExit(f'CLI validation did not succeed: {failed}')
-          print('Tests, six packaged targets and three native smoke jobs passed')
+          print('Tests, six packaged targets and six native smoke jobs passed')
           PY

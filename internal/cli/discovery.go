@@ -45,6 +45,16 @@ func (a *App) completeDiscovery() {
 					kind = "multipart-http"
 					effect = "mutation"
 					availability = "observed"
+				case path == "package plan":
+					kind, effect, availability = "package-http", "planning", "server-dependent"
+				case path == "package export agent" || path == "package export network":
+					kind, effect, availability = "package-http", "export", "server-dependent"
+				case path == "package import":
+					kind, effect, availability = "package-http", "mutation", "server-dependent"
+				case path == "package status":
+					kind, effect, availability = "package-http", "read", "server-dependent"
+				case path == "package cancel" || path == "package resume":
+					kind, effect, availability = "package-http", "mutation", "server-dependent"
 				case path == "project agent export" || path == "export" || path == "manifest export" || path == "manifest capture":
 					kind = "http-projection"
 					effect = "read"

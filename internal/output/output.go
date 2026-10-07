@@ -9,13 +9,21 @@ import (
 	"io"
 )
 
+type DomainDiagnostic struct {
+	Code string `json:"code"`
+	File string `json:"file,omitempty"`
+	Path string `json:"path,omitempty"`
+}
+
 type Error struct {
-	Code      int    `json:"exit_code"`
-	Message   string `json:"message"`
-	Status    int    `json:"http_status,omitempty"`
-	RequestID string `json:"request_id,omitempty"`
-	Outcome   string `json:"write_outcome,omitempty"`
-	Cause     error  `json:"-"`
+	DomainCode  string             `json:"domain_code,omitempty"`
+	Diagnostics []DomainDiagnostic `json:"diagnostics,omitempty"`
+	Code        int                `json:"exit_code"`
+	Message     string             `json:"message"`
+	Status      int                `json:"http_status,omitempty"`
+	RequestID   string             `json:"request_id,omitempty"`
+	Outcome     string             `json:"write_outcome,omitempty"`
+	Cause       error              `json:"-"`
 }
 
 func (e *Error) Error() string            { return e.Message }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish the exact CI native candidate to GitHub, without npm or extra secrets."""
+"""Publish the exact CI native/npm candidate to GitHub and GHCR."""
 import argparse
 import hashlib
 import json
@@ -188,16 +188,18 @@ def candidate(version, commit, manifest_sha256, trusted_tag=False, image=None):
         raise ValueError('candidate manifest differs from successful CI output')
     run(sys.executable, 'scripts/verify_artifacts.py', '--commit', commit, '--version', version)
     manifest = json.loads(manifest_path.read_text())
-    if 'npm' in manifest:
-        raise ValueError('this release accepts native-only candidates; npm distribution is deferred')
     record = dict(schema_version='1', version=version, commit=commit,
                   candidate_manifest_sha256=manifest_sha256, compiler=manifest['compiler'],
                   artifacts=manifest['artifacts'])
+    if 'npm' in manifest:
+        record['npm'] = manifest['npm']
     if image:
         record['image'] = dict(image, version=version, platforms=['linux/amd64', 'linux/arm64'])
     permanent = pathlib.Path('dist/release-manifest.json')
     permanent.write_text(json.dumps(record, indent=2) + '\n')
     names = [item['name'] for item in manifest['artifacts']]
+    if 'npm' in manifest:
+        names.append(manifest['npm']['name'])
     names.extend(['SHA256SUMS', 'artifacts.json', permanent.name])
     return {name: pathlib.Path('dist') / name for name in names}
 

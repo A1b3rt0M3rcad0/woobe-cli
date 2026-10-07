@@ -17,8 +17,8 @@ def prepare(commit, version, digest, epoch=0):
     if hashlib.sha256(metadata.read_bytes()).hexdigest() != digest:
         raise ValueError('candidate manifest digest differs from successful CI')
     manifest = json.loads(metadata.read_text())
-    if manifest['commit'] != commit or manifest['version'] != version or 'npm' in manifest:
-        raise ValueError('container source must match the exact native-only candidate')
+    if manifest['commit'] != commit or manifest['version'] != version:
+        raise ValueError('container source must match the exact validated candidate')
     subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name('verify_artifacts.py')),
                     '--commit', commit, '--version', version], check=True)
     context = root / 'oci'
