@@ -195,13 +195,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-          registry-url: https://registry.npmjs.org
       - name: Install the OIDC-capable npm client
         run: npm install --global npm@11.5.1
       - name: Publish the exact validated npm package
         env:
-          # Optional bootstrap token. Remove after configuring Trusted Publishing.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # The package now exists: require Trusted Publishing, never bootstrap
+          # with a long-lived secret even if NPM_TOKEN remains in the repository.
+          NODE_AUTH_TOKEN: ''
           CLI_VERSION: ${{ needs.identity.outputs.version }}
           CLI_REVISION: ${{ needs.identity.outputs.revision }}
           CANDIDATE_SHA256: ${{ needs.validate.outputs.manifest_sha256 }}
