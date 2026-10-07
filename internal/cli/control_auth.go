@@ -324,6 +324,9 @@ func (a *App) controlAuthCommands() {
 		if e != nil {
 			return e
 		}
+		if a.DryRun {
+			return a.emit(map[string]any{"executed": false, "context": name, "method": "GET", "path": "/identity/control-key/me"})
+		}
 		client, e := a.client()
 		if e != nil {
 			return e
