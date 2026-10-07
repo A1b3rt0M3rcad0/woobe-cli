@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagebundle"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/requestinput"
 )
@@ -34,23 +34,7 @@ func descriptor(resource Resource) string {
 }
 
 func readConfined(root *os.Root, path string) ([]byte, error) {
-	parts := strings.Split(path, "/")
-	for i := range parts {
-		info, err := root.Lstat(strings.Join(parts[:i+1], "/"))
-		if err != nil || info.Mode()&os.ModeSymlink != 0 {
-			return nil, fmt.Errorf("resource file is unavailable or contains a symlink")
-		}
-	}
-	f, err := root.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	info, err := f.Stat()
-	if err != nil || !info.Mode().IsRegular() || info.Size() > requestinput.MaxBytes {
-		return nil, fmt.Errorf("resource descriptor must be a bounded regular file")
-	}
-	return io.ReadAll(io.LimitReader(f, requestinput.MaxBytes+1))
+	return packagebundle.ReadConfined(root, path, requestinput.MaxBytes)
 }
 
 func LoadGraph(config *Config) (*Graph, error) {

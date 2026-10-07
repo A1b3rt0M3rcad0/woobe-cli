@@ -23,11 +23,12 @@ type Defaults struct {
 	PullEnvironment string `json:"pull_environment" yaml:"pull_environment"`
 }
 type Resource struct {
-	UID   string `json:"uid" yaml:"uid"`
-	Kind  string `json:"kind" yaml:"kind"`
-	Key   string `json:"key" yaml:"key"`
-	Alias string `json:"alias" yaml:"alias"`
-	Path  string `json:"path" yaml:"path"`
+	Frozen bool   `json:"frozen,omitempty" yaml:"frozen,omitempty"`
+	UID    string `json:"uid" yaml:"uid"`
+	Kind   string `json:"kind" yaml:"kind"`
+	Key    string `json:"key" yaml:"key"`
+	Alias  string `json:"alias" yaml:"alias"`
+	Path   string `json:"path" yaml:"path"`
 }
 type Config struct {
 	SchemaVersion int        `json:"schema_version" yaml:"schema_version"`

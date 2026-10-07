@@ -15,6 +15,7 @@ import (
 )
 
 type ExportRequest struct {
+	Development    bool    `json:"development,omitempty"`
 	ReleaseVersion string  `json:"release_version,omitempty"`
 	Kind           string  `json:"kind"`
 	TargetID       string  `json:"target_id"`
@@ -26,6 +27,8 @@ type ExportRequest struct {
 }
 
 type ExportReceipt struct {
+	ResourceBindings     map[string]CapturedBinding    `json:"resource_bindings,omitempty"`
+	CredentialBindings   map[string]string             `json:"credential_bindings,omitempty"`
 	Source               map[string]any                `json:"source,omitempty"`
 	Name                 string                        `json:"name,omitempty"`
 	Version              string                        `json:"version,omitempty"`
@@ -111,4 +114,14 @@ func (c *Client) Download(ctx context.Context, receipt ExportReceipt) (*packageb
 		return nil, output.New(9, "Downloaded Package closure differs from its receipt")
 	}
 	return bundle, nil
+}
+
+type CapturedBinding struct {
+	OwnerAgentID string `json:"owner_agent_id"`
+	Frozen       bool   `json:"frozen"`
+	ResourceID   string `json:"resource_id"`
+	Kind         string `json:"kind"`
+	Revision     any    `json:"revision"`
+	SourceKind   string `json:"source_kind,omitempty"`
+	SnapshotID   string `json:"snapshot_id,omitempty"`
 }

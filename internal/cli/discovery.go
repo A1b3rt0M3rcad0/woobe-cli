@@ -31,6 +31,14 @@ func (a *App) completeDiscovery() {
 			if !ok {
 				kind, effect, availability := "local", "local", "local"
 				switch {
+				case strings.HasPrefix(path, "develop "):
+					kind, effect, availability = "development", "local", "local"
+					if strings.HasSuffix(path, " pull") {
+						kind, effect, availability = "development-http", "export", "server-dependent"
+					}
+					if strings.HasSuffix(path, " push") {
+						kind, effect, availability = "development-http", "mutation", "server-dependent"
+					}
 				case strings.HasPrefix(path, "completion "):
 					kind = "shell-completion"
 					effect = "local"
