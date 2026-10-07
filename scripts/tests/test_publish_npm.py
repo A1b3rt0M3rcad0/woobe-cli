@@ -20,7 +20,7 @@ class NpmPublicationTests(unittest.TestCase):
 
     def test_visible_integrity_conflict_fails_immediately(self):
         with patch.object(publish_npm, 'view', return_value='different'), patch.object(publish_npm.time, 'sleep') as sleep:
-            with self.assertRaisesRegex(ValueError, 'different'):
+            with self.assertRaisesRegex(ValueError, 'bytes differ'):
                 publish_npm.wait_for_integrity('woobe-cli@1.2.3', 'expected')
             sleep.assert_not_called()
 
