@@ -78,6 +78,10 @@ func renderView(w io.Writer, options Options, value any, err error, evidence map
 		} else if _, e := fmt.Fprintln(w, encodeCell(value)); e != nil {
 			return e
 		}
+	} else if err == nil {
+		if _, e := fmt.Fprintln(w, "Done."); e != nil {
+			return e
+		}
 	}
 	if len(evidence) > 0 {
 		if e := detail(w, "meta.", evidence); e != nil {

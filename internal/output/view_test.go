@@ -140,3 +140,10 @@ func TestConciseTextEscapesControlCharactersAndPreservesUnicode(t *testing.T) {
 		t.Fatal(text)
 	}
 }
+
+func TestConciseEmptySuccessHasTerminalConfirmation(t *testing.T) {
+	text, _ := view(t, Options{Mode: "text"}, nil, nil, nil)
+	if text != "Done.\n" {
+		t.Fatal(text)
+	}
+}
