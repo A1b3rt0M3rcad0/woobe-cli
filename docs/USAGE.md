@@ -483,7 +483,7 @@ inside the configured artifact root; local resource identities stay in
 `diff` and `status` are offline and include dependency and declared support-file
 changes. `validate` checks the compiled portable schema offline; server semantic
 validation, credentials and authorization are checked during push. `--dry-run`
-never applies a push; its summary identifies local changes and dependencies.
+never applies a push; it uploads and validates the exact server plan and reports every native effect for the registered dependency closure.
 
 Pull performs a three-way merge against the last remote base. Independent edits
 merge; conflicting fields or support files leave all author files and state
@@ -503,3 +503,53 @@ content, destination and principal. If acceptance is unknown, the next push
 looks up the same operation rather than sending another mutation. Keep `.state/`
 until the operation has been reconciled; it is intentionally excluded from Git
 and from compiled packages.
+
+
+### Explicit local identities and recovery
+
+```sh
+woobe resources create provider primary --file ./provider.yaml
+woobe resources create model chat --file ./model.yaml
+woobe resources create agent support --file ./agent.yaml
+woobe agent '@support' create --yes
+
+woobe resources clone agent '@support' --alias support-v2
+# Edit the clone's YAML; its Provider, Model, Tool and Knowledge refs are shared.
+woobe agent '@support-v2' create --yes
+woobe resources move agent '@support-v2' --path agents/new-location
+woobe resources alias agent '@support-v2' --alias support-next
+
+woobe resources register tool lookup --path tools/lookup/tool.yaml
+woobe resources unregister agent '@support-next'
+woobe resources diff
+woobe resources validate
+woobe resources push --dry-run
+woobe resources push --yes
+woobe agent '@support' reconcile
+```
+
+`resources create` copies a supplied author descriptor with a new UID. For
+support files, register an existing folder or clone a registered artifact.
+`create` on a managed Agent/Network is the explicit remote creation step and
+rejects an already bound root. `push` updates a bound Draft and never creates
+another root. Names do not determine native identity. Clone retains dependency
+refs, gives the selected root a new UID and uses the new alias as its display
+name; edit metadata.name before creation for a different name. Its native identity
+is unbound.
+A moved artifact retains UID, logical refs and native bindings. Only declared
+files move, through a recoverable transaction; unrelated files stay in place.
+Unregister refuses consumers and retains author files and private native bindings;
+it never deletes an Agent, Network or shared dependency from Woobe.
+
+Bulk operations visit only registered Agent/Network roots in dependency order;
+frozen Network constituents are not independent roots. Creation remains explicit.
+Bulk push stops on the first error and reports completed results and remaining
+roots. Each accepted write retains its own content-bound checkpoint.
+
+After a timeout or interrupted push, `reconcile` observes the original operation,
+even with broken local YAML. It cannot upload, plan or apply again. Unknown
+acceptance remains pending. Terminal success refreshes native bindings and the
+accepted local base. Terminal failure/cancellation reconciles only components
+with matching approved definition digests and completed owner receipts, then
+allows an explicit new attempt. Local edits made after the original upload remain
+unsynchronized; no author file is overwritten during reconciliation.

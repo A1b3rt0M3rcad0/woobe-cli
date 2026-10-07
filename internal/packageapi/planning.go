@@ -129,6 +129,7 @@ func (c *Client) Plan(ctx context.Context, request PlanRequest) (Plan, error) {
 		}
 		for key, expected := range request.ResourceBindings {
 			observed, exists := result.ResourceBindings[key]
+			observed.DefinitionDigest = ""
 			left, _ := json.Marshal(expected)
 			right, _ := json.Marshal(observed)
 			if !exists || string(left) != string(right) {
@@ -152,6 +153,7 @@ func (c *Client) Plan(ctx context.Context, request PlanRequest) (Plan, error) {
 }
 
 type DevelopmentTarget struct {
+	DefinitionDigest string `json:"definition_digest,omitempty"`
 	SourceExportID   string `json:"source_export_id,omitempty"`
 	SourceComponent  string `json:"source_component,omitempty"`
 	ResourceUID      string `json:"resource_uid"`

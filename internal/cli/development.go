@@ -24,7 +24,7 @@ func (a *App) developmentCommands() {
 	for _, kind := range []string{"agent", "network"} {
 		parent := &cobra.Command{Use: kind, Short: "Develop " + kind + " through local YAML and native Drafts"}
 		group.AddCommand(parent)
-		for _, action := range []string{"pull", "push", "diff", "validate", "status"} {
+		for _, action := range []string{"pull", "push", "create", "reconcile", "diff", "validate", "status"} {
 			var localPath, alias, env, version string
 			var deadline time.Duration
 			command := &cobra.Command{Use: action + " [REFERENCE]", Short: action + " a registered " + kind, Args: cobra.MaximumNArgs(1), Example: "woobe " + kind + " \"@support\" " + action, Long: "Resolve UUID, exact remote name, registered @alias or local path. pull downloads an environment, push always writes Draft. Within a linked artifact folder the reference is optional. JSON/YAML raw API commands remain available.", RunE: func(cmd *cobra.Command, args []string) error {
@@ -61,9 +61,12 @@ func (a *App) developmentCommands() {
 				if len(args) > 0 {
 					reference = args[0]
 				}
-				graph, err := devworkspace.LoadGraph(c)
-				if err != nil {
-					return output.New(2, err.Error())
+				var graph *devworkspace.Graph
+				if action != "reconcile" {
+					graph, err = devworkspace.LoadGraph(c)
+					if err != nil {
+						return output.New(2, err.Error())
+					}
 				}
 				ctx, cancel := context.WithTimeout(cmd.Context(), deadline)
 				defer cancel()
@@ -143,6 +146,12 @@ func (a *App) developmentCommands() {
 					return resolveErr
 				}
 				bound := state.Bindings[resource.UID]
+				if action == "reconcile" {
+					return a.developmentReconcile(ctx, client, c, state, resource)
+				}
+				if action == "create" && bound.ResourceID != "" {
+					return output.New(2, "Resource is already bound; use push to edit or clone to create another root")
+				}
 				if action == "validate" {
 					bundle, _, err := graph.Compile(resource.Key, state.Requirements, state.Credentials)
 					if err != nil {
@@ -151,7 +160,7 @@ func (a *App) developmentCommands() {
 					defer bundle.Close()
 					return a.emit(map[string]any{"valid": true, "resource": resource.Alias, "dependencies": len(bundle.Graph.Components) - 1, "authorization": "not_evaluated", "semantic_validation": "server_required", "executed": false})
 				}
-				if bound.ResourceID == "" {
+				if bound.ResourceID == "" && action != "create" && action != "diff" && action != "status" {
 					return output.New(2, "Resource is not bound to this Woobe/Workspace/Project; pull it first or create explicitly")
 				}
 				if action == "diff" || action == "status" {
@@ -193,7 +202,19 @@ func (a *App) developmentCommands() {
 					targets[key] = target
 				}
 				if a.DryRun {
-					return a.emit(map[string]any{"executed": false, "resource": resource.Alias, "environment": "draft", "resources": len(targets), "changes": devworkspace.Diff(bound.Base, graph.Nodes[resource.Key].Document), "semantic_validation": "server_required"})
+					uploaded, err := client.Upload(ctx, bundle, false)
+					if err != nil {
+						return err
+					}
+					plan, err := client.Plan(ctx, packageapi.PlanRequest{Mode: "sync", RegistryID: c.RegistryID, ResourceBindings: targets, UploadID: uploaded.UploadID, ArtifactDigest: bundle.ArtifactDigest, Bindings: bindings, Lifecycle: "draft"})
+					if err != nil {
+						return err
+					}
+					changes, err := graph.ClosureChanges(*resource, state)
+					if err != nil {
+						return output.New(2, err.Error())
+					}
+					return a.emit(map[string]any{"executed": false, "resource": resource.Alias, "environment": "draft", "changes": changes, "effects": plan.Effects, "plan_id": plan.PlanID, "plan_digest": plan.PlanDigest, "semantic_validation": "server_validated"})
 				}
 				acceptedBases, err := graph.AcceptedBases(bundle)
 				if err != nil {
@@ -273,7 +294,11 @@ func (a *App) developmentPush(ctx context.Context, client *packageapi.Client, c 
 	// Apply after an unknown outcome; this checkpoint is scoped to content+authority.
 	identityBytes, _ := json.Marshal(map[string]any{"artifact_digest": digest, "targets": targets})
 	requestDigest := fmt.Sprintf("%x", sha256.Sum256(identityBytes))
-	checkpoint := filepath.Join(c.RootPath(), ".state", "push-"+resource.UID+"-"+requestDigest+".json")
+	attempt, err := randomPackageIdentity()
+	if err != nil {
+		return err
+	}
+	checkpoint := filepath.Join(c.RootPath(), ".state", "push-"+resource.UID+"-"+requestDigest+"-"+attempt+".json")
 	if active := state.Pending[resource.UID]; active != "" {
 		relative, err := filepath.Rel(filepath.Join(c.RootPath(), ".state"), active)
 		if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.IsAbs(relative) {
@@ -293,9 +318,9 @@ func (a *App) developmentPush(ctx context.Context, client *packageapi.Client, c 
 	cp, readErr := store.Read()
 	var result packageapi.Operation
 	if readErr == nil && cp.State != packagecheckpoint.Prepared {
-		data, err := c.ReadOperationalFile(checkpoint+".base.json", 16<<20)
-		if err != nil || json.Unmarshal(data, &acceptedBases) != nil {
-			return output.New(9, "Accepted local base is unavailable; reconcile this operation before another push")
+		acceptedBases, err = readDevelopmentBases(c, checkpoint)
+		if err != nil {
+			return err
 		}
 		if cp.APIOrigin != client.Control.Base || cp.ProjectID != client.ProjectID || cp.PrincipalFingerprint != capabilities.PrincipalFingerprint {
 			return output.New(3, "Push checkpoint belongs to another destination")
@@ -322,9 +347,9 @@ func (a *App) developmentPush(ctx context.Context, client *packageapi.Client, c 
 			if cp.ArtifactDigest != digest {
 				return output.New(2, "Prepared source changed; retain the approved source")
 			}
-			data, err := c.ReadOperationalFile(checkpoint+".base.json", 16<<20)
-			if err != nil || json.Unmarshal(data, &acceptedBases) != nil {
-				return output.New(9, "Prepared local base is unavailable")
+			acceptedBases, err = readDevelopmentBases(c, checkpoint)
+			if err != nil {
+				return err
 			}
 		} else {
 			uploaded, err := upload()
@@ -381,6 +406,10 @@ func (a *App) developmentPush(ctx context.Context, client *packageapi.Client, c 
 	}
 	result, err = client.Wait(ctx, result, func(next packageapi.Operation) error { return savePackageObservation(store, &cp, next) })
 	if err != nil || result.State != "succeeded" {
+		a.packageCheckpointPath = checkpoint
+		if err == nil && result.Terminal && result.State != "succeeded" {
+			return &packageOperationFailure{result, output.New(7, "Development write did not complete; run woobe "+strings.ToLower(resource.Kind)+" '@"+resource.Alias+"' reconcile")}
+		}
 		return a.emitPackageOperation(result, err)
 	}
 	recovered, err := client.Registry(ctx, c.RegistryID)
@@ -391,10 +420,7 @@ func (a *App) developmentPush(ctx context.Context, client *packageapi.Client, c 
 		if acceptedBases[binding.ResourceUID].Base == nil {
 			continue
 		}
-		local, exists := state.Bindings[binding.ResourceUID]
-		if !exists {
-			continue
-		}
+		local := state.Bindings[binding.ResourceUID]
 		if binding.ResourceID != "" {
 			local.ResourceID = binding.ResourceID
 		}
