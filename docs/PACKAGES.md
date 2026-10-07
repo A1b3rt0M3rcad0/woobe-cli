@@ -13,7 +13,7 @@ ambiguous names require a terminal choice or an explicit UUID with `--no-input`.
 woobe package export agent "Orders & Requests Agent"
 woobe package export agent 01a00d4a-fa75-7629-a2c6-773c25c6e2ef
 woobe package export agent AGENT_UUID --env staging
-woobe package export agent AGENT_UUID --env release --version 1.2.0
+woobe package export agent AGENT_UUID --env release --version v1.0.20261007.01
 woobe package export agent AGENT_UUID --env production
 woobe package export network "Customer Support" --env production
 ```

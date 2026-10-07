@@ -189,7 +189,7 @@ func TestPackageBindingsTemplateCanBeFilledAndPlannedOffline(t *testing.T) {
 
 func TestPackageHelpExamplesAndApplicableFlags(t *testing.T) {
 	code, text := outputInvoke(t, []string{"package", "export", "agent", "--help"})
-	if code != 0 || !strings.Contains(text, "--env release --version 1.2.0") || strings.Contains(text, "--file string") {
+	if code != 0 || !strings.Contains(text, "--env release --version v1.0.20261007.01") || strings.Contains(text, "--file string") {
 		t.Fatal(code, text)
 	}
 	code, result := invoke(t, []string{"help", "package", "export", "agent", "--output", "compact"}, "")

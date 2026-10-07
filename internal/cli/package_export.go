@@ -38,7 +38,7 @@ func (a *App) packageExportCommands(group *cobra.Command) {
 			} else {
 				source = environment
 				if source == "release" && version == "" {
-					return output.New(2, "Release export requires --version; example: woobe package export "+kind+" UUID --env release --version 1.2.0")
+					return output.New(2, "Release export requires --version; example: woobe package export "+kind+" UUID --env release --version v1.0.20261007.01")
 				}
 				if source != "release" && version != "" {
 					return output.New(2, "--version selects a release; use --env release or --package-version for package metadata")

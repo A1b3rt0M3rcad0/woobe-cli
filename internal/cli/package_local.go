@@ -52,7 +52,7 @@ func (a *App) packageBindingsCommand(group *cobra.Command) {
 		if a.DryRun && destination != "" {
 			return output.New(2, "Bindings --dry-run cannot write a destination; omit --destination to preview YAML")
 		}
-		if err := packageFlags(cmd); err != nil {
+		if err := packageFlags(cmd, "yes"); err != nil {
 			return err
 		}
 		bundle, err := loadPackage(args[0], false)
