@@ -213,11 +213,36 @@ func TestManagedCaptureReusesRegistryAndConflictsWithoutWriting(t *testing.T) {
 		_ = d
 	}
 	credential, _ := NewID()
+	publicSpec := clone(packagefmt.Object(packagefmt.Object(packagefmt.List(packagefmt.Object(packagefmt.Object(bundle.Graph.Manifest["spec"])["requires"])["credentials"])[0])["metadata"]))
+	if publicSpec == nil {
+		publicSpec = map[string]any{}
+	}
+	publicSpec["provider"] = "custom"
+	provider, err := target.Add("Provider", "my-provider", "", map[string]any{"format": "woobe-package", "schema_version": "1.0", "kind": "Provider", "metadata": map[string]any{"name": "My provider"}, "spec": publicSpec}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	providerGraph, _ := LoadGraph(target)
+	state.Credentials[provider.Key] = credential
+	state.Bindings[provider.UID] = Binding{ResourceID: credential, Base: providerGraph.Nodes[provider.Key].Document}
 	resource, conflicts, err := target.ImportCapture(bundle, state, captured, map[string]string{"primary": credential}, "support", "")
 	if err != nil || len(conflicts) > 0 {
 		t.Fatal(resource, conflicts, err)
 	}
 	count := len(target.Resources)
+	providers := 0
+	for _, item := range target.Resources {
+		if item.Kind == "Provider" {
+			providers++
+		}
+	}
+	if providers != 1 {
+		t.Fatal("verified Provider duplicated", providers)
+	}
+	reused, err := target.Resolve("Provider", "@my-provider")
+	if err != nil || reused.UID != provider.UID {
+		t.Fatal("Provider identity lost", reused, err)
+	}
 	if _, conflicts, err = target.ImportCapture(bundle, state, captured, map[string]string{"primary": credential}, "", ""); err != nil || len(conflicts) > 0 || len(target.Resources) != count {
 		t.Fatal("duplicated capture", conflicts, err, len(target.Resources), count)
 	}
