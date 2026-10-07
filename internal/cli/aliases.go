@@ -46,7 +46,7 @@ func (a *App) aliasCommands() {
 			if name == "agent" || name == "network" {
 				actions := map[string]string{"pull": "pull", "sync": "pull", "push": "push", "update": "push", "diff": "diff", "validate": "validate", "status": "status", "create": "create", "reconcile": "reconcile"}
 				if name == "agent" {
-					for _, action := range []string{"stage", "publish", "activate", "rollback", "archive"} {
+					for _, action := range []string{"stage", "publish", "activate", "rollback", "archive", "test"} {
 						actions[action] = action
 					}
 				}
