@@ -14,7 +14,7 @@ func packageVisibleFlag(path, name string) bool {
 		return true
 	}
 	switch name {
-	case "file", "query", "secret-file", "if-match", "runtime-credential":
+	case "file", "input-format", "query", "secret-file", "if-match", "runtime-credential":
 		return false
 	case "idempotency-key":
 		return path == "package import"
@@ -38,11 +38,11 @@ func (a *App) installCommandGuides() {
 		"package cancel":       {"Request cancellation of an existing import", "Cancellation does not delete shared resources. Inspect the final status and retained inventory.", "woobe package cancel OPERATION_ID\nwoobe package status OPERATION_ID --wait"},
 		"project agent export": {"Export a partial JSON projection for inspection", "This projection is incomplete and not importable. For a portable YAML package with dependencies, use woobe package export agent NAME_OR_UUID. --destination is a file for this command; --output selects terminal formatting.", "woobe agent export UUID --destination ./agent-projection.json\nwoobe package export agent UUID\nwoobe package export agent \"Support Agent\" --env production"},
 		"export":               {"Export a partial resource projection", "For portable YAML composition, use woobe package export agent|network NAME_OR_UUID. --output selects terminal formatting; --destination selects a file/directory according to the command.", "woobe package export agent UUID\nwoobe package export network UUID --env staging"},
-		"manifest":             {"Compose explicit API resource operations", "Manifest JSON operations and portable YAML Packages are separate formats. For moving an Agent/Network with its dependencies, use package export/import.", "woobe manifest --help\nwoobe package --help"},
+		"manifest":             {"Compose explicit API resource operations", "Manifest YAML/JSON operations and portable YAML Packages are separate formats. For moving an Agent/Network with its dependencies, use package export/import.", "woobe manifest --help\nwoobe package --help"},
 		"context":              {"Manage named Woobe connections", "Each connection keeps its own API URL and CLI key/project selection. Create a connection, select it, then authenticate. A key with one eligible project selects it automatically.", "woobe context create local --api-url http://localhost:8000\nwoobe context use local\nwoobe auth login --cli-key\nwoobe context project select UUID"},
 		"auth login":           {"Authenticate the selected Woobe connection", "--cli-key reads a masked terminal prompt. --cli-key --stdin reads a key from stdin for automation. The key is stored privately and resolves workspace/project grants. Never put the key in command arguments.", "woobe context use local\nwoobe auth login --cli-key\nwoobe auth status"},
 		"auth status":          {"Show authentication and selected project", "Shows the selected connection and project without revealing the CLI key. --wide provides grant metadata.", "woobe auth status\nwoobe auth status --output compact"},
-		"schema":               {"Inspect a command input/output schema", "Use the canonical command path. This describes CLI inputs; server-schema provides advertised API payload schemas. API --file accepts JSON; portable package descriptors accept YAML/JSON.", "woobe schema --command \"project agent create\" --kind input\nwoobe server-schema --output json"},
+		"schema":               {"Inspect a command input/output schema", "Use the canonical command path. This describes CLI inputs; server-schema provides advertised API payload schemas. API --file accepts YAML or JSON; portable package descriptors accept YAML/JSON.", "woobe schema --command \"project agent create\" --kind input\nwoobe server-schema --output json"},
 		"help":                 {"Discover focused command guidance", "Use COMMAND --help for readable examples. Use help CANONICAL_COMMAND --output compact for concise structured guidance. --wide/--output json includes the full command metadata.", "woobe package export agent --help\nwoobe help package export agent --output compact\nwoobe agent create --help"},
 	}
 	for _, kind := range []string{"agent", "network"} {
@@ -55,7 +55,7 @@ func (a *App) installCommandGuides() {
 			if action == "update" {
 				suffix = " UUID"
 			}
-			guides["project "+kind+" "+action] = commandGuide{action + " a project " + kind, "--file is a JSON API payload, not a portable YAML package. Consult the advertised server schema for authoritative fields. --dry-run shows the request without executing it; --validate-body validates the server payload contract.", "woobe " + kind + " " + action + suffix + " --file ./payload.json --dry-run\nwoobe " + kind + " " + action + suffix + " --file ./payload.json --validate-body"}
+			guides["project "+kind+" "+action] = commandGuide{action + " a project " + kind, "--file accepts a YAML or JSON API payload. For a portable resource with dependencies, use package import. Consult the advertised server schema for authoritative fields. --dry-run shows the request without executing it; --validate-body validates the server payload contract.", "woobe " + kind + " " + action + suffix + " --file ./payload.yaml --dry-run\nwoobe " + kind + " " + action + suffix + " --file ./payload.yaml --validate-body"}
 		}
 	}
 	guides["project agent release list"] = commandGuide{"List native Agent release versions", "Use the exact version value with package export --env release --version. Details are available through --wide or --output json.", "woobe agent release list UUID\nwoobe package export agent UUID --env release --version VERSION_FROM_LIST"}
@@ -64,6 +64,21 @@ func (a *App) installCommandGuides() {
 	guides["context use"] = commandGuide{"Select a Woobe connection", "Uses the connection's saved API origin, CLI key and project.", "woobe context list\nwoobe context use local\nwoobe auth status"}
 	guides["context project select"] = commandGuide{"Select a project granted to this connection", "Accepts eligible project name, slug or UUID. Does not require entering workspace identity.", "woobe context project select UUID\nwoobe context project select chatbot"}
 	guides["context show"] = commandGuide{"Inspect the selected connection", "Connection settings are separate from the private key store.", "woobe context show\nwoobe context show local"}
+	for _, op := range a.Registry {
+		if _, exists := guides[op.Command]; exists || op.Method == "" {
+			continue
+		}
+		details := "Uses the selected connection and authorized scope. Use --fields to select useful output, --wide for details, or --output compact for concise automation."
+		example := "woobe " + op.Command
+		for _, param := range op.Params {
+			example += " " + strings.ToUpper(param)
+		}
+		if op.Body {
+			details += " --file accepts YAML/JSON API payloads; --file - --input-format yaml reads stdin. server-schema and validate-input describe and validate authoritative fields. --dry-run never submits the request."
+			example += " --file ./payload.yaml --dry-run"
+		}
+		guides[op.Command] = commandGuide{op.Command + " (" + op.Effect + ")", details, example}
+	}
 	var walk func(*cobra.Command)
 	walk = func(cmd *cobra.Command) {
 		path := strings.TrimPrefix(cmd.CommandPath(), "woobe ")

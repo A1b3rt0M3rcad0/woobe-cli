@@ -27,7 +27,7 @@ func packageFlags(cmd *cobra.Command, allowed ...string) error {
 	for _, name := range allowed {
 		permitted[name] = true
 	}
-	for _, name := range []string{"file", "query", "secret-file", "if-match", "idempotency-key", "schema-sha256", "validate-body", "validate-parameters", "yes", "runtime-credential"} {
+	for _, name := range []string{"file", "input-format", "query", "secret-file", "if-match", "idempotency-key", "schema-sha256", "validate-body", "validate-parameters", "yes", "runtime-credential"} {
 		if cmd.Flags().Changed(name) && !permitted[name] {
 			return output.New(2, "--"+name+" is incompatible with this package command")
 		}

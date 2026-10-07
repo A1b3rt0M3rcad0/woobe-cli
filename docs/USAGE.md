@@ -387,3 +387,23 @@ Knowledge can be rebuilt from portable documents or resolved through an external
 binding. See [PACKAGES.md](PACKAGES.md) for flags, lifecycle, protection, recovery
 and the supported CLI/server pair. Existing resource projections and Manifest
 semantic-upsert limitations remain described above.
+
+## YAML and JSON request input
+
+Every API command that consumes `--file` accepts YAML (`.yaml`/`.yml`) or JSON.
+The wire contract remains JSON. For stdin, choose the format explicitly:
+
+```sh
+woobe agent update UUID --file ./agent-change.yaml --validate-body
+woobe validate-input --command "project agent update" --file ./agent-change.yaml
+woobe agent update UUID --file - --input-format yaml
+```
+
+Use `--input-format json` to require JSON regardless of the filename. Auto mode
+uses the extension, then JSON object/array syntax, otherwise YAML. One document
+is accepted; duplicate fields, anchors, aliases, merge keys, custom tags and
+non-finite numbers are rejected before submission. Explicit `null`, omitted
+fields and exact numeric values retain their meanings. A YAML API payload is
+not a portable Package: use `package import` for dependency-aware bundles.
+Manifests can also be written in YAML with the existing manifest schema.
+No project configuration file is required for request input or command help.
