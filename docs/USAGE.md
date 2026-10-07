@@ -447,3 +447,59 @@ folder, stopping at the Git repository boundary. `--project-config PATH` selects
 an explicit file; `--no-project-config` disables discovery. API requests,
 authentication, contexts, runtime calls and standalone packages do not load this
 file. Their operation is unaffected by a missing or malformed project config.
+
+## Pull, edit YAML, push Draft
+
+Managed development requires a Woobe server advertising `sync` and `registry`
+capabilities. The server validates the complete dependency graph and authorizes
+both the root and each reused artifact. Native UUIDs are retained for Agents and
+Networks; changed shared dependencies use explicit copy-on-write effects.
+
+```sh
+woobe init --context local
+woobe agent UUID pull --alias support
+woobe agent "@support" diff
+woobe agent "@support" validate
+woobe agent "@support" push
+woobe network UUID pull --alias helpdesk
+woobe network "@helpdesk" push
+```
+
+Edit the registered `agent.yaml`, `network.yaml` and dependency descriptors in
+between pull and push. Reference-first `sync` aliases `pull`, and `update` aliases
+`push`: `woobe agent UUID update --path ./.woobe/agents/support`. Canonical API
+`woobe agent update UUID --file patch.yaml` still accepts a raw request payload.
+Quote aliases in PowerShell (`"@support"`). UUID, exact remote name on the first
+pull, typed alias and registered folder are supported. Inside a linked folder,
+`woobe agent pull`/`push` can omit the reference.
+
+Pull defaults to Draft. `--env staging` and `--env production` select the current
+native snapshots; `--env release --version 1.2.0` selects an immutable release.
+Regardless of the pulled environment, push writes Draft. Publishing and
+activation remain explicit lifecycle operations. `--path` is an optional folder
+inside the configured artifact root; local resource identities stay in
+`.woobe-config`, destination UUIDs and base revisions stay in `.state/`.
+
+`diff` and `status` are offline and include dependency and declared support-file
+changes. `validate` checks the compiled portable schema offline; server semantic
+validation, credentials and authorization are checked during push. `--dry-run`
+never applies a push; its summary identifies local changes and dependencies.
+
+Pull performs a three-way merge against the last remote base. Independent edits
+merge; conflicting fields or support files leave all author files and state
+untouched. Push includes native revision evidence, so stale edits receive a
+conflict instead of overwriting another client. Pull again, resolve the listed
+paths, inspect diff and retry. Resetting or deleting local state is unnecessary.
+
+Networks preserve repeated nodes separately. An Agent Draft is editable, while
+fixed constituent snapshots remain under `snapshots/` with separate UIDs. Editing
+a frozen constituent is rejected; pull its standalone Draft to edit the Agent.
+A Network push does not activate constituent Agents as standalone Production.
+
+Local writes use a registry process lock and a durable transaction journal.
+Interrupted transactions recover on the next development command, and recovery
+refuses to overwrite a conflicting external edit. Push checkpoints pin the
+content, destination and principal. If acceptance is unknown, the next push
+looks up the same operation rather than sending another mutation. Keep `.state/`
+until the operation has been reconciled; it is intentionally excluded from Git
+and from compiled packages.

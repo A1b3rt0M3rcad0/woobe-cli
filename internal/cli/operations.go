@@ -230,6 +230,19 @@ func (a *App) discoveryCommands() {
 			return a.emit(a.Registry)
 		}
 		path := strings.Join(args, " ")
+		if len(args) >= 2 && (args[0] == "agent" || args[0] == "network") {
+			actions := map[string]string{"pull": "pull", "sync": "pull", "push": "push", "diff": "diff", "status": "status", "validate": "validate"}
+			action := args[1]
+			if len(args) >= 3 {
+				action = args[2]
+				if action == "update" {
+					action = "push"
+				}
+			}
+			if mapped := actions[action]; mapped != "" {
+				path = "develop " + args[0] + " " + mapped
+			}
+		}
 		for alias, canonical := range map[string]string{"agent": "project agent", "network": "project network", "control-key": "workspace control-key"} {
 			if path == alias || strings.HasPrefix(path, alias+" ") {
 				path = canonical + strings.TrimPrefix(path, alias)

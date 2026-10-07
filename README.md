@@ -5,6 +5,16 @@ control plane and runtime. Manage Workspace and Project resources, validate
 manifests, publish Agent and Network releases and execute released targets.
 The backend authorizes every operation.
 
+## Develop locally with YAML
+
+`woobe init`, then `woobe agent UUID pull --alias support`; edit the YAML and
+run `woobe agent "@support" diff` followed by `woobe agent "@support" push`.
+Networks use the same workflow. Push writes Draft and preserves the native root
+UUID. The optional registry shares Providers, Models and other dependencies
+across artifacts. See [managed development](docs/USAGE.md#pull-edit-yaml-push-draft)
+for environments, conflicts and recovery. Requires a matching Woobe backend
+with development synchronization capabilities.
+
 ## Install and run
 
 Download your platform archive and `SHA256SUMS` from

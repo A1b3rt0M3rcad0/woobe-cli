@@ -74,13 +74,15 @@ func (c *Client) Upload(ctx context.Context, bundle *packagebundle.Bundle, locke
 }
 
 type PlanRequest struct {
-	Mode           string         `json:"mode"`
-	UploadID       string         `json:"upload_id"`
-	ArtifactDigest string         `json:"artifact_digest"`
-	Bindings       map[string]any `json:"bindings"`
-	Lifecycle      string         `json:"lifecycle"`
-	ReleaseNotes   *string        `json:"release_notes"`
-	Reason         *string        `json:"reason"`
+	RegistryID       string                       `json:"registry_id,omitempty"`
+	ResourceBindings map[string]DevelopmentTarget `json:"resource_bindings,omitempty"`
+	Mode             string                       `json:"mode"`
+	UploadID         string                       `json:"upload_id"`
+	ArtifactDigest   string                       `json:"artifact_digest"`
+	Bindings         map[string]any               `json:"bindings"`
+	Lifecycle        string                       `json:"lifecycle"`
+	ReleaseNotes     *string                      `json:"release_notes"`
+	Reason           *string                      `json:"reason"`
 }
 type Effect struct {
 	Key                 string   `json:"key"`
@@ -92,24 +94,27 @@ type Effect struct {
 	State               string   `json:"state"`
 }
 type Plan struct {
-	APIOrigin            string         `json:"api_origin"`
-	PackageSchemaVersion string         `json:"package_schema_version"`
-	PlanID               string         `json:"plan_id"`
-	PlanDigest           string         `json:"plan_digest"`
-	ProjectID            string         `json:"project_id"`
-	UploadID             string         `json:"upload_id"`
-	ArtifactDigest       string         `json:"artifact_digest"`
-	DefinitionDigest     string         `json:"definition_digest"`
-	CapabilitiesDigest   string         `json:"capabilities_digest"`
-	BindingsDigest       string         `json:"bindings_digest"`
-	Bindings             map[string]any `json:"bindings"`
-	Lifecycle            string         `json:"lifecycle"`
-	ReleaseNotes         *string        `json:"release_notes"`
-	Reason               *string        `json:"reason"`
-	Effects              []Effect       `json:"effects"`
-	RequiredPermissions  []string       `json:"required_permissions"`
-	CreatedAt            string         `json:"created_at"`
-	ExpiresAt            string         `json:"expires_at"`
+	Mode                 string                       `json:"mode,omitempty"`
+	RegistryID           string                       `json:"registry_id,omitempty"`
+	ResourceBindings     map[string]DevelopmentTarget `json:"resource_bindings,omitempty"`
+	APIOrigin            string                       `json:"api_origin"`
+	PackageSchemaVersion string                       `json:"package_schema_version"`
+	PlanID               string                       `json:"plan_id"`
+	PlanDigest           string                       `json:"plan_digest"`
+	ProjectID            string                       `json:"project_id"`
+	UploadID             string                       `json:"upload_id"`
+	ArtifactDigest       string                       `json:"artifact_digest"`
+	DefinitionDigest     string                       `json:"definition_digest"`
+	CapabilitiesDigest   string                       `json:"capabilities_digest"`
+	BindingsDigest       string                       `json:"bindings_digest"`
+	Bindings             map[string]any               `json:"bindings"`
+	Lifecycle            string                       `json:"lifecycle"`
+	ReleaseNotes         *string                      `json:"release_notes"`
+	Reason               *string                      `json:"reason"`
+	Effects              []Effect                     `json:"effects"`
+	RequiredPermissions  []string                     `json:"required_permissions"`
+	CreatedAt            string                       `json:"created_at"`
+	ExpiresAt            string                       `json:"expires_at"`
 }
 
 func (c *Client) Plan(ctx context.Context, request PlanRequest) (Plan, error) {
@@ -117,6 +122,19 @@ func (c *Client) Plan(ctx context.Context, request PlanRequest) (Plan, error) {
 	err := c.request(ctx, http.MethodPost, "/plan", request, &result)
 	if err != nil {
 		return result, err
+	}
+	if request.Mode == "sync" {
+		if result.Mode != "sync" || result.RegistryID != request.RegistryID || len(result.ResourceBindings) != len(request.ResourceBindings) {
+			return Plan{}, output.New(9, "Server changed the development registry identity")
+		}
+		for key, expected := range request.ResourceBindings {
+			observed, exists := result.ResourceBindings[key]
+			left, _ := json.Marshal(expected)
+			right, _ := json.Marshal(observed)
+			if !exists || string(left) != string(right) {
+				return Plan{}, output.New(9, "Server changed an approved native resource binding")
+			}
+		}
 	}
 	bindingsDigest, bindingsErr := BindingsDigest(result.Bindings)
 	if bindingsErr != nil || bindingsDigest != result.BindingsDigest {
@@ -131,4 +149,13 @@ func (c *Client) Plan(ctx context.Context, request PlanRequest) (Plan, error) {
 		return Plan{}, output.New(9, "Server returned a different Package plan identity")
 	}
 	return result, nil
+}
+
+type DevelopmentTarget struct {
+	SourceExportID   string `json:"source_export_id,omitempty"`
+	SourceComponent  string `json:"source_component,omitempty"`
+	ResourceUID      string `json:"resource_uid"`
+	ResourceID       string `json:"resource_id,omitempty"`
+	ExpectedRevision any    `json:"expected_revision"`
+	SnapshotID       string `json:"release_id,omitempty"`
 }

@@ -127,6 +127,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 		return a.emit(map[string]any{"version": Version, "commit": Commit, "go_version": runtime.Version(), "os": runtime.GOOS, "arch": runtime.GOARCH, "schema_version": "1"})
 	}})
 	a.developmentConfigCommands()
+	a.developmentCommands()
 	a.contextCommands()
 	a.requestCommands()
 	a.requestPagesCommand()

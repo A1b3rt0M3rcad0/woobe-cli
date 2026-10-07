@@ -21,7 +21,7 @@ func (a *App) developmentConfig(required bool) (*devworkspace.Config, error) {
 	}
 	if path == "" {
 		if required {
-			return nil, output.New(2, "No development registry found; run woobe init or use UUID and an explicit path")
+			return nil, output.New(2, "No development registry found; run woobe init for managed YAML development, or use standalone package export/import")
 		}
 		return nil, nil
 	}
