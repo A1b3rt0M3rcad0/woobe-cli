@@ -230,12 +230,32 @@ func (a *App) discoveryCommands() {
 			return a.emit(a.Registry)
 		}
 		path := strings.Join(args, " ")
+		for alias, canonical := range map[string]string{"agent": "project agent", "network": "project network", "control-key": "workspace control-key"} {
+			if path == alias || strings.HasPrefix(path, alias+" ") {
+				path = canonical + strings.TrimPrefix(path, alias)
+				break
+			}
+		}
 		for _, op := range a.Registry {
 			if op.Command == path {
 				return a.emit(op)
 			}
 		}
-		return output.New(2, "unknown operation")
+		command, remaining, err := a.Root.Find(strings.Fields(path))
+		if err == nil && len(remaining) == 0 && command != a.Root && command.HasAvailableSubCommands() {
+			commands := []map[string]string{}
+			for _, child := range command.Commands() {
+				if !child.Hidden {
+					commands = append(commands, map[string]string{"name": child.Name(), "summary": child.Short, "usage": child.UseLine()})
+				}
+			}
+			examples := []string{}
+			if command.Example != "" {
+				examples = strings.Split(command.Example, "\n")
+			}
+			return a.emit(map[string]any{"command": path, "usage": command.UseLine(), "summary": command.Short, "examples": examples, "commands": commands})
+		}
+		return output.New(2, "unknown operation; use woobe help or COMMAND --help")
 	}}
 	a.Root.SetHelpCommand(help)
 	a.Root.AddCommand(help)

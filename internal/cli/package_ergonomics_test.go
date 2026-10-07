@@ -279,3 +279,35 @@ func TestPackageReleaseDiscoveryUsesSelectedProject(t *testing.T) {
 		t.Fatal(code, result)
 	}
 }
+
+func TestPackageHelpGroupsAndAliasesAreFocused(t *testing.T) {
+	for _, path := range [][]string{{"package"}, {"agent"}, {"agent", "create"}, {"network", "version", "list"}} {
+		args := append([]string{"help"}, path...)
+		args = append(args, "--output", "compact")
+		code, result := invoke(t, args, "")
+		if code != 0 {
+			t.Fatal(code, result)
+		}
+		data := result["data"].(map[string]any)
+		if data["summary"] == nil || data["examples"] == nil {
+			t.Fatal("help missing guidance", result)
+		}
+	}
+}
+
+func TestPackageReleaseDiscoveryOmitsDefinitionsFromCompactLists(t *testing.T) {
+	t.Setenv("WOOBE_CONTROL_KEY", "test-control")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]any{"success": true, "data": []any{map[string]any{"id": exportUUID, "version": "v1.0.20261007.01", "kind": "release", "definition": map[string]string{"system_prompt": "large-author-definition"}, "resolved_bindings": map[string]string{"root": "large-binding-snapshot"}}}})
+	}))
+	defer server.Close()
+	for _, mode := range []string{"compact", "json"} {
+		code, text := outputInvoke(t, []string{"network", "version", "list", exportUUID, "--api-url", server.URL, "--project", "project", "--output", mode})
+		if code != 0 || !strings.Contains(text, "v1.0.20261007.01") {
+			t.Fatal(code, text)
+		}
+		if strings.Contains(text, "large-author-definition") != (mode == "json") {
+			t.Fatal(mode, text)
+		}
+	}
+}
