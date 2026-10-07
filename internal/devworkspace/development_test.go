@@ -251,3 +251,43 @@ func TestPrivateStateRefusesLinkedParents(t *testing.T) {
 		t.Fatal("linked private state accepted")
 	}
 }
+
+func TestCaptureOfMinimalPackageKeepsEmptyRequirementArraysCompilable(t *testing.T) {
+	source := t.TempDir()
+	documents := map[string]string{
+		"woobe.yaml": `{"format":"woobe-package","schema_version":"1.0","kind":"Package","metadata":{"name":"Support","version":"1.0.0"},"spec":{"entrypoint":{"kind":"Agent","ref":"support"},"resources":["agent.yaml","model.yaml"],"requires":{"credentials":[{"ref":"primary","provider":"custom"}],"knowledge":[],"secrets":[],"project_environment":[]}}}`,
+		"agent.yaml": `{"format":"woobe-package","schema_version":"1.0","kind":"Agent","metadata":{"key":"support","name":"Support"},"spec":{"model":{"primary":{"ref":"chat"}},"legacy_system_prompt":"Help"}}`,
+		"model.yaml": `{"format":"woobe-package","schema_version":"1.0","kind":"Model","metadata":{"key":"chat","name":"Chat"},"spec":{"provider":"custom","model":"fake","credential":{"ref":"primary"}}}`,
+	}
+	for name, data := range documents {
+		if err := os.WriteFile(filepath.Join(source, name), []byte(data), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	bundle, err := packagebundle.Load(source, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bundle.Close()
+	c, _ := Create(t.TempDir(), ".woobe", "")
+	state, err := c.ReadState("http://local", "workspace", "project")
+	if err != nil {
+		t.Fatal(err)
+	}
+	credentialID, _ := NewID()
+	agentID, _ := NewID()
+	modelID, _ := NewID()
+	resource, conflicts, err := c.ImportCapture(bundle, state, map[string]CapturedBinding{"support": {ResourceID: agentID, Revision: 1, SourceKind: "draft"}, "chat": {ResourceID: modelID, Revision: "revision"}}, map[string]string{"primary": credentialID}, "support", "")
+	if err != nil || len(conflicts) > 0 {
+		t.Fatal(err, conflicts)
+	}
+	graph, err := LoadGraph(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	compiled, _, err := graph.Compile(resource.Key, state.Requirements, state.Credentials)
+	if err != nil {
+		t.Fatal("pulled minimal package became uncompilable", err)
+	}
+	compiled.Close()
+}

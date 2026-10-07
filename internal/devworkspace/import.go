@@ -317,7 +317,7 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 		if group == "project_environment" {
 			field = "key"
 		}
-		items := packagefmt.List(nextState.Requirements[group])
+		items := append([]any{}, packagefmt.List(nextState.Requirements[group])...)
 		for _, incoming := range packagefmt.List(raw) {
 			name := packagefmt.Text(packagefmt.Object(incoming)[field])
 			found := false
