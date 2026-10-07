@@ -59,6 +59,7 @@ class NpmPublicationTests(unittest.TestCase):
                 with patch.object(publish_npm, 'view', side_effect=[None, latest, self.integrity]), patch.object(publish_npm.subprocess, 'run') as run:
                     publish_npm.publish(self.commit, version, digest)
                     command = run.call_args_list[1].args[0]
+                    self.assertTrue(pathlib.Path(command[2]).is_absolute())
                     self.assertEqual(command[command.index('--tag') + 1], expected)
                     self.assertIn('--provenance', command)
 

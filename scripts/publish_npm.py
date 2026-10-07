@@ -38,7 +38,8 @@ def publish(commit, version, manifest_sha256):
         raise ValueError('npm source differs from validated release identity')
     subprocess.run([sys.executable, 'scripts/verify_artifacts.py', '--commit', commit,
                     '--version', version], check=True)
-    artifact = root / manifest['npm']['name']
+    # npm treats bare "dist/file.tgz" as a GitHub shorthand, not a file.
+    artifact = (root / manifest['npm']['name']).resolve()
     integrity = 'sha512-' + base64.b64encode(hashlib.sha512(artifact.read_bytes()).digest()).decode()
     spec = f'woobe-cli@{version}'
     existing = view(spec, 'dist.integrity')

@@ -201,7 +201,7 @@ files, workflow inputs, PR comments, or chat.
 
 After the workflow change is merged, its master push runs Release CLI, creating
 the first npm package with that token. Alternatively, publish the validated
-tarball manually with `npm login` and `npm publish dist/woobe-cli-VERSION.tgz
+tarball manually with `npm login` and `npm publish ./dist/woobe-cli-VERSION.tgz
 --access public`, then configure OIDC before the next release.
 
 ### Switch to token-free Trusted Publishing
