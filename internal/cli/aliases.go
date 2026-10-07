@@ -56,7 +56,7 @@ func (a *App) aliasCommands() {
 				reserved := map[string]bool{"list": true, "get": true, "create": true, "update": true, "prompt": true, "contract": true, "model-config": true, "release": true, "environment": true, "draft": true, "promotion": true, "version": true, "management": true, "activation": true, "rollback": true, "session": true}
 				if len(args) > 1 && actions[args[1]] != "" && !strings.HasPrefix(args[0], "-") && !reserved[args[0]] {
 					routed = append(append(forwarded, "develop", name, actions[args[1]], args[0]), args[2:]...)
-				} else if len(args) > 0 && actions[args[0]] != "" && args[0] != "update" && args[0] != "create" {
+				} else if len(args) > 0 && actions[args[0]] != "" && args[0] != "update" && args[0] != "create" && !(name == "network" && args[0] == "rollback") {
 					routed = append(append(forwarded, "develop", name, actions[args[0]]), args[1:]...)
 				}
 			}
