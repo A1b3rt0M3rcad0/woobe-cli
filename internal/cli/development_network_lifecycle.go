@@ -135,6 +135,9 @@ func (a *App) developmentNetworkLifecycleCommands() {
 				if err != nil {
 					return err
 				}
+				if current["production_version_id"] == selected {
+					return output.New(6, "Selected Network Release is already in Production; choose a different immutable version")
+				}
 				body["source_version_id"], body["expected_current_production_version_id"], body["change_description"] = selected, current["production_version_id"], notes
 				path += "/production/activations"
 			}
