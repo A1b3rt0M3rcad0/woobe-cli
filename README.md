@@ -87,6 +87,20 @@ Changing the API URL requires login again. Runtime Keys remain separate.
 
 ## Discover and automate
 
+Interactive terminals now show concise tables and labeled results. Existing
+redirected JSON remains compatible. For AI agents, use `--output compact` and
+select the fields needed for the next action:
+
+```sh
+woobe agent list
+woobe agent list --output compact --fields id,name,status
+woobe agent get AGENT_ID --wide
+```
+
+`--output json` retains the complete response. `doctor` summarizes checks without
+dumping OpenAPI. See [output formats](docs/OUTPUT.md) and the
+[measured before/after comparisons](docs/OUTPUT_EXAMPLES.md).
+
 ```bash
 woobe help --output json
 woobe doctor

@@ -209,6 +209,10 @@ func (a *App) register(op Operation) {
 	}
 	for _, p := range op.Params {
 		flag := strings.ReplaceAll(strings.TrimSuffix(p, "_id"), "_", "-")
+		if a.Root.PersistentFlags().Lookup(flag) != nil {
+			// Resource parameters must not shadow connection/configuration flags.
+			flag = strings.ReplaceAll(p, "_", "-")
+		}
 		if cmd.Flags().Lookup(flag) == nil {
 			value := new(string)
 			paramValues[p] = value
@@ -253,7 +257,7 @@ func (a *App) discoveryCommands() {
 						return output.New(2, "manifest-version must be 1 or 2")
 					}
 				}
-				return output.Write(a.Out, a.Mode, schema, nil, nil)
+				return a.writeOutput(a.Out, schema, nil, nil, nil)
 			}
 		}
 		return output.New(2, "unknown operation")

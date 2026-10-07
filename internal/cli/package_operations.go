@@ -50,7 +50,7 @@ func (a *App) emitPackageOperation(result packageapi.Operation, err error) error
 	if result.State == "failed" {
 		return &packageOperationFailure{result, output.New(7, "Package operation failed; inspect its diagnostics and retained inventory")}
 	}
-	return output.WriteWithMeta(a.Out, a.Mode, result, map[string]string{"project_id": result.ProjectID}, nil, a.packageFinalMeta(result))
+	return a.writeOutput(a.Out, result, map[string]string{"project_id": result.ProjectID}, nil, a.packageFinalMeta(result))
 }
 
 func (a *App) packageFinalMeta(result packageapi.Operation) map[string]any {

@@ -149,7 +149,7 @@ func (a *App) paginatedCall(cmd *cobra.Command, path string, options paginationO
 	if e != nil {
 		return pageFailure(v, state.Metadata(), e)
 	}
-	return output.WriteWithMeta(a.Out, a.Mode, output.Redact(v), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, nil, state.Metadata())
+	return a.writeOutput(a.Out, output.Redact(v), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, nil, state.Metadata())
 }
 
 func pageFailure(data any, meta map[string]any, err error) error {
@@ -168,5 +168,5 @@ func (a *App) emitPages(pages controlplane.Pages, err error) error {
 		}
 		return pageFailure(pages, pages.Metadata(), err)
 	}
-	return output.WriteWithMeta(a.Out, a.Mode, output.Redact(pages), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, nil, pages.Metadata())
+	return a.writeOutput(a.Out, output.Redact(pages), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, nil, pages.Metadata())
 }

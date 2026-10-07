@@ -1,0 +1,9 @@
+complete: true
+advertised_routes: 4
+authorization: not_evaluated
+checks.identity.success: true
+checks.instance.success: true
+checks.openapi.success: true
+client_version: dev
+reviewed_routes: 191
+Details: --wide | --fields FIELD,... | --output json

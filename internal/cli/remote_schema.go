@@ -32,7 +32,7 @@ func (a *App) remoteSchemaCommand() {
 		if e != nil {
 			return e
 		}
-		return output.Write(a.Out, a.Mode, map[string]any{"operation": op, "definition": definition, "path_parameters": path["parameters"], "components": doc["components"], "openapi_version": doc["openapi"], "source": "server_openapi"}, nil, nil)
+		return a.writeOutput(a.Out, map[string]any{"operation": op, "definition": definition, "path_parameters": path["parameters"], "components": doc["components"], "openapi_version": doc["openapi"], "source": "server_openapi"}, nil, nil, nil)
 	}}
 	c.Flags().StringVar(&operation, "command", "", "Canonical HTTP command")
 	_ = c.MarkFlagRequired("command")
