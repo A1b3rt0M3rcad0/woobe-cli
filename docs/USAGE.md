@@ -407,3 +407,43 @@ fields and exact numeric values retain their meanings. A YAML API payload is
 not a portable Package: use `package import` for dependency-aware bundles.
 Manifests can also be written in YAML with the existing manifest schema.
 No project configuration file is required for request input or command help.
+
+## Optional local development registry
+
+`woobe init --root .woobe --context local` creates `.woobe-config` in the
+current directory. This YAML file identifies the registry and records resource
+UIDs, kinds, logical keys, aliases and paths relative to the artifact root.
+Keep it in Git. `.woobe/.state/` is private and ignored by Git.
+
+```yaml
+schema_version: 1
+registry_id: 71e7c0ee-ea31-48b9-a566-ad713b4b8407
+context: local
+root: .woobe
+defaults:
+  pull_environment: draft
+resources:
+  - uid: fae665bb-0817-4834-903e-3352815e9367
+    kind: Provider
+    key: openai-main
+    alias: openai-main
+    path: providers/openai-main
+```
+
+`woobe config show` displays this configuration. `woobe config check` validates
+registered descriptors and their dependency graph offline; it does not evaluate
+server permissions or execute mutations. `woobe resources list` lists the
+registry, while `woobe resources used-by provider "@openai-main"` shows direct
+and indirect local consumers, including embedding Models and Knowledge.
+
+Provider descriptors use `provider`, `credential_ref` and optional public
+`base_url`, `compatibility` and `provider_family` fields. Credential material
+belongs in the existing provider/auth workflow. Managed Model descriptors may
+use `provider_ref` to identify a registered Provider. Multiple Models can share
+a connection; two connections remain distinct registry resources.
+
+Development commands discover the nearest `.woobe-config` from the current
+folder, stopping at the Git repository boundary. `--project-config PATH` selects
+an explicit file; `--no-project-config` disables discovery. API requests,
+authentication, contexts, runtime calls and standalone packages do not load this
+file. Their operation is unaffected by a missing or malformed project config.
