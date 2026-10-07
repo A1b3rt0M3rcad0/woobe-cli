@@ -52,3 +52,9 @@ If a Surface create times out, its durable local intent blocks automatic retries
 Inspect `surface list`, then reconcile explicitly with
 `surface UUID pull --alias chat`. No keys, session tokens or access secrets enter
 Surface author files.
+
+Author `target_ref` and other dependency references use stable registry **keys**,
+shown by `resources list`; terminal references use `@alias`, UUID or path. Changing
+an alias does not rewrite dependency identity. Provider bind also records its
+native identity so a later target pull reuses that same Provider rather than
+creating another definition.

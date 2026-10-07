@@ -98,6 +98,9 @@ func (a *App) developmentBindCommand() {
 		}
 		if !a.DryRun {
 			state.Credentials[resource.Key] = args[2]
+			if state.Bindings[resource.UID].ResourceID == "" {
+				state.Bindings[resource.UID] = devworkspace.Binding{ResourceID: args[2], Base: graph.Nodes[resource.Key].Document}
+			}
 			if err = c.WriteState(state); err != nil {
 				return output.New(2, err.Error())
 			}
