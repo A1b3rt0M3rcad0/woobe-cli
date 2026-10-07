@@ -67,9 +67,11 @@ def main():
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     rows = []
+    cleanup_config = None
     try:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
+            cleanup_config = root / "cleanup.json"
             origin = f"http://127.0.0.1:{server.server_port}"
             env = {**os.environ, "WOOBE_CONTROL_KEY": "fixture-only", "WOOBE_OUTPUT": "auto"}
             for name in ["WOOBE_CONTEXT", "WOOBE_CREDENTIAL", "WOOBE_RUNTIME_CREDENTIAL", "WOOBE_API_URL", "WOOBE_WORKSPACE_ID", "WOOBE_PROJECT_ID"]:
@@ -159,6 +161,11 @@ def main():
                         row["note"] = row["note"] or "Requires a dedicated valid input/state scenario; no invented reduction"
                 rows.append(row)
     finally:
+        # Native Windows credentials outlive temporary directories. Remove only
+        # the dummy references in this audit's unique credential-store namespace.
+        if cleanup_config is not None:
+            for reference in ["fixture-ref", "imported"]:
+                subprocess.run([binary, "auth", "credential", "remove", reference, "--config", str(cleanup_config), "--output", "json"], capture_output=True, timeout=10)
         server.shutdown()
         server.server_close()
         thread.join()
