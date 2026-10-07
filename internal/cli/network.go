@@ -9,7 +9,7 @@ func (a *App) networkCommands() {
 		{Command: "project network draft update", Method: "PATCH", Path: "/network/{network_id}/draft", Scope: "project", Body: true},
 		{Command: "project network promotion preview", Method: "POST", Path: "/network/{network_id}/promotions/preview", Scope: "project", Body: true},
 		{Command: "project network promotion create", Method: "POST", Path: "/network/{network_id}/promotions", Scope: "project", Body: true, Effect: "publication"},
-		{Command: "project network version list", Method: "GET", Path: "/network/{network_id}/versions", Scope: "project", Body: false},
+		{Command: "project network version list", Method: "GET", Path: "/network/{network_id}/versions", Scope: "project", Body: false, QueryScope: "project_id"},
 		{Command: "project network management versions", Method: "GET", Path: "/network/{network_id}/management/versions", Scope: "project", Body: false},
 		{Command: "project network management external-context", Method: "GET", Path: "/network/{network_id}/management/external-context-contract", Scope: "project", Body: false},
 		{Command: "project network activation list", Method: "GET", Path: "/network/{network_id}/management/activations", Scope: "project", Body: false},

@@ -15,16 +15,20 @@ import (
 )
 
 type ExportRequest struct {
-	Kind       string  `json:"kind"`
-	TargetID   string  `json:"target_id"`
-	Source     *string `json:"source"`
-	SnapshotID *string `json:"snapshot_id"`
-	Knowledge  string  `json:"knowledge"`
-	Name       string  `json:"name"`
-	Version    string  `json:"version"`
+	ReleaseVersion string  `json:"release_version,omitempty"`
+	Kind           string  `json:"kind"`
+	TargetID       string  `json:"target_id"`
+	Source         *string `json:"source,omitempty"`
+	SnapshotID     *string `json:"snapshot_id,omitempty"`
+	Knowledge      string  `json:"knowledge"`
+	Name           string  `json:"name,omitempty"`
+	Version        string  `json:"version,omitempty"`
 }
 
 type ExportReceipt struct {
+	Source               map[string]any                `json:"source,omitempty"`
+	Name                 string                        `json:"name,omitempty"`
+	Version              string                        `json:"version,omitempty"`
 	PackageSchemaVersion string                        `json:"package_schema_version"`
 	ExportID             string                        `json:"export_id"`
 	ProjectID            string                        `json:"project_id"`

@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -24,6 +25,7 @@ var Version = "dev"
 var Commit = "unknown"
 
 type App struct {
+	packageCheckpointPath                                                                    string
 	packageOutputSequence                                                                    int64
 	SchemaSHA                                                                                string
 	Root                                                                                     *cobra.Command
@@ -144,6 +146,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.remoteSchemaCommand()
 	a.validateInputCommand()
 	a.discoveryCommands()
+	a.installCommandGuides()
 	a.completeDiscovery()
 	return a
 }
@@ -299,7 +302,7 @@ func (a *App) query() (url.Values, error) {
 }
 func (a *App) Execute(ctx context.Context, args []string) int {
 	a.Root.SetArgs(args)
-	e := a.Root.ExecuteContext(ctx)
+	command, e := a.Root.ExecuteContextC(ctx)
 	if e == nil {
 		return 0
 	}
@@ -342,10 +345,18 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 		}
 	}
 	e = output.Normalize(e)
+	if failure := output.Normalize(e); failure.Code == 2 && failure.Status == 0 && command != nil {
+		failure.Message += "; see " + command.CommandPath() + " --help"
+	}
+	meta := map[string]any{}
+	if a.packageCheckpointPath != "" {
+		meta["checkpoint"] = a.packageCheckpointPath
+		meta["recovery_command"] = "woobe package status --checkpoint " + strconv.Quote(a.packageCheckpointPath) + " --wait"
+	}
 	w := a.Out
 	if a.Mode == "jsonl" {
 		w = a.Err
 	}
-	_ = a.writeOutput(w, nil, map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, e, nil)
+	_ = a.writeOutput(w, nil, map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, e, meta)
 	return output.Normalize(e).Code
 }

@@ -95,13 +95,18 @@ func (a *App) completeDiscovery() {
 				op.Kind = "http"
 			}
 			op.Usage = cmd.UseLine()
+			op.Summary = cmd.Short
+			op.Details = cmd.Long
+			if cmd.Example != "" {
+				op.Examples = strings.Split(cmd.Example, "\n")
+			}
 			switch path {
 			case "manifest validate", "manifest preflight", "manifest plan", "manifest diff", "manifest apply", "manifest reconcile", "manifest compile":
 				op.Body = true
 			}
 			flags := map[string]FlagDescriptor{}
 			add := func(f *pflag.Flag) {
-				if f.Hidden {
+				if f.Hidden || !packageVisibleFlag(path, f.Name) {
 					return
 				}
 				_, required := f.Annotations[cobra.BashCompOneRequiredFlag]

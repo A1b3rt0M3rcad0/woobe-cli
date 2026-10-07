@@ -195,6 +195,34 @@ var relevantFields = []string{
 }
 
 func summarize(command string, value any) any {
+	if strings.HasPrefix(command, "package export ") {
+		if obj, ok := value.(map[string]any); ok {
+			summary := project(obj, []string{"name", "version", "destination", "integrity", "closure_complete", "self_contained", "knowledge", "next_command"}, false).(map[string]any)
+			if source, ok := obj["source"].(map[string]any); ok {
+				summary["source"] = project(source, []string{"environment", "version"}, false)
+			}
+			return summary
+		}
+	}
+	if command == "package validate" {
+		if obj, ok := value.(map[string]any); ok && obj["valid"] == true {
+			summary := project(obj, []string{"valid", "entrypoint", "artifact_digest", "authorization", "semantic_validation", "executed", "diagnostics"}, false).(map[string]any)
+			if inventory, ok := obj["inventory"].([]any); ok {
+				summary["files"] = len(inventory)
+			}
+			return summary
+		}
+	}
+	if command == "package plan" {
+		if obj, ok := value.(map[string]any); ok && obj["executed"] != false {
+			summary := project(obj, []string{"plan_id", "project_id", "lifecycle", "expires_at", "artifact_digest", "bindings", "diagnostics", "permissions", "release_notes", "reason"}, false).(map[string]any)
+			if effects, ok := obj["effects"].([]any); ok {
+				summary["effects_count"] = len(effects)
+				summary["effects"] = project(effects, []string{"key", "owner", "action", "permission", "state"}, false)
+			}
+			return summary
+		}
+	}
 	if strings.HasPrefix(command, "schema") || command == "server-schema" || command == "validate-input" || strings.Contains(command, "manifest") || strings.HasPrefix(command, "package ") {
 		// Schemas, plans and recovery evidence must not lose operational details.
 		return value
@@ -209,10 +237,14 @@ func summarize(command string, value any) any {
 			fields = []string{"name", "status", "model", "id"}
 		case "project network list":
 			fields = []string{"name", "status", "id"}
+		case "project agent release list":
+			fields = []string{"version", "snapshot_kind", "status", "id", "created_at"}
+		case "project network version list":
+			fields = []string{"version", "kind", "id", "created_at"}
 		}
 		for i, row := range rows {
 			selected := project(row, fields, false)
-			if command != "project agent list" && command != "project network list" && command != "help" {
+			if command != "project agent list" && command != "project network list" && command != "project agent release list" && command != "project network version list" && command != "help" {
 				selected = summarize("", row)
 			}
 			if obj, ok := selected.(map[string]any); ok && len(obj) == 0 {
@@ -245,7 +277,7 @@ func summarize(command string, value any) any {
 		return map[string]any{"client_version": obj["client_version"], "checks": checks, "complete": obj["complete"], "advertised_routes": advertised, "reviewed_routes": total, "authorization": "not_evaluated"}
 	}
 	if command == "help" {
-		return project(obj, []string{"command", "usage", "method", "path", "scope", "effect", "availability", "path_parameters", "body_required", "permission", "permission_source"}, false)
+		return project(obj, []string{"command", "usage", "method", "path", "scope", "effect", "availability", "path_parameters", "body_required", "permission", "permission_source", "summary", "examples", "commands"}, false)
 	}
 	if command == "version" {
 		return project(obj, []string{"version", "commit", "os", "arch", "go_version"}, false)
