@@ -420,6 +420,7 @@ func (a *App) developmentPush(ctx context.Context, client *packageapi.Client, c 
 		if binding.ResourceID != "" {
 			local.ResourceID = binding.ResourceID
 		}
+		local.Identifiers = binding.Identifiers
 		local.Revision = binding.Revision
 		local.Base = acceptedBases[binding.ResourceUID].Base
 		local.Supports = acceptedBases[binding.ResourceUID].Supports

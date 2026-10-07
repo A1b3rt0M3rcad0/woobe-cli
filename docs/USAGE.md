@@ -623,3 +623,29 @@ fresh pull. Identity is never inferred from a matching display name. Explicit
 `--context` and `WOOBE_CONTEXT` take precedence over `.woobe-config` preferences.
 A Skill clone changes its `SKILL.md` frontmatter name as well as its descriptor,
 so importing the clone creates a distinct native Skill namespace.
+
+### Network lifecycle and native archive
+
+```powershell
+woobe network '@helpdesk' stage --yes
+woobe network '@helpdesk' publish --yes
+woobe network '@helpdesk' activate --version 1.2.0 --notes "Reactivate approved composition" --yes
+woobe network '@helpdesk' rollback --version 1.1.0 --notes "Restore stable composition" --yes
+woobe agent '@support' archive --yes
+woobe agent '@support' delete --yes
+```
+
+Network staging/publication requests a native preview, approves only its content
+bound action IDs and sends the Draft revision or current Staging identity back
+as a precondition. Concurrent changes fail instead of selecting a newer snapshot.
+Network publication follows Woobe's existing behavior: create/reuse an immutable
+Release and activate the Network in Production. Constituent Agent Releases do
+not activate standalone Agent Production. Activation/rollback select a saved
+immutable Network version and guard the current Production pointer.
+
+Agent `archive` and `delete` use Woobe's native archival operation. Historical
+snapshots and runs remain available for audit; no shared Model, Provider, Tool,
+Skill or Knowledge is deleted. The CLI reads the native revision and sends
+`If-Match`; an explicit `--if-match` remains authoritative. Native dependency
+checks can block archival while Networks or Chat Surfaces still depend on the
+Agent. `resources unregister` is a separate local registry operation.

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -12,7 +13,7 @@ import (
 
 func (a *App) developmentLifecycleCommands() {
 	parent := a.group("develop agent")
-	for _, action := range []string{"stage", "publish", "activate", "rollback", "archive"} {
+	for _, action := range []string{"stage", "publish", "activate", "rollback", "archive", "delete"} {
 		var version, notes string
 		command := &cobra.Command{Use: action + " REFERENCE", Short: action + " an Agent through the native lifecycle", Args: cobra.ExactArgs(1), Long: "Select the current native environment automatically. stage copies current Draft to Staging; publish creates an immutable Release from current Staging; activate and rollback require an explicit Release version. Local YAML is never silently pushed by lifecycle commands. Run push first. Publication requires --yes and an audit reason in --notes.", RunE: func(cmd *cobra.Command, args []string) error {
 			if a.File != "" {
@@ -24,7 +25,7 @@ func (a *App) developmentLifecycleCommands() {
 			if (action == "activate" || action == "rollback") && version == "" {
 				return output.New(2, "Select the immutable Release with --version")
 			}
-			if action != "stage" && action != "archive" && len(strings.TrimSpace(notes)) < 3 {
+			if action != "stage" && action != "archive" && action != "delete" && len(strings.TrimSpace(notes)) < 3 {
 				return output.New(2, "Supply an audit reason with --notes (at least three characters)")
 			}
 			id, err := a.nativeReference("agent_id", args[0])
@@ -41,8 +42,22 @@ func (a *App) developmentLifecycleCommands() {
 			path := "/ai/agents/" + url.PathEscape(id)
 			body := map[string]any{}
 			method := "POST"
-			if action == "archive" {
-				method, body = "PATCH", map[string]any{"status": "archived"}
+			if action == "archive" || action == "delete" {
+				method = "DELETE"
+				response, _, readErr := control.Request(cmd.Context(), "GET", path, nil, nil)
+				if readErr != nil {
+					return readErr
+				}
+				current, readErr := developmentResponseData(response)
+				if readErr != nil {
+					return readErr
+				}
+				if current["revision"] == nil {
+					return output.New(9, "Agent read omitted archive revision")
+				}
+				if a.IfMatch == "" {
+					a.IfMatch = fmt.Sprintf("\"%v\"", current["revision"])
+				}
 			} else {
 				client, err := packageapi.New(control, a.Project)
 				if err != nil {
