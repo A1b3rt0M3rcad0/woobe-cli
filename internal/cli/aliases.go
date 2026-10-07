@@ -43,15 +43,20 @@ func (a *App) aliasCommands() {
 			forwarded = append(forwarded, args[:prefix]...)
 			args = args[prefix:]
 			routed := append(append(forwarded, target...), args...)
-			if name == "agent" || name == "network" {
+			if name == "agent" || name == "network" || name == "surface" {
 				actions := map[string]string{"pull": "pull", "sync": "pull", "push": "push", "update": "push", "diff": "diff", "validate": "validate", "status": "status", "create": "create", "reconcile": "reconcile"}
 				for _, action := range []string{"stage", "publish", "activate", "rollback"} {
-					actions[action] = action
+					if name != "surface" {
+						actions[action] = action
+					}
 				}
 				if name == "agent" {
 					for _, action := range []string{"archive", "delete", "test"} {
 						actions[action] = action
 					}
+				}
+				if name == "surface" {
+					delete(actions, "reconcile")
 				}
 				reserved := map[string]bool{"list": true, "get": true, "create": true, "update": true, "prompt": true, "contract": true, "model-config": true, "release": true, "environment": true, "draft": true, "promotion": true, "version": true, "management": true, "activation": true, "rollback": true, "session": true}
 				if len(args) > 1 && actions[args[1]] != "" && !strings.HasPrefix(args[0], "-") && !reserved[args[0]] {

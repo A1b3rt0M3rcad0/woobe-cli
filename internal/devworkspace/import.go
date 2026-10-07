@@ -297,9 +297,27 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 				if err != nil {
 					return nil, nil, err
 				}
-				if !reflect.DeepEqual(existing.Nodes[r.Key].Document, nextState.Bindings[r.UID].Base) {
-					return nil, nil, fmt.Errorf("Provider connection intent differs; reconcile it explicitly")
+				author := existing.Nodes[r.Key].Document
+				incoming := nextState.Bindings[r.UID].Base
+				authorSpec := packagefmt.Object(author["spec"])
+				incomingSpec := packagefmt.Object(incoming["spec"])
+				for field, value := range authorSpec {
+					if field != "credential_ref" && !reflect.DeepEqual(value, incomingSpec[field]) {
+						return nil, nil, fmt.Errorf("Provider connection intent differs at %s; reconcile it explicitly", field)
+					}
 				}
+				// Display metadata and schema markers are local author intent;
+				// native connection metadata is authoritative and secret-free.
+				merged := clone(author)
+				merged["spec"] = clone(incomingSpec)
+				binding := nextState.Bindings[r.UID]
+				binding.Base = merged
+				nextState.Bindings[r.UID] = binding
+				data, err = Encode(merged)
+				if err != nil {
+					return nil, nil, err
+				}
+				writes[target] = data
 				_ = previous
 			} else {
 				writes[target] = data

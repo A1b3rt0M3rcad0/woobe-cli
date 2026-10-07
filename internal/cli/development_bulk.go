@@ -21,7 +21,7 @@ func (f *developmentBatchFailure) Error() string { return f.Cause.Error() }
 func (a *App) developmentBulkCommands() {
 	for _, action := range []string{"validate", "diff", "push"} {
 		var kind string
-		command := &cobra.Command{Use: action, Args: cobra.NoArgs, Short: action + " explicitly registered Agent and Network roots", Long: "Operate only on the registered dependency graph. Shared dependencies are compiled through their registered UIDs; frozen Network constituents are not independent roots. push requires already bound roots and stops at the first error. --dry-run validates exact server plans without applying native changes.", RunE: func(cmd *cobra.Command, _ []string) error {
+		command := &cobra.Command{Use: action, Args: cobra.NoArgs, Short: action + " explicitly registered Agent, Network and Surface roots", Long: "Operate only on the registered dependency graph. Shared dependencies are compiled through their registered UIDs; frozen Network constituents are not independent roots. push requires already bound roots and stops at the first error. --dry-run validates exact Agent/Network server plans and Surface destination/CAS identity without applying changes. Surface settings follow their native lifecycle and may affect active Surfaces; disable first when changes must stay offline.", RunE: func(cmd *cobra.Command, _ []string) error {
 			c, err := a.developmentConfig(true)
 			if err != nil {
 				return err
@@ -30,8 +30,8 @@ func (a *App) developmentBulkCommands() {
 			if err != nil {
 				return output.New(2, err.Error())
 			}
-			if kind != "" && kind != "agent" && kind != "network" {
-				return output.New(2, "--kind must be agent or network")
+			if kind != "" && kind != "agent" && kind != "network" && kind != "surface" {
+				return output.New(2, "--kind must be agent, network or surface")
 			}
 			// Provider, Model, Tool, Skill and Knowledge dependencies are included
 			// by closure. They never become accidental top-level create operations.
@@ -49,7 +49,7 @@ func (a *App) developmentBulkCommands() {
 						return err
 					}
 				}
-				if !node.Resource.Frozen && (node.Resource.Kind == "Agent" || node.Resource.Kind == "Network") && (kind == "" || strings.EqualFold(kind, node.Resource.Kind)) {
+				if !node.Resource.Frozen && (node.Resource.Kind == "Agent" || node.Resource.Kind == "Network" || node.Resource.Kind == "Surface") && (kind == "" || strings.EqualFold(kind, node.Resource.Kind)) {
 					roots = append(roots, node.Resource)
 				}
 				return nil
@@ -60,7 +60,10 @@ func (a *App) developmentBulkCommands() {
 				}
 			}
 			flags := []string{}
-			a.Root.PersistentFlags().Visit(func(flag *pflag.Flag) {
+			cmd.Flags().Visit(func(flag *pflag.Flag) {
+				if a.Root.PersistentFlags().Lookup(flag.Name) == nil {
+					return
+				}
 				if flag.Name == "output" || flag.Name == "project-config" || flag.Name == "fields" || flag.Name == "wide" {
 					return
 				}
@@ -89,7 +92,7 @@ func (a *App) developmentBulkCommands() {
 			}
 			return a.emit(map[string]any{"results": results, "complete": true, "roots": len(roots), "executed": action == "push" && !a.DryRun, "registered_only": true})
 		}}
-		command.Flags().StringVar(&kind, "kind", "", "Restrict registered roots to agent or network")
+		command.Flags().StringVar(&kind, "kind", "", "Restrict registered roots to agent, network or surface")
 		a.group("resources").AddCommand(command)
 	}
 }

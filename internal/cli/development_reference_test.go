@@ -90,3 +90,32 @@ func TestParentAliasesUseCapturedParentIdentity(t *testing.T) {
 		}
 	}
 }
+
+func TestPromptVersionAliasUsesTheTypedCapturedVersion(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("WOOBE_CONTROL_KEY", "test")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/ai/agents/native-agent/prompts/native-prompt" {
+			t.Error(r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": map[string]any{"id": "native-prompt"}})
+	}))
+	defer server.Close()
+	c, _ := devworkspace.Create(".", ".woobe", "")
+	agent, _ := devworkspace.NewID()
+	prompt, _ := devworkspace.NewID()
+	c.Resources = []devworkspace.Resource{{UID: agent, Kind: "Agent", Key: "support", Alias: "support", Path: "agents/support"}, {UID: prompt, Kind: "Prompt", Key: "instructions", Alias: "instructions", Path: "prompts/instructions"}}
+	if err := c.Save(); err != nil {
+		t.Fatal(err)
+	}
+	state, _ := c.ReadState(server.URL, "workspace", "project")
+	state.Bindings[agent] = devworkspace.Binding{ResourceID: "native-agent"}
+	state.Bindings[prompt] = devworkspace.Binding{ResourceID: "native-prompt"}
+	if err := c.WriteState(state); err != nil {
+		t.Fatal(err)
+	}
+	code, result := invoke(t, []string{"--api-url", server.URL, "--workspace", "workspace", "--project", "project", "agent", "@support", "prompt", "get", "@instructions", "--output", "json"}, "")
+	if code != 0 {
+		t.Fatal(code, result)
+	}
+}

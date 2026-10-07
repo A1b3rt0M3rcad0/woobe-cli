@@ -52,6 +52,9 @@ func TestProviderBindingVerifiesDestinationWithoutCopyingSecrets(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			if scenario == "valid" && state.Bindings[resource.UID].ResourceID != "native-credential" {
+				t.Fatal("binding cannot be reused by pull", state)
+			}
 			if scenario == "valid" && state.Credentials[resource.Key] != "native-credential" {
 				t.Fatal(state)
 			}

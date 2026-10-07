@@ -224,3 +224,25 @@ woobe agent '@support' reconcile
 ```
 
 See [local identities, bulk operations and recovery](docs/USAGE.md#explicit-local-identities-and-recovery).
+
+
+### Repository-local YAML development
+
+`.woobe-config` is optional and is used only by development commands. Native UUID
+API operations, authentication and runtime commands work without it.
+
+```sh
+woobe init --root .woobe
+woobe agent AGENT_UUID pull --alias support
+woobe agent '@support' diff
+woobe agent '@support' push --yes
+woobe agent '@support' stage --yes
+woobe agent '@support' test --file testcase.yaml --yes
+woobe agent '@support' publish --notes "Reviewed change" --yes
+```
+
+Providers, Models, Tools, Skills, Knowledge, Prompts and Contracts are registered
+once and reused through typed local references. Surface authoring uses the same
+registry and native identities. See [Provider bindings and Surface workflows](docs/DEVELOPMENT.md)
+and [local development and recovery](docs/USAGE.md#explicit-local-identities-and-recovery).
+The development server additions currently require [Woobe PR #179](https://github.com/A1b3rt0M3rcad0/woobe/pull/179).

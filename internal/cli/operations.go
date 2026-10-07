@@ -149,7 +149,11 @@ func (a *App) register(op Operation) {
 				value = args[argIndex]
 				argIndex++
 			}
-			value, e = a.nativeReference(p, value)
+			referenceParameter := p
+			if p == "version_id" && op.Command == "project agent prompt get" {
+				referenceParameter = "prompt_id"
+			}
+			value, e = a.nativeReference(referenceParameter, value)
 			if e != nil {
 				return e
 			}
