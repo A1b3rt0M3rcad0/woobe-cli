@@ -231,8 +231,8 @@ func validateProvider(spec map[string]any) error {
 			return fmt.Errorf("Provider fields must be strings")
 		}
 	}
-	if packagefmt.Text(spec["provider"]) == "" || packagefmt.Text(spec["credential_ref"]) == "" {
-		return fmt.Errorf("Provider requires provider and credential_ref")
+	if packagefmt.Text(spec["provider"]) == "" {
+		return fmt.Errorf("Provider requires provider; bind its native credential with resources bind")
 	}
 	if raw := packagefmt.Text(spec["base_url"]); raw != "" {
 		parsed, err := url.Parse(raw)
