@@ -121,19 +121,25 @@ func (a *App) selectControlProject(identity controlIdentity, selection, previous
 		return "", nil
 	}
 	for i, p := range projects {
-		fmt.Fprintf(a.Err, "%d. %s (%s)\n", i+1, p.Name, p.Slug)
+		fmt.Fprintf(a.Err, "%d. %q (%q)\n", i+1, p.Name, p.Slug)
 	}
-	fmt.Fprint(a.Err, "Select project: ")
+	fmt.Fprint(a.Err, "Select project (number, name or slug): ")
 	line, e := bufio.NewReader(io.LimitReader(a.In, 4096)).ReadString('\n')
 	if e != nil {
 		return "", output.New(2, "Project selection was cancelled")
 	}
-	n, e := strconv.Atoi(strings.TrimSpace(line))
-	if e != nil || n < 1 || n > len(projects) {
-		return "", output.New(2, "Invalid project selection")
-	}
-	return projects[n-1].ID, nil
+	return a.controlProjectChoice(identity, projects, strings.TrimSpace(line))
 }
+func (a *App) controlProjectChoice(identity controlIdentity, projects []controlProject, choice string) (string, error) {
+	if choice == "" {
+		return "", output.New(2, "Choose a project number, name or slug")
+	}
+	if n, e := strconv.Atoi(choice); e == nil && n >= 1 && n <= len(projects) {
+		return projects[n-1].ID, nil
+	}
+	return a.selectControlProject(identity, choice, "")
+}
+
 func (a *App) loginControl(cmd *cobra.Command, stdin bool, selection string) error {
 	c, name, v, e := a.savedConnection()
 	if e != nil {

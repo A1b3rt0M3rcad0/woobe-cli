@@ -251,3 +251,21 @@ func TestControlLoginInvocationSchemaDistinguishesHumanAndKeyModes(t *testing.T)
 		}
 	}
 }
+
+func TestControlInteractiveProjectChoiceByNumberNameAndSlug(t *testing.T) {
+	app := New(strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	projects := []controlProject{eligibleProject("a", "Alpha"), eligibleProject("b", "Production Team")}
+	projects[1].Slug = "production"
+	identity := controlIdentity{Projects: projects}
+	for _, choice := range []string{"2", "Production Team", "production"} {
+		id, err := app.controlProjectChoice(identity, projects, choice)
+		if err != nil || id != "b" {
+			t.Fatalf("Choice %q did not select production: %v", choice, err)
+		}
+	}
+	for _, choice := range []string{"", "3", "Missing"} {
+		if _, err := app.controlProjectChoice(identity, projects, choice); err == nil {
+			t.Fatal("Invalid choice selected a project")
+		}
+	}
+}
