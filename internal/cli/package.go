@@ -76,6 +76,7 @@ func (a *App) packageCommands() {
 	}
 	validate.Flags().BoolVar(&locked, "locked", false, "Require and verify woobe.lock.json without rewriting it")
 	group.AddCommand(validate)
+	a.packageBindingsCommand(group)
 	a.packageOperationCommands(group)
 	a.packagePlanningCommands(group)
 	a.packageImportCommands(group)

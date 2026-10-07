@@ -183,3 +183,21 @@ permissions the server does not provide.
 ## Portable packages
 
 See [portable Agent and Network packages](docs/PACKAGES.md) for offline validation, approved plans, durable import/recovery, Knowledge rebuilding and complete snapshot export. The paired draft PRs carry the supported CLI/server revisions and qualification evidence.
+
+### Portable YAML export/import
+
+```powershell
+woobe package export agent "Support Agent"
+woobe package export agent AGENT_UUID --env production
+woobe package export agent AGENT_UUID --env release --version 1.2.0
+woobe package validate ./support-agent --locked
+woobe package bindings ./support-agent --destination ./destination.yaml
+woobe package import ./support-agent --bindings ./destination.yaml --wait
+```
+
+Export accepts a name or UUID, defaults to draft and `./normalized-name`, and writes
+readable YAML with dependencies. Fill bindings with destination identities before
+importing; packages without requirements need no bindings. Import creates draft
+resources and manages its private recovery checkpoint automatically. See
+[Package guide](docs/PACKAGES.md) for review, environments and recovery. Use
+`woobe package --help` or `woobe help package export agent --output compact`.

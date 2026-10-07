@@ -55,6 +55,9 @@ func (a *App) emitPackageOperation(result packageapi.Operation, err error) error
 
 func (a *App) packageFinalMeta(result packageapi.Operation) map[string]any {
 	meta := map[string]any{"complete": result.Terminal}
+	if a.packageCheckpointPath != "" {
+		meta["checkpoint"] = a.packageCheckpointPath
+	}
 	if a.Mode == "jsonl" {
 		a.packageOutputSequence++
 		meta["record"], meta["sequence"], meta["operation_id"] = "final", a.packageOutputSequence, result.OperationID

@@ -196,7 +196,7 @@ Offline compilation emits a v1 execution document and hash. Both formats reuse t
 
 `--skip-unchanged` performs an authorized GET for compatible update targets, comparing only supplied fields. Matching state is checkpointed as `unchanged`, making results available to dependent resources; resume skips that observation just as it skips completed writes. It is a recorded observation, not continuous drift detection. Changed state proceeds to the ordinary PATCH/PUT; server-side revision enforcement remains authoritative. An explicit `if_match` requires an observed matching ETag before this shortcut. Missing compatible getters (including NetworkDraft) return exit 9; default apply remains available without the option. Create intents are always explicit creations and have no name-based existence check.
 
-Packages contain both `manifest.schema.json` (steps v1) and `resources.schema.json` (resources v2). Full resource coverage, semantic upsert/existence reconciliation, complete export/import and secret references remain open.
+Packages contain both `manifest.schema.json` (steps v1) and `resources.schema.json` (resources v2). Manifest resource coverage and semantic upsert/existence reconciliation remain limited. Portable Agent/Network YAML export/import and protected bindings use the separate Package V1 workflow below.
 
 ## Captura seletiva e paginação anunciada
 
@@ -382,7 +382,7 @@ new tools start in review. Existing immutable release snapshots are unaffected.
 Use `woobe package validate`, `plan`, `import`, `status`, `resume`, `cancel`, and
 `export agent|network` for complete native author definitions. A Package requires
 the matching backend capability catalog; it does not fall back to Manifest.
-`--destination` is the export path, while `--output` selects text/JSON/JSONL.
+`--destination` optionally overrides the export directory (default: ./normalized-resource-name), while `--output` selects text/JSON/JSONL. Export accepts a name or UUID; `--env` defaults to draft, staging/production resolve current versions, and release requires `--version`. Import checkpoints are automatic unless explicitly specified. Use `package bindings SOURCE` for a destination YAML template.
 Knowledge can be rebuilt from portable documents or resolved through an external
 binding. See [PACKAGES.md](PACKAGES.md) for flags, lifecycle, protection, recovery
 and the supported CLI/server pair. Existing resource projections and Manifest

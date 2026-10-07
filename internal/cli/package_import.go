@@ -104,9 +104,20 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 			}
 			return a.emit(map[string]any{"package_schema_version": "1.0", "artifact_digest": bundle.ArtifactDigest, "inventory": bundle.Inventory, "bindings": bindings, "lifecycle": lifecycle, "executed": false, "authorization": "not_evaluated", "semantic_validation": "server_required"})
 		}
+		ctx, cancel := context.WithTimeout(cmd.Context(), deadline)
+		defer cancel()
 		if checkpointPath == "" {
-			return output.New(2, "Package import requires --checkpoint for durable recovery")
+			source := ""
+			if len(args) > 0 {
+				source = args[0]
+			}
+			var err error
+			checkpointPath, err = a.automaticPackageCheckpoint(ctx, source, planPath, lifecycle)
+			if err != nil {
+				return err
+			}
 		}
+		a.packageCheckpointPath = checkpointPath
 		store, err := packagecheckpoint.Open(checkpointPath)
 		if err != nil {
 			return err
@@ -116,8 +127,6 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 		if readErr != nil && !os.IsNotExist(readErr) {
 			return readErr
 		}
-		ctx, cancel := context.WithTimeout(cmd.Context(), deadline)
-		defer cancel()
 		var sequence int64
 		var progressSecrets map[string]string
 		client, err := a.packageClient(ctx, "apply")
@@ -332,7 +341,7 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 		return a.emitPackageOperation(result, err)
 	}}
 	command.Flags().StringVar(&planPath, "plan-file", "", "Private approved plan receipt; exclusive with SOURCE")
-	command.Flags().StringVar(&checkpointPath, "checkpoint", "", "Private durable checkpoint; required for apply and reconciliation")
+	command.Flags().StringVar(&checkpointPath, "checkpoint", "", "Private checkpoint; defaults to CLI state and is reused for the same source/destination")
 	command.Flags().StringVar(&bindingsPath, "bindings", "", "Destination bindings file")
 	command.Flags().StringArrayVar(&shortcuts, "bind", nil, "Bind credential.ALIAS=UUID")
 	command.Flags().StringVar(&savePath, "save-plan", "", "Save approved private plan exclusively")

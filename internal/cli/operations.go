@@ -11,6 +11,9 @@ import (
 )
 
 type Operation struct {
+	Summary          string                          `json:"summary,omitempty"`
+	Examples         []string                        `json:"examples,omitempty"`
+	Details          string                          `json:"details,omitempty"`
 	Pagination       controlplane.PaginationContract `json:"pagination,omitempty"`
 	Kind             string                          `json:"kind"`
 	Usage            string                          `json:"usage"`

@@ -1,8 +1,69 @@
 # Portable packages
 
-Package V1 is implemented in woobe-cli draft PR #10 and Woobe draft
-PR #179. These commands require the matching Package capability/schema catalog;
+Package V1 is implemented in woobe-cli and Woobe PR #179. These commands require the matching Package capability/schema catalog;
 the stable CLI's Manifest commands remain independent.
+
+## Quick workflow
+
+Use the selected connection/project; authenticate with `woobe auth login --cli-key`.
+Names and UUIDs are accepted for Agent and Network export. Names must match exactly;
+ambiguous names require a terminal choice or an explicit UUID with `--no-input`.
+
+```powershell
+woobe package export agent "Orders & Requests Agent"
+woobe package export agent 01a00d4a-fa75-7629-a2c6-773c25c6e2ef
+woobe package export agent AGENT_UUID --env staging
+woobe package export agent AGENT_UUID --env release --version 1.2.0
+woobe package export agent AGENT_UUID --env production
+woobe package export network "Customer Support" --env production
+```
+
+The default is the current **draft**, never production. Staging/production resolve
+current assignments inside the server's frozen capture; release resolves the exact
+`--version`. An unavailable environment/version fails without fallback. Names/versions
+of the package are derived from captured author metadata. Unversioned definitions use
+`0.0.0+<portable-definition-hash>`. `--package-version` overrides package metadata;
+`--version` selects a release with `--env release`. Legacy `--source`/`--snapshot-id`
+remain compatible, including their old `--version` package metadata meaning.
+
+`--destination` defaults to `./normalized-resource-name`, even when exporting by
+UUID. Paths are safe on Linux, macOS and Windows and existing paths are never replaced.
+`--name` optionally overrides package metadata and its default directory name.
+Exported `woobe.yaml` and component descriptors are readable YAML, with multiline
+prompts. YAML and JSON descriptors are accepted. Operational plans/checkpoints/locks
+remain JSON. Editing exported files invalidates the old lock; use ordinary validation
+for edited author data and `--locked` to verify an unchanged captured package.
+
+```powershell
+woobe package validate ./orders-requests-agent --locked
+woobe package bindings ./orders-requests-agent --destination ./destination.yaml
+# Fill every placeholder using destination identities/private references.
+woobe project provider-credential list
+woobe package plan ./orders-requests-agent --bindings ./destination.yaml --save-plan ./plan.json
+woobe package import --plan-file ./plan.json --wait
+# Or plan and apply directly:
+woobe package import ./orders-requests-agent --bindings ./destination.yaml --wait
+```
+
+If no destination requirements exist, omit `--bindings`. Keep bindings and saved plans
+outside the portable package directory. SOURCE accepts a directory, its `woobe.yaml`,
+or a `.tar.gz`/`.tgz` archive. The generated bindings template is incomplete until filled;
+credentials and secrets are never included in portable author data. The template uses
+`vector_snapshot_id` for external knowledge and `protected_ref` for private values.
+
+Imports **create** resources in draft by default, regardless of export origin.
+Checkpoints are automatic under the private CLI config directory's `package-imports/`.
+They are scoped to API/project/principal/input/lifecycle. Repeating the same command
+reconciles the original operation, even after completion, without another Apply. Use
+an explicit new `--checkpoint` for an intentional second import. Output includes the
+checkpoint path for `package status --checkpoint PATH --wait`. Automatic Windows
+state uses an explicit private inheritable DACL; existing directories are checked.
+
+For focused assistance use `COMMAND --help` or `woobe help package export agent
+--output compact`. `--output` selects terminal formatting; `--destination` selects
+an artifact path. Use `--wide` or `--output json` for full metadata and inventory.
+`woobe agent export` and root `export` still return partial JSON projections; use
+`package export` for portable YAML composition.
 
 Validate a declared closure locally, without loading config, credentials or HTTP:
 
@@ -50,7 +111,7 @@ OPERATION_ID --revision REVISION` resumes its observed dependency wait;
 resources. Package polling only retries transient GET observations, never POST
 mutations.
 
-Apply a captured source or an approved private plan with an explicit checkpoint:
+Apply a captured source or an approved private plan with an optional explicit checkpoint:
 
 ```sh
 woobe package import ./support --project PROJECT_ID \
