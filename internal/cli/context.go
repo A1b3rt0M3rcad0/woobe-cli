@@ -28,6 +28,7 @@ func (a *App) contextCommands() {
 				name = args[0]
 			}
 			oldCredential := c.Contexts[name].Credential
+			oldManaged := isConnectionCredential(c.Contexts[name])
 			switch action {
 			case "list":
 				return a.emit(c)
@@ -69,7 +70,6 @@ func (a *App) contextCommands() {
 						if strings.TrimRight(v.APIURL, "/") != strings.TrimRight(a.APIURL, "/") {
 							v.Credential = ""
 							v.AuthAPIURL = ""
-							v.AuthAPIURL = ""
 							v.Workspace = ""
 							v.Project = ""
 						}
@@ -88,7 +88,7 @@ func (a *App) contextCommands() {
 			if e = config.Save(a.ConfigPath, c); e != nil {
 				return e
 			}
-			if strings.HasPrefix(oldCredential, "connection-") && c.Contexts[name].Credential != oldCredential {
+			if oldManaged && c.Contexts[name].Credential != oldCredential {
 				if e = a.store().Remove(oldCredential); e != nil {
 					return output.New(3, "Context saved, but previous credential cleanup failed")
 				}
@@ -151,8 +151,10 @@ func (a *App) contextCommands() {
 					ref = a.RuntimeCredential
 				}
 				if action == "attach" {
-					if strings.HasPrefix(ref, "connection-") {
-						return output.New(2, "Connection credentials are private to their context; use auth login --cli-key")
+					for _, connection := range c.Contexts {
+						if connection.Credential == ref && isConnectionCredential(connection) {
+							return output.New(2, "Connection credentials are private to their context; use auth login --cli-key")
+						}
 					}
 					if ref == "" {
 						return output.New(2, "credential reference flag required")

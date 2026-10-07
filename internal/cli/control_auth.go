@@ -65,6 +65,10 @@ func inspectControl(cmd *cobra.Command, client *controlplane.Client) (controlIde
 	}
 	return identity, nil
 }
+func isConnectionCredential(v config.Context) bool {
+	return v.AuthAPIURL != "" && strings.HasPrefix(v.Credential, "connection-")
+}
+
 func (a *App) savedConnection() (config.Config, string, config.Context, error) {
 	c, e := config.Load(a.ConfigPath)
 	if e != nil {
@@ -193,6 +197,7 @@ func (a *App) loginControl(cmd *cobra.Command, stdin bool, selection string) err
 	if e = a.store().Put(ref, strings.TrimSpace(string(key))); e != nil {
 		return e
 	}
+	oldManaged := isConnectionCredential(v)
 	old := v.Credential
 	v.Credential = ref
 	v.AuthAPIURL = strings.TrimRight(v.APIURL, "/")
@@ -203,7 +208,7 @@ func (a *App) loginControl(cmd *cobra.Command, stdin bool, selection string) err
 		_ = a.store().Remove(ref)
 		return e
 	}
-	if strings.HasPrefix(old, "connection-") {
+	if oldManaged {
 		if e = a.store().Remove(old); e != nil && !os.IsNotExist(e) {
 			return output.New(3, "Login saved, but previous credential cleanup failed")
 		}
@@ -305,6 +310,7 @@ func (a *App) controlAuthCommands() {
 		if a.DryRun {
 			return a.emit(map[string]any{"executed": false, "context": name, "local_logout": true, "revoked": false})
 		}
+		managed := isConnectionCredential(v)
 		ref := v.Credential
 		v.Credential = ""
 		v.AuthAPIURL = ""
@@ -314,7 +320,7 @@ func (a *App) controlAuthCommands() {
 		if e = config.Save(a.ConfigPath, c); e != nil {
 			return e
 		}
-		if strings.HasPrefix(ref, "connection-") {
+		if managed {
 			if e = a.store().Remove(ref); e != nil && !os.IsNotExist(e) {
 				return e
 			}

@@ -269,3 +269,49 @@ func TestControlInteractiveProjectChoiceByNumberNameAndSlug(t *testing.T) {
 		}
 	}
 }
+
+func TestControlLegacyReferencesAreNotDeletedOrReservedByPrefix(t *testing.T) {
+	srv := authServer(t, nil)
+	defer srv.Close()
+	path := authConfig(t, srv.URL)
+	store := credentials.Store{Dir: filepath.Join(filepath.Dir(path), "credentials")}
+	const alias = "connection-legacy"
+	if e := store.Put(alias, "test-control-key"); e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() { _ = store.Remove(alias); _, _ = authExecute(t, path, "", "auth", "logout", "--cli-key") })
+	for _, name := range []string{"first", "second"} {
+		code, out := authExecute(t, path, "", "context", "credential", "attach", name, "--credential", alias)
+		if code != 0 {
+			t.Fatal(out)
+		}
+	}
+	code, out := authExecute(t, path, "", "auth", "logout", "--cli-key")
+	if code != 0 {
+		t.Fatal(out)
+	}
+	if _, e := store.Get(alias); e != nil {
+		t.Fatal("Logout deleted a shared legacy reference", e)
+	}
+	code, out = authExecute(t, path, "test-control-key", "auth", "login", "--cli-key", "--stdin")
+	if code != 0 {
+		t.Fatal(out)
+	}
+	if _, e := store.Get(alias); e != nil {
+		t.Fatal("Login deleted a shared legacy reference", e)
+	}
+	code, out = authExecute(t, path, "", "--context", "second", "auth", "status")
+	if code != 0 {
+		t.Fatal(out)
+	}
+	c, _ := config.Load(path)
+	owned := c.Contexts["first"].Credential
+	code, out = authExecute(t, path, "", "context", "credential", "attach", "second", "--credential", owned)
+	if code == 0 {
+		t.Fatal("Managed connection credential was shared across contexts")
+	}
+	c, _ = config.Load(path)
+	if c.Contexts["second"].Credential != alias {
+		t.Fatal("Failed attach changed second context")
+	}
+}
