@@ -149,6 +149,10 @@ func (a *App) register(op Operation) {
 				value = args[argIndex]
 				argIndex++
 			}
+			value, e = a.nativeReference(p, value)
+			if e != nil {
+				return e
+			}
 			if e := resourceID(value); e != nil {
 				return e
 			}

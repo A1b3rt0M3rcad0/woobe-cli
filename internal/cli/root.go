@@ -128,6 +128,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	}})
 	a.developmentConfigCommands()
 	a.developmentCommands()
+	a.developmentLifecycleCommands()
 	a.contextCommands()
 	a.requestCommands()
 	a.requestPagesCommand()
