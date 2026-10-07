@@ -406,8 +406,9 @@ func (a *App) developmentPush(ctx context.Context, client *packageapi.Client, c 
 	}
 	result, err = client.Wait(ctx, result, func(next packageapi.Operation) error { return savePackageObservation(store, &cp, next) })
 	if err != nil || result.State != "succeeded" {
-		if err == nil && result.Terminal {
-			_ = a.emit(map[string]any{"operation_id": result.OperationID, "state": result.State, "next_command": "woobe " + strings.ToLower(resource.Kind) + " '@" + resource.Alias + "' reconcile"})
+		a.packageCheckpointPath = checkpoint
+		if err == nil && result.Terminal && result.State != "succeeded" {
+			return &packageOperationFailure{result, output.New(7, "Development write did not complete; run woobe "+strings.ToLower(resource.Kind)+" '@"+resource.Alias+"' reconcile")}
 		}
 		return a.emitPackageOperation(result, err)
 	}
