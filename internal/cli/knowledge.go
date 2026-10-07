@@ -19,7 +19,7 @@ func (a *App) knowledgeCommands() {
 		{Command: "project knowledge collection overview", Method: "GET", Path: "/agent/knowledge/collections/{collection_id}/overview", Scope: "project", Body: false},
 		{Command: "project knowledge collection vector-preview", Method: "POST", Path: "/agent/knowledge/collections/{collection_id}/vector-preview", Scope: "project", Body: true},
 		{Command: "project knowledge snapshot create", Method: "POST", Path: "/agent/knowledge/collections/{collection_id}/vector-snapshots", Scope: "project", Body: true},
-		{Command: "project knowledge snapshot list", Method: "GET", Path: "/agent/knowledge/collections/{collection_id}/vector-snapshots", Scope: "project", Body: false},
+		{Command: "project knowledge snapshot list", Method: "GET", Path: "/agent/knowledge/collections/{collection_id}/vector-snapshots", Scope: "project", Body: false, QueryScope: "project_id"},
 		{Command: "project knowledge snapshot get", Method: "GET", Path: "/agent/knowledge/vector-snapshots/{snapshot_id}", Scope: "project", Body: false},
 	} {
 		a.register(op)

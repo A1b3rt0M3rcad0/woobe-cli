@@ -70,8 +70,11 @@ func (a *App) developmentManageCommands() {
 					return output.New(2, "clone requires --alias for its new identity")
 				}
 				var state *devworkspace.State
+				if a.ContextName == "" && os.Getenv("WOOBE_CONTEXT") == "" {
+					a.ContextName = c.Context
+				}
 				if connection, resolveErr := a.resolve(); resolveErr == nil {
-					state, err = c.ReadState(strings.TrimRight(connection.APIURL, "/"), a.Workspace, a.Project)
+					state, err = c.ReadState(strings.TrimRight(connection.APIURL, "/"), connection.Workspace, connection.Project)
 					if err != nil {
 						return output.New(2, err.Error())
 					}

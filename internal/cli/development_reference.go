@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"os"
 	"strings"
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
@@ -9,7 +10,7 @@ import (
 // Native UUID operations stay independent from local configuration. Only an
 // explicit alias or filesystem reference opts into development resolution.
 func (a *App) nativeReference(parameter, value string) (string, error) {
-	kind := map[string]string{"agent_id": "Agent", "network_id": "Network", "tool_id": "Tool", "provider_model_id": "Model", "credential_id": "Provider", "skill_version_id": "Skill", "snapshot_id": "Knowledge", "surface_id": "Surface", "prompt_id": "Prompt", "contract_id": "Contract"}[parameter]
+	kind := map[string]string{"agent_id": "Agent", "network_id": "Network", "tool_id": "Tool", "provider_model_id": "Model", "credential_id": "Provider", "skill_version_id": "Skill", "skill_id": "Skill", "collection_id": "Knowledge", "snapshot_id": "Knowledge", "surface_id": "Surface", "prompt_id": "Prompt", "contract_id": "Contract"}[parameter]
 	if kind == "" || (!strings.HasPrefix(value, "@") && !strings.ContainsAny(value, "/\\") && value != ".") {
 		return value, nil
 	}
@@ -17,7 +18,7 @@ func (a *App) nativeReference(parameter, value string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if a.ContextName == "" && c.Context != "" {
+	if a.ContextName == "" && os.Getenv("WOOBE_CONTEXT") == "" && c.Context != "" {
 		a.ContextName = c.Context
 	}
 	connection, err := a.resolve()
@@ -32,7 +33,11 @@ func (a *App) nativeReference(parameter, value string) (string, error) {
 	if err != nil {
 		return "", output.New(2, "Reference is not registered for "+kind)
 	}
-	id := state.Bindings[resource.UID].ResourceID
+	binding := state.Bindings[resource.UID]
+	id := binding.ResourceID
+	if parameter == "skill_id" || parameter == "collection_id" {
+		id = binding.Identifiers[parameter]
+	}
 	if kind == "Provider" {
 		id = state.Credentials[resource.Key]
 	}

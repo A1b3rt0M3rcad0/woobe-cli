@@ -16,13 +16,14 @@ import (
 )
 
 type CapturedBinding struct {
-	OwnerAgentID string `json:"owner_agent_id"`
-	Frozen       bool   `json:"frozen"`
-	ExportID     string `json:"export_id"`
-	ResourceID   string `json:"resource_id"`
-	Revision     any    `json:"revision"`
-	SourceKind   string `json:"source_kind,omitempty"`
-	SnapshotID   string `json:"snapshot_id,omitempty"`
+	Identifiers  map[string]string `json:"identifiers,omitempty"`
+	OwnerAgentID string            `json:"owner_agent_id"`
+	Frozen       bool              `json:"frozen"`
+	ExportID     string            `json:"export_id"`
+	ResourceID   string            `json:"resource_id"`
+	Revision     any               `json:"revision"`
+	SourceKind   string            `json:"source_kind,omitempty"`
+	SnapshotID   string            `json:"snapshot_id,omitempty"`
 }
 
 func RewriteReferences(document map[string]any, keys map[string]string) {
@@ -279,7 +280,7 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 		}
 		writes[filepath.Join(c.RootPath(), descriptor(r))] = data
 		native := captured[oldKey]
-		nextState.Bindings[r.UID] = Binding{Supports: supportBases, OwnerAgentID: native.OwnerAgentID, ResourceID: native.ResourceID, Revision: native.Revision, SourceKind: native.SourceKind, SnapshotID: native.SnapshotID, ExportID: native.ExportID, SourceComponent: oldKey, Base: document}
+		nextState.Bindings[r.UID] = Binding{Identifiers: native.Identifiers, Supports: supportBases, OwnerAgentID: native.OwnerAgentID, ResourceID: native.ResourceID, Revision: native.Revision, SourceKind: native.SourceKind, SnapshotID: native.SnapshotID, ExportID: native.ExportID, SourceComponent: oldKey, Base: document}
 	}
 	if len(conflicts) > 0 {
 		return nil, conflicts, nil
