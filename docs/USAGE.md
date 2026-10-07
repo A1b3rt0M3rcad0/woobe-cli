@@ -553,3 +553,25 @@ accepted local base. Terminal failure/cancellation reconciles only components
 with matching approved definition digests and completed owner receipts, then
 allows an explicit new attempt. Local edits made after the original upload remain
 unsynchronized; no author file is overwritten during reconciliation.
+
+### Native lifecycle with local references
+
+Lifecycle commands use saved native snapshots. Push YAML edits first; staging or
+publication does not upload local changes implicitly.
+
+```powershell
+woobe agent '@support' push
+woobe agent '@support' stage --yes
+woobe agent '@support' publish --notes "Reviewed support changes" --yes
+woobe agent '@support' activate --version 1.2.0 --notes "Deploy approved release" --yes
+woobe agent '@support' rollback --version 1.1.0 --notes "Restore previous behavior" --yes
+woobe agent '@support' release list
+woobe agent '@support' get
+woobe model usage '@chat-model'
+woobe provider usage '@openai'
+```
+
+Native UUIDs work without a development config. Explicit `@alias` and local
+paths use bindings scoped to the selected connection, Workspace and Project.
+The canonical forms (for example `agent release promote UUID RELEASE_UUID
+--file promotion.yaml --yes`) remain available with JSON or YAML input.
