@@ -76,11 +76,14 @@ jobs:
         with:
           go-version: '1.27.1'
           cache: true
-      - name: Build six versioned archives
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build six versioned archives and npm package
         env:
           CLI_PACKAGE_VERSION: ${{ inputs.version }}
         shell: bash
-        run: bash scripts/package.sh "${CLI_PACKAGE_VERSION:-0.0.0-ci.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}}"
+        run: bash scripts/package.sh "${CLI_PACKAGE_VERSION:-0.0.0-ci.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}}" --with-npm
       - name: Verify archives and source identity
         run: python3 scripts/verify_artifacts.py --commit "$(git rev-parse HEAD)"
       - id: identity
@@ -94,6 +97,7 @@ jobs:
           path: |
             dist/*.tar.gz
             dist/*.zip
+            dist/*.tgz
             dist/SHA256SUMS
             dist/artifacts.json
   native-smoke:
@@ -117,6 +121,9 @@ jobs:
         with:
           go-version: '1.27.1'
           cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Qualify native Package filesystem and checkpoints
         shell: bash
         run: |
@@ -129,6 +136,9 @@ jobs:
       - name: Exercise packaged native executable
         shell: bash
         run: python scripts/smoke_artifacts.py --commit "$(git rev-parse HEAD)" --report native-smoke.json
+      - name: Exercise npm installation and launcher
+        shell: bash
+        run: python scripts/smoke_npm.py --commit "$(git rev-parse HEAD)" --report npm-smoke.json
       - uses: actions/upload-artifact@v4
         with:
           name: native-smoke-${{ matrix.runner }}
@@ -136,6 +146,7 @@ jobs:
           retention-days: 90
           path: |
             native-smoke.json
+            npm-smoke.json
   ci:
     if: always()
     needs: [test, package, native-smoke]

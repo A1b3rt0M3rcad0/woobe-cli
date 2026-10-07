@@ -42,6 +42,19 @@ docker run --rm ghcr.io/a1b3rt0m3rcad0/woobe-cli:0.1.4 help
 Pin a version for automation. Mount persistent configuration at `/data`, writable
 by UID 10001. See [installation and container usage](docs/INSTALLATION.md).
 
+## npm installation
+
+After the npm publisher is configured, each automatic release publishes the same
+version to npm. Node.js 22+ is required; Go is not.
+
+```sh
+npm install --global woobe-cli
+npx --yes --package=woobe-cli woobe version
+```
+
+The package bundles all six executables and works with `--ignore-scripts`.
+See [one-time npm publisher setup and recovery](docs/INSTALLATION.md#npm-publisher-setup-owner-once).
+
 ## Connect to Woobe
 
 Create a Control Key at **Workspace settings → CLI Keys → Create CLI key**.
@@ -130,7 +143,7 @@ Explicit `v<VERSION>` tags can release the exact tagged source through the same
 CI gates before master integration. Rerunning a release recovers that version;
 it does not create another version. Published tags, assets and image versions
 must never be overwritten. See [release calculation and recovery](docs/INSTALLATION.md).
-npm distribution is deferred.
+The same tested release is also published to npm after the one-time publisher setup.
 
 ## Coverage and documentation
 
