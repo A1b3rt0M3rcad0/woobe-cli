@@ -102,6 +102,11 @@ func TestSurfaceCreatePushCASAndUnknownOutcomeCheckpoint(t *testing.T) {
 			if state.Bindings[surface.UID].Revision != "2026-10-07T00:01:00Z" {
 				t.Fatal(state)
 			}
+			code, result = invoke(t, []string{"--api-url", server.URL, "--workspace", "workspace", "--project", "project", "--output", "json", "resources", "push", "--kind", "surface", "--dry-run"}, "")
+			if code != 0 {
+				t.Fatal("bulk Surface failed", code, result)
+			}
+
 		})
 	}
 }

@@ -60,7 +60,10 @@ func (a *App) developmentBulkCommands() {
 				}
 			}
 			flags := []string{}
-			a.Root.PersistentFlags().Visit(func(flag *pflag.Flag) {
+			cmd.Flags().Visit(func(flag *pflag.Flag) {
+				if a.Root.PersistentFlags().Lookup(flag.Name) == nil {
+					return
+				}
 				if flag.Name == "output" || flag.Name == "project-config" || flag.Name == "fields" || flag.Name == "wide" {
 					return
 				}
