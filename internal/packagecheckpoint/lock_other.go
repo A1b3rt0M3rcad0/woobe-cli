@@ -1,4 +1,4 @@
-//go:build !linux && !darwin
+//go:build !linux && !darwin && !windows
 
 package packagecheckpoint
 
@@ -17,3 +17,8 @@ func openPrivateRead(path string) (*os.File, error) { return nil, supportedProte
 func openConfinedRead(root *os.Root, name string) (*os.File, error) {
 	return nil, supportedProtection()
 }
+
+func privateMode(info os.FileInfo) bool      { return false }
+func checkPrivateFile(file *os.File) error   { return supportedProtection() }
+func checkPrivateParent(root *os.Root) error { return supportedProtection() }
+func syncParent(file *os.File) error         { return supportedProtection() }

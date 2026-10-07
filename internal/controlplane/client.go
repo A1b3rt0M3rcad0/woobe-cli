@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -113,7 +114,37 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 		if resp.StatusCode >= 500 {
 			outcome = "unknown"
 		}
-		return nil, resp.Header, &output.Error{Code: code, Message: "server rejected request", Status: resp.StatusCode, RequestID: resp.Header.Get("X-Request-ID"), Outcome: outcome}
+		failure := &output.Error{Code: code, Message: "server rejected request", Status: resp.StatusCode, RequestID: resp.Header.Get("X-Request-ID"), Outcome: outcome}
+		// Package owns stable diagnostics. Preserve only bounded machine fields;
+		// provider messages, input snapshots and protected values are omitted.
+		if strings.Contains(path, "/packages/") && jsoninput.Validate(b) == nil {
+			var envelope struct {
+				Data struct {
+					Version     string                    `json:"package_schema_version"`
+					Diagnostics []output.DomainDiagnostic `json:"diagnostics"`
+				} `json:"data"`
+			}
+			if json.Unmarshal(b, &envelope) == nil && envelope.Data.Version == "1.0" && len(envelope.Data.Diagnostics) <= 32 {
+				machineCode := regexp.MustCompile(`^PACKAGE_[A-Z0-9_]{1,80}$`)
+				safePath := regexp.MustCompile(`^[A-Za-z0-9_./~ -]*$`)
+				for _, diagnostic := range envelope.Data.Diagnostics {
+					if !machineCode.MatchString(diagnostic.Code) {
+						continue
+					}
+					if len(diagnostic.File) > 1024 || !safePath.MatchString(diagnostic.File) {
+						diagnostic.File = ""
+					}
+					if len(diagnostic.Path) > 1024 || !safePath.MatchString(diagnostic.Path) {
+						diagnostic.Path = ""
+					}
+					failure.Diagnostics = append(failure.Diagnostics, diagnostic)
+				}
+				if len(failure.Diagnostics) != 0 {
+					failure.DomainCode = failure.Diagnostics[0].Code
+				}
+			}
+		}
+		return nil, resp.Header, failure
 	}
 	if method == "HEAD" || len(bytes.TrimSpace(b)) == 0 {
 		return nil, resp.Header, nil

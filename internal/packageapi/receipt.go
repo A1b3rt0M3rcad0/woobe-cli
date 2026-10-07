@@ -47,6 +47,10 @@ func (r PlanReceipt) Validate() error {
 	if packagefmt.Validate(&packagefmt.Document{Value: r.Plan.Bindings, File: "approved-bindings"}) != nil {
 		return output.New(2, "Invalid approved Package bindings")
 	}
+	digest, err := BindingsDigest(r.Plan.Bindings)
+	if err != nil || digest != r.Plan.BindingsDigest {
+		return output.New(2, "Approved Package binding identities changed")
+	}
 	return nil
 }
 func (r PlanReceipt) Save(path string) error {

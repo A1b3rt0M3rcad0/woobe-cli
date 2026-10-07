@@ -50,7 +50,16 @@ func (a *App) emitPackageOperation(result packageapi.Operation, err error) error
 	if result.State == "failed" {
 		return &packageOperationFailure{result, output.New(7, "Package operation failed; inspect its diagnostics and retained inventory")}
 	}
-	return output.WriteWithMeta(a.Out, a.Mode, result, map[string]string{"project_id": result.ProjectID}, nil, map[string]any{"complete": result.Terminal})
+	return output.WriteWithMeta(a.Out, a.Mode, result, map[string]string{"project_id": result.ProjectID}, nil, a.packageFinalMeta(result))
+}
+
+func (a *App) packageFinalMeta(result packageapi.Operation) map[string]any {
+	meta := map[string]any{"complete": result.Terminal}
+	if a.Mode == "jsonl" {
+		a.packageOutputSequence++
+		meta["record"], meta["sequence"], meta["operation_id"] = "final", a.packageOutputSequence, result.OperationID
+	}
+	return meta
 }
 
 // progress records are observations; one final envelope reports the last known state.
@@ -63,6 +72,7 @@ func (a *App) packageProgress(result packageapi.Operation, sequence *int64, valu
 		_ = json.Unmarshal(scrubSecretJSON(encoded, values), &result)
 	}
 	*sequence++
+	a.packageOutputSequence = *sequence
 	return output.WriteWithMeta(a.Out, "jsonl", result, map[string]string{"project_id": result.ProjectID}, nil,
 		map[string]any{"complete": false, "record": "progress", "sequence": *sequence, "operation_id": result.OperationID})
 }

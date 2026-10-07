@@ -2,7 +2,6 @@ package cli
 
 import (
 	"errors"
-	"os"
 	"strings"
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
@@ -38,12 +37,7 @@ func packageFlags(cmd *cobra.Command, allowed ...string) error {
 
 func loadPackage(source string, locked bool) (*packagebundle.Bundle, error) {
 	if strings.HasSuffix(source, ".tar.gz") || strings.HasSuffix(source, ".tgz") {
-		file, err := os.Open(source)
-		if err != nil {
-			return nil, packageError(err)
-		}
-		defer file.Close()
-		bundle, err := packagebundle.ReceiveArchive(file, locked)
+		bundle, err := packagebundle.LoadArchive(source, locked)
 		if err != nil {
 			return nil, packageError(err)
 		}

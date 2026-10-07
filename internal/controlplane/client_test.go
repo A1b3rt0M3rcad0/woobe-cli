@@ -1,6 +1,7 @@
 package controlplane
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
@@ -90,5 +91,23 @@ func TestCancellation(t *testing.T) {
 	v := output.Normalize(e)
 	if v.Code != 130 || v.Outcome != "unknown" {
 		t.Fatalf("%+v", v)
+	}
+}
+
+func TestPackageDiagnosticsAreBoundedAndDoNotEchoProtectedMessages(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"data":{"package_schema_version":"1.0","diagnostics":[{"code":"PACKAGE_SCHEMA_INVALID","file":"knowledge-1.yaml","path":"/spec/vector_snapshot","message":"private-provider-secret","input":"private-provider-secret"}]}}`))
+	}))
+	defer s.Close()
+	client, _ := New(s.URL, "fixture", time.Second)
+	_, _, err := client.Request(context.Background(), "POST", "/projects/p/packages/export", nil, nil)
+	failure := output.Normalize(err)
+	if failure.Code != 2 || failure.DomainCode != "PACKAGE_SCHEMA_INVALID" || len(failure.Diagnostics) != 1 || failure.Diagnostics[0].Path != "/spec/vector_snapshot" {
+		t.Fatalf("missing structured diagnostic: %+v", failure)
+	}
+	encoded, _ := json.Marshal(failure)
+	if bytes.Contains(encoded, []byte("private-provider-secret")) {
+		t.Fatal("protected message copied into diagnostic")
 	}
 }

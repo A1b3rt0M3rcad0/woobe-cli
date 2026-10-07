@@ -34,7 +34,7 @@ func TestCheckpointIsDistinctStrictAndCannotCarryProtectedFields(t *testing.T) {
 }
 
 func TestCheckpointPersistsBeforeRequestAndSurvivesUnknownOutcome(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" && runtime.GOOS != "windows" {
 		t.Skip("protection modality unsupported")
 	}
 	path := filepath.Join(t.TempDir(), "import.json")
@@ -98,13 +98,13 @@ func TestCheckpointPersistsBeforeRequestAndSurvivesUnknownOutcome(t *testing.T) 
 		t.Fatal(err)
 	}
 	info, _ := os.Stat(path)
-	if info.Mode().Perm() != 0600 {
+	if !privateMode(info) {
 		t.Fatal("public checkpoint")
 	}
 }
 
 func TestCheckpointNeverOverwritesOtherFormatsOrFollowsSymlinks(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" && runtime.GOOS != "windows" {
 		t.Skip("protection modality unsupported")
 	}
 	path := filepath.Join(t.TempDir(), "other.json")
@@ -151,7 +151,7 @@ func FuzzCheckpointStrictParsing(f *testing.F) {
 }
 
 func TestCheckpointUsesCapturedParentAfterReplacement(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" && runtime.GOOS != "windows" {
 		t.Skip("native protection")
 	}
 	base := t.TempDir()

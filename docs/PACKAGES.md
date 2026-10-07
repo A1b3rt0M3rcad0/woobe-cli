@@ -71,8 +71,44 @@ not authorize a second Apply. Existing private operational files are not replace
 by `--yes`.
 
 Native lifecycle phases preserve standalone Agent Production when a Network
-creates Agent Releases. Public CLI/API/worker/PostgreSQL tests qualify Agent
-Draft and Network Production apply. Full Export and the complete cross-project
-roundtrip/runtime qualification are still under implementation.
-Private receipts/checkpoints currently return unsupported exit code 9 on Windows;
-there is no unprotected plaintext fallback.
+creates Agent Releases. Cross-project roundtrips are qualified locally for Agent
+Draft, Network Staging/Production, and portable Knowledge rebuilt in the destination.
+Knowledge execution is checked after deleting all local source/export files.
+The complete plan acceptance matrix remains under qualification in both draft PRs.
+
+Export a captured native definition with all declared support files:
+
+```sh
+woobe package export agent AGENT_UUID --source staging \
+  --destination ./support --name support --version 1.0.0
+woobe package export network NETWORK_UUID --snapshot-id SNAPSHOT_UUID \
+  --destination ./network --name network --version 1.0.0
+```
+
+Use exactly one of `--source draft|staging|release|production` or `--snapshot-id`.
+The server freezes the source once. Download verifies transport bytes, exact
+inventory and artifact digest, then publishes the complete locked destination
+without replacing any existing path. `--knowledge portable` is the default;
+`--knowledge binding` exports a destination requirement and reports that the
+package is not self-contained. Authentication values, OAuth state, discovered
+MCP schemas and destination IDs are never portable author configuration.
+
+An existing operation can be observed or controlled using only its checkpoint:
+
+```sh
+woobe package status --checkpoint ./import-checkpoint.json --wait
+woobe package resume --checkpoint ./import-checkpoint.json --revision REVISION
+woobe package cancel --checkpoint ./import-checkpoint.json
+```
+
+Scope must still match API origin, Project and principal fingerprint. An unknown
+checkpoint performs lookup with its original key; it never starts another Apply.
+JSONL output has ordered progress records and one final record with the last
+known remote state. A local timeout or interrupt does not cancel the operation.
+
+POSIX operational files use mode 0600 and native exclusive locks. Windows uses
+native owner/DACL checks and LockFileEx; its parent directory must already be
+private so inheritance cannot expose newly created files. Unsupported or unsafe
+protection fails before sending Apply. File data is synced before replacement;
+Windows does not offer the POSIX directory-fsync guarantee. The six native CI
+runners qualify the same Package parsing, filesystem and checkpoint tests.

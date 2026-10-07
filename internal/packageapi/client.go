@@ -75,6 +75,8 @@ type InventoryItem struct {
 	ResourceID string `json:"resource_id,omitempty"`
 }
 type Dependency struct {
+	ID         string `json:"id,omitempty"`
+	Code       string `json:"code,omitempty"`
 	Component  string `json:"component,omitempty"`
 	Kind       string `json:"kind,omitempty"`
 	State      string `json:"state"`

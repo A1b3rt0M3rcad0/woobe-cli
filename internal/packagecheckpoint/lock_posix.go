@@ -39,3 +39,19 @@ func openPrivateRead(path string) (*os.File, error) {
 func openConfinedRead(root *os.Root, name string) (*os.File, error) {
 	return root.OpenFile(name, os.O_RDONLY|unix.O_NOFOLLOW|unix.O_NONBLOCK|unix.O_CLOEXEC, 0)
 }
+
+func privateMode(info os.FileInfo) bool {
+	return info.Mode().IsRegular() && info.Mode().Perm()&0077 == 0
+}
+func checkPrivateFile(file *os.File) error {
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	if !privateMode(info) {
+		return output.New(3, "Package operational file must be private and regular")
+	}
+	return nil
+}
+func checkPrivateParent(root *os.Root) error { return nil }
+func syncParent(file *os.File) error         { return file.Sync() }

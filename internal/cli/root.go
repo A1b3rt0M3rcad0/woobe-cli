@@ -23,6 +23,7 @@ var Version = "dev"
 var Commit = "unknown"
 
 type App struct {
+	packageOutputSequence                                                                    int64
 	SchemaSHA                                                                                string
 	Root                                                                                     *cobra.Command
 	In                                                                                       io.Reader
@@ -253,7 +254,7 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 		return 0
 	}
 	if failure, ok := e.(*packageOperationFailure); ok {
-		_ = output.WriteWithMeta(a.Out, a.Mode, failure.Operation, map[string]string{"project_id": failure.Operation.ProjectID}, failure.Cause, map[string]any{"complete": false})
+		_ = output.WriteWithMeta(a.Out, a.Mode, failure.Operation, map[string]string{"project_id": failure.Operation.ProjectID}, failure.Cause, a.packageFinalMeta(failure.Operation))
 		return failure.Cause.Code
 	}
 	if failure, ok := e.(*packageFailure); ok {

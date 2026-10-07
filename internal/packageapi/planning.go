@@ -118,6 +118,10 @@ func (c *Client) Plan(ctx context.Context, request PlanRequest) (Plan, error) {
 	if err != nil {
 		return result, err
 	}
+	bindingsDigest, bindingsErr := BindingsDigest(result.Bindings)
+	if bindingsErr != nil || bindingsDigest != result.BindingsDigest {
+		return Plan{}, output.New(9, "Server Package binding digest does not match approved identities")
+	}
 	if !identifier.MatchString(result.PlanID) || result.ProjectID != c.ProjectID || result.UploadID != request.UploadID ||
 		result.ArtifactDigest != request.ArtifactDigest || result.Lifecycle != request.Lifecycle || !digestPattern.MatchString(result.PlanDigest) || !digestPattern.MatchString(result.DefinitionDigest) ||
 		!digestPattern.MatchString(result.CapabilitiesDigest) || !digestPattern.MatchString(result.BindingsDigest) ||

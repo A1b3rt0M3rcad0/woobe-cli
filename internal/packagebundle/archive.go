@@ -178,3 +178,22 @@ func ReceiveArchive(reader io.Reader, locked bool) (*Bundle, error) {
 	}
 	return bundle, nil
 }
+
+// LoadArchive captures an already checked regular transport file through its parent handle.
+func LoadArchive(path string, locked bool) (*Bundle, error) {
+	root, err := os.OpenRoot(filepath.Dir(path))
+	if err != nil {
+		return nil, failure("PACKAGE_PATH_INVALID", "Archive parent is unavailable", "")
+	}
+	defer root.Close()
+	input, err := confinedOpen(root, filepath.Base(path))
+	if err != nil {
+		return nil, err
+	}
+	defer input.Close()
+	info, err := input.Stat()
+	if err != nil || info.Size() > MaxArchiveBytes {
+		return nil, failure("PACKAGE_LIMIT_EXCEEDED", "Archive exceeds transport limit", "")
+	}
+	return ReceiveArchive(input, locked)
+}

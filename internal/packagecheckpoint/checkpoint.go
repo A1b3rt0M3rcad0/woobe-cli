@@ -157,6 +157,10 @@ func Open(path string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err = checkPrivateParent(root); err != nil {
+		root.Close()
+		return nil, err
+	}
 	name := filepath.Base(absolute)
 	lock, err := lockCheckpoint(root, name+".lock")
 	if err != nil {
@@ -181,7 +185,7 @@ func (s *Store) Read() (Checkpoint, error) {
 	if err != nil {
 		return empty, err
 	}
-	if !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 || info.Size() > 1<<20 {
+	if !privateMode(info) || info.Size() > 1<<20 {
 		return empty, output.New(3, "package checkpoint must be a bounded private regular file")
 	}
 	file, err := openConfinedRead(s.root, s.name)
@@ -190,8 +194,11 @@ func (s *Store) Read() (Checkpoint, error) {
 	}
 	defer file.Close()
 	opened, err := file.Stat()
-	if err != nil || !os.SameFile(info, opened) || !opened.Mode().IsRegular() || opened.Mode().Perm()&0077 != 0 {
+	if err != nil || !os.SameFile(info, opened) || !privateMode(opened) {
 		return empty, output.New(3, "package checkpoint changed while opening")
+	}
+	if err = checkPrivateFile(file); err != nil {
+		return empty, err
 	}
 	data, err := io.ReadAll(io.LimitReader(file, 1<<20+1))
 	if err != nil {
@@ -263,5 +270,5 @@ func (s *Store) Save(checkpoint Checkpoint) error {
 		return err
 	}
 	defer parent.Close()
-	return parent.Sync()
+	return syncParent(parent)
 }

@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -87,7 +88,7 @@ func TestPackagePlanUploadsCapturedClosureAndSavesPrivateReceipt(t *testing.T) {
 			data["plan_digest"] = strings.Repeat("c", 64)
 			data["definition_digest"] = strings.Repeat("d", 64)
 			data["capabilities_digest"] = strings.Repeat("e", 64)
-			data["bindings_digest"] = strings.Repeat("f", 64)
+			data["bindings_digest"], _ = packageapi.BindingsDigest(data["bindings"].(map[string]any))
 			data["effects"] = []any{map[string]any{"key": "model.primary", "owner": "agent", "action": "resolve_model", "permission": "model:write", "state": "materializing"}}
 			data["created_at"] = time.Now().UTC().Format(time.RFC3339)
 			data["expires_at"] = time.Now().Add(time.Hour).UTC().Format(time.RFC3339)
@@ -107,7 +108,7 @@ func TestPackagePlanUploadsCapturedClosureAndSavesPrivateReceipt(t *testing.T) {
 		t.Fatal(receipt, err)
 	}
 	info, err := os.Stat(receiptPath)
-	if err != nil || info.Mode().Perm() != 0600 {
+	if err != nil || runtime.GOOS != "windows" && info.Mode().Perm() != 0600 {
 		t.Fatal(info, err)
 	}
 	if err = receipt.Save(receiptPath); err == nil {

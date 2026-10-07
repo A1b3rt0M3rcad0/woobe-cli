@@ -45,17 +45,20 @@ func confinedOpen(root *os.Root, path string) (*os.File, error) {
 		if err != nil || info.Mode()&os.ModeSymlink != 0 {
 			return nil, failure("PACKAGE_PATH_INVALID", "Symlinks or unavailable files are forbidden", path)
 		}
+		if i == len(parts)-1 && (!info.Mode().IsRegular() || !singleLink(info)) {
+			return nil, failure("PACKAGE_PATH_INVALID", "Only regular files with one link are accepted", path)
+		}
 		if i < len(parts)-1 && !info.IsDir() {
 			return nil, failure("PACKAGE_PATH_INVALID", "Parent must be a directory", path)
 		}
 	}
-	stream, err := root.Open(path)
+	stream, err := openRegular(root, path)
 	if err != nil {
 		return nil, failure("PACKAGE_PATH_INVALID", "File is not confined to package root", path)
 	}
 	opened, err := stream.Stat()
 	named, lookupErr := root.Lstat(path)
-	if err != nil || lookupErr != nil || !opened.Mode().IsRegular() || !os.SameFile(opened, named) {
+	if err != nil || lookupErr != nil || !opened.Mode().IsRegular() || !fileSingleLink(stream) || !os.SameFile(opened, named) {
 		stream.Close()
 		return nil, failure("PACKAGE_PATH_INVALID", "Only stable regular files are accepted", path)
 	}

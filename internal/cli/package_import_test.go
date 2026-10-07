@@ -55,6 +55,7 @@ func TestPackageImportLostResponseReconcilesWithoutResending(t *testing.T) {
 	planPath := filepath.Join(directory, "plan.json")
 	checkpoint := filepath.Join(directory, "checkpoint.json")
 	receipt := packageapi.PlanReceipt{Format: "woobe-package-plan-receipt", SchemaVersion: "1.0", PrincipalFingerprint: strings.Repeat("b", 64), Plan: packageapi.Plan{PackageSchemaVersion: "1.0", APIOrigin: server.URL, ProjectID: "project", UploadID: "upload", PlanID: "plan", PlanDigest: digest, ArtifactDigest: digest, DefinitionDigest: digest, CapabilitiesDigest: digest, BindingsDigest: digest, Lifecycle: "draft", CreatedAt: time.Now().UTC().Format(time.RFC3339Nano), ExpiresAt: time.Now().Add(time.Hour).UTC().Format(time.RFC3339Nano), Effects: []packageapi.Effect{{Key: "agent:x", Owner: "agent", Action: "prepare_inactive_agent", Permission: "agent:write"}}, Bindings: map[string]any{"format": "woobe-package", "schema_version": "1.0", "kind": "ImportBindings", "metadata": map[string]any{"name": "Destination"}, "spec": map[string]any{}}}}
+	receipt.Plan.BindingsDigest, _ = packageapi.BindingsDigest(receipt.Plan.Bindings)
 	if err := receipt.Save(planPath); err != nil {
 		t.Fatal(err)
 	}

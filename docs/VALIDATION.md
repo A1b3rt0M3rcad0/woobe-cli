@@ -11,3 +11,15 @@ Real Woobe E2E was not run: no deployed test instance/credentials. Fixtures prov
 Resource continuation: all six kind/action mappings are checked against executable HTTP handlers. Tests cover v2 compile validation, large integers, typed IDs, unsupported actions, exact dependency references, compile-to-v1 execution identity, authorized diff, unchanged observation/ETag requirements, checkpoint resume and uncertain creation reconciliation without replay. Both schema files are verified inside all six packages. Final continuation CI is attached to PR #1.
 
 Latest continuation tests selective capture/reapply with only requested fields, omission/null/revision preservation, unavailable or secret fields, mismatched identity/scope, new typed Skill/Project intents, same-route advertised pagination, cycle/scope/foreign-link rejection, partial redaction, dry-run preflight, build identity and composed-step progress reporting. COMPLETENESS.json covers all 101 original roadmap deliveries exactly; its report is regenerated and checked in CI.
+
+
+## Portable Package qualification in draft PR #10
+
+The implementation uses the exact Package schema catalog from Woobe draft PR
+#179. Current local checks cover transport/inventory proof, bounded archives,
+private checkpoints, lookup after lost Apply responses, public alias masking,
+ordered JSONL completion, backend-compatible Unicode binding digests and race
+detection. Windows protection is implemented with native ACL/lock APIs and is
+cross-compiled locally; native execution is a separate required CI result.
+The workflow runs native Package tests on Linux/macOS/Windows for amd64/arm64,
+plus parser/path fuzzing. Cross-compilation alone is not native qualification.

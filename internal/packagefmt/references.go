@@ -155,7 +155,7 @@ func Resolve(manifest map[string]any, documents map[string]*Document) (*Graph, e
 				return nil, fail("PACKAGE_REQUIREMENT_NOT_FOUND", "Knowledge binding must declare a destination requirement", graph.Paths[key], "")
 			}
 			if spec["mode"] == "portable" {
-				if len(Object(spec["collection"])) == 0 || len(List(spec["documents"])) == 0 || len(Object(spec["embedding"])) == 0 || len(Object(spec["vector_snapshot"])) == 0 || len(Object(spec["binding"])) != 0 {
+				if len(Object(spec["collection"])) == 0 || len(List(spec["documents"])) == 0 || len(Object(spec["embedding"])) == 0 || Object(spec["vector_snapshot"]) == nil || len(Object(spec["binding"])) != 0 {
 					return nil, fail("PACKAGE_KNOWLEDGE_INVALID", "Portable Knowledge requires documents, collection, embedding and build configuration", graph.Paths[key], "")
 				}
 			} else if len(Object(spec["binding"])) == 0 || len(Object(spec["collection"])) != 0 || len(List(spec["documents"])) != 0 || len(Object(spec["embedding"])) != 0 || len(Object(spec["vector_snapshot"])) != 0 {
