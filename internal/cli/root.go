@@ -6,9 +6,9 @@ import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/controlplane"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/credentials"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/identity"
-	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/requestinput"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 	"io"
@@ -36,6 +36,7 @@ type App struct {
 	ValidateBody                                                                             bool
 	ValidateParameters                                                                       bool
 	Yes, DryRun, NoInput                                                                     bool
+	InputFormat                                                                              string
 	File, IfMatch, IdempotencyKey, SecretFile                                                string
 	Query                                                                                    []string
 	Registry                                                                                 []Operation
@@ -73,7 +74,8 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.BoolVar(&a.ValidateParameters, "validate-parameters", false, "Validate advertised path and query schemas before a canonical HTTP operation")
 	f.BoolVar(&a.ValidateBody, "validate-body", false, "Validate the advertised request-body schema before a canonical write")
 	f.BoolVar(&a.DryRun, "dry-run", false, "Render the request without executing")
-	f.StringVar(&a.File, "file", "", "JSON input file, or - for stdin")
+	f.StringVar(&a.File, "file", "", "YAML or JSON input file, or - for stdin")
+	f.StringVar(&a.InputFormat, "input-format", "auto", "Input format: auto, json or yaml (including stdin)")
 	f.StringArrayVar(&a.Query, "query", nil, "Query name=value (repeatable)")
 	f.StringVar(&a.IfMatch, "if-match", "", "Expected server ETag")
 	f.StringVar(&a.IdempotencyKey, "idempotency-key", "", "Key, only when supported by server")
@@ -284,10 +286,11 @@ func (a *App) body(required bool) ([]byte, error) {
 	if e != nil {
 		return nil, output.New(2, "cannot read input")
 	}
-	if len(b) > 8<<20 || jsoninput.Validate(b) != nil {
-		return nil, output.New(2, "input must be JSON within 8 MiB")
+	converted, err := requestinput.Decode(b, a.File, a.InputFormat)
+	if err != nil {
+		return nil, output.New(2, err.Error())
 	}
-	return b, nil
+	return converted, nil
 }
 func (a *App) query() (url.Values, error) {
 	q := url.Values{}
