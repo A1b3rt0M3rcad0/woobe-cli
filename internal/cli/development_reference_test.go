@@ -50,3 +50,43 @@ func TestCanonicalAndReferenceFirstAliasesUseScopedNativeBindings(t *testing.T) 
 		t.Fatal("cross-project alias sent a request", code, requests)
 	}
 }
+
+func TestParentAliasesUseCapturedParentIdentity(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("WOOBE_CONTROL_KEY", "test-control")
+	c, err := devworkspace.Create(".", ".woobe", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	skillUID, _ := devworkspace.NewID()
+	knowledgeUID, _ := devworkspace.NewID()
+	c.Resources = []devworkspace.Resource{
+		{UID: skillUID, Kind: "Skill", Key: "procedure", Alias: "procedure", Path: "skills/procedure"},
+		{UID: knowledgeUID, Kind: "Knowledge", Key: "policy", Alias: "policy", Path: "knowledge/policy"},
+	}
+	if err := c.Save(); err != nil {
+		t.Fatal(err)
+	}
+	state, err := c.ReadState("http://localhost:8000", "workspace", "project")
+	if err != nil {
+		t.Fatal(err)
+	}
+	state.Bindings[skillUID] = devworkspace.Binding{ResourceID: "native-version", Identifiers: map[string]string{"skill_id": "native-skill"}}
+	state.Bindings[knowledgeUID] = devworkspace.Binding{ResourceID: "native-snapshot", Identifiers: map[string]string{"collection_id": "native-collection"}}
+	if err := c.WriteState(state); err != nil {
+		t.Fatal(err)
+	}
+	a := New(nil, nil, nil)
+	a.APIURL, a.Workspace, a.Project = "http://localhost:8000", "workspace", "project"
+	for _, item := range []struct{ parameter, reference, want string }{
+		{"skill_id", "@procedure", "native-skill"},
+		{"skill_version_id", "@procedure", "native-version"},
+		{"collection_id", "@policy", "native-collection"},
+		{"snapshot_id", "@policy", "native-snapshot"},
+	} {
+		got, err := a.nativeReference(item.parameter, item.reference)
+		if err != nil || got != item.want {
+			t.Fatal(item, got, err)
+		}
+	}
+}

@@ -117,11 +117,12 @@ func (c *Client) Download(ctx context.Context, receipt ExportReceipt) (*packageb
 }
 
 type CapturedBinding struct {
-	OwnerAgentID string `json:"owner_agent_id"`
-	Frozen       bool   `json:"frozen"`
-	ResourceID   string `json:"resource_id"`
-	Kind         string `json:"kind"`
-	Revision     any    `json:"revision"`
-	SourceKind   string `json:"source_kind,omitempty"`
-	SnapshotID   string `json:"snapshot_id,omitempty"`
+	Identifiers  map[string]string `json:"identifiers,omitempty"`
+	OwnerAgentID string            `json:"owner_agent_id"`
+	Frozen       bool              `json:"frozen"`
+	ResourceID   string            `json:"resource_id"`
+	Kind         string            `json:"kind"`
+	Revision     any               `json:"revision"`
+	SourceKind   string            `json:"source_kind,omitempty"`
+	SnapshotID   string            `json:"snapshot_id,omitempty"`
 }

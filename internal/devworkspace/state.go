@@ -17,6 +17,7 @@ import (
 )
 
 type Binding struct {
+	Identifiers     map[string]string `json:"identifiers,omitempty"`
 	Supports        map[string]string `json:"supports,omitempty"`
 	OwnerAgentID    string            `json:"owner_agent_id,omitempty"`
 	ExportID        string            `json:"export_id,omitempty"`

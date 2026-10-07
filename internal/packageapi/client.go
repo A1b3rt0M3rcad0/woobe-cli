@@ -163,12 +163,13 @@ func (c *Client) Resume(ctx context.Context, id string, revision int64) (Operati
 }
 
 type RegistryBinding struct {
-	ResourceUID      string `json:"resource_uid"`
-	Kind             string `json:"kind"`
-	ResourceID       string `json:"resource_id"`
-	Revision         any    `json:"revision"`
-	DefinitionDigest string `json:"definition_digest"`
-	OperationID      string `json:"operation_id"`
+	Identifiers      map[string]string `json:"identifiers,omitempty"`
+	ResourceUID      string            `json:"resource_uid"`
+	Kind             string            `json:"kind"`
+	ResourceID       string            `json:"resource_id"`
+	Revision         any               `json:"revision"`
+	DefinitionDigest string            `json:"definition_digest"`
+	OperationID      string            `json:"operation_id"`
 }
 type Registry struct {
 	RegistryID string            `json:"registry_id"`

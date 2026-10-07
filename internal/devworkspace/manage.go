@@ -129,6 +129,11 @@ func (c *Config) CloneWithState(kind, reference, alias, destination string, stat
 		supports[filepath.ToSlash(name)] = data
 	}
 	document := clone(node.Document)
+	if kind == "Skill" {
+		if err := cloneSkillManifest(document, supports, alias); err != nil {
+			return Resource{}, err
+		}
+	}
 	packagefmt.Object(document["metadata"])["name"] = alias
 	return c.Add(resource.Kind, alias, destination, document, supports, dryRun)
 }

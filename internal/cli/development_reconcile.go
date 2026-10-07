@@ -134,6 +134,7 @@ func (a *App) developmentReconcile(ctx context.Context, client *packageapi.Clien
 		if remote.ResourceID != "" {
 			local.ResourceID = remote.ResourceID
 		}
+		local.Identifiers = remote.Identifiers
 		local.Revision, local.Base, local.Supports = remote.Revision, bases[remote.ResourceUID].Base, bases[remote.ResourceUID].Supports
 		state.Bindings[remote.ResourceUID] = local
 		completed[remote.ResourceUID] = true

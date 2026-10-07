@@ -605,3 +605,21 @@ Failed execution or assertion exits with code 6 and includes the recorded test
 result. A network timeout is not retried automatically. The older `agent release
 test` operation only registers a test record; `agent REFERENCE test` and the
 canonical `agent release run-test` perform the actual execution.
+
+A captured Skill binding retains both the Skill namespace and its immutable
+version. Knowledge bindings retain both Collection and Vector Snapshot identities:
+
+```powershell
+woobe skill version list '@procedure'
+woobe skill version get '@procedure'
+woobe knowledge collection get '@policy'
+woobe knowledge snapshot list '@policy'
+woobe knowledge snapshot get '@policy'
+```
+
+Parent commands select the namespace/Collection; version/snapshot commands select
+the captured immutable identity. Old bindings without parent evidence require a
+fresh pull. Identity is never inferred from a matching display name. Explicit
+`--context` and `WOOBE_CONTEXT` take precedence over `.woobe-config` preferences.
+A Skill clone changes its `SKILL.md` frontmatter name as well as its descriptor,
+so importing the clone creates a distinct native Skill namespace.
