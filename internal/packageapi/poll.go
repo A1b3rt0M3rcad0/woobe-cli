@@ -3,6 +3,7 @@ package packageapi
 import (
 	"context"
 	"errors"
+	"math/rand/v2"
 	"time"
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
@@ -12,16 +13,17 @@ import (
 // observations are retried; acceptance, resume and cancellation are never replayed.
 func (c *Client) Wait(ctx context.Context, initial Operation, observe func(Operation) error) (Operation, error) {
 	current := initial
+	backoff := 2 * time.Second
 	for !current.Terminal {
 		if err := ctx.Err(); err != nil {
 			return current, output.Normalize(err)
 		}
-		pause := time.Duration(current.NextPollAfterMS) * time.Millisecond
-		if pause < 100*time.Millisecond {
-			pause = 100 * time.Millisecond
-		}
-		if pause > 30*time.Second {
-			pause = 30 * time.Second
+		pause := packagePollDelay(current.NextPollAfterMS, backoff)
+		if current.NextPollAfterMS <= 0 && backoff < 15*time.Second {
+			backoff *= 2
+			if backoff > 15*time.Second {
+				backoff = 15 * time.Second
+			}
 		}
 		timer := time.NewTimer(pause)
 		select {
@@ -52,4 +54,26 @@ func (c *Client) Wait(ctx context.Context, initial Operation, observe func(Opera
 		}
 	}
 	return current, nil
+}
+
+func packagePollDelay(suggestedMS int64, backoff time.Duration) time.Duration {
+	if suggestedMS > 0 {
+		const maximum = time.Duration(1<<63 - 1)
+		if suggestedMS > int64(maximum/time.Millisecond) {
+			return maximum
+		}
+		return time.Duration(suggestedMS) * time.Millisecond
+	}
+	// Jitter only the local fallback; an advertised delay is authoritative.
+	floor, ceiling := backoff-backoff/5, backoff+backoff/5
+	if floor < 2*time.Second {
+		floor = 2 * time.Second
+	}
+	if ceiling > 15*time.Second {
+		ceiling = 15 * time.Second
+	}
+	if ceiling <= floor {
+		return floor
+	}
+	return floor + time.Duration(rand.Int64N(int64(ceiling-floor)+1))
 }

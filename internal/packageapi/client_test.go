@@ -110,3 +110,19 @@ func TestPostCancellationIsNotRetriedAfterDisconnect(t *testing.T) {
 		t.Fatal(err, attempts.Load())
 	}
 }
+
+func TestPackagePollingUsesServerDelayAndBoundedJitteredFallback(t *testing.T) {
+	for _, milliseconds := range []int64{1, 100, 45000} {
+		if delay := packagePollDelay(milliseconds, 2*time.Second); delay != time.Duration(milliseconds)*time.Millisecond {
+			t.Fatal("changed advertised delay", delay)
+		}
+	}
+	for _, base := range []time.Duration{2 * time.Second, 4 * time.Second, 8 * time.Second, 15 * time.Second} {
+		for i := 0; i < 100; i++ {
+			delay := packagePollDelay(0, base)
+			if delay < 2*time.Second || delay > 15*time.Second {
+				t.Fatal("unbounded fallback", delay)
+			}
+		}
+	}
+}

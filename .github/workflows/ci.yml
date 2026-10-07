@@ -48,6 +48,10 @@ jobs:
       - run: go test ./internal/schemacheck -run='^$' -fuzz=FuzzSchemaCheck -fuzztime=10s -parallel=2
       - run: go test ./internal/packagefmt -run='^$' -fuzz=FuzzDecodePackage -fuzztime=10s -parallel=2
       - run: go test ./internal/packagebundle -run='^$' -fuzz=FuzzPortablePath -fuzztime=10s -parallel=2
+      - run: go test ./internal/packagefmt -run='^$' -fuzz=FuzzReferenceClosure -fuzztime=5s -parallel=2
+      - run: go test ./internal/packagefmt -run='^$' -fuzz=FuzzPackageLockDocument -fuzztime=5s -parallel=2
+      - run: go test ./internal/packagebundle -run='^$' -fuzz=FuzzLockedArchive -fuzztime=5s -parallel=2
+      - run: go test ./internal/packagecheckpoint -run='^$' -fuzz=FuzzCheckpointStrictParsing -fuzztime=5s -parallel=2
       - run: go build -trimpath -o bin/woobe ./cmd/woobe
       - run: bin/woobe help --output json > discovery.json
       - uses: actions/upload-artifact@v4

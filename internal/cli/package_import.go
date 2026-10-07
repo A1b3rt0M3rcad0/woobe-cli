@@ -292,7 +292,19 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 			if e := store.Save(cp); e != nil {
 				return output.New(9, "Could not persist Package outcome; reconcile the existing checkpoint")
 			}
-			return &output.Error{Code: 9, Message: "Package Apply was sent once; reconcile the existing checkpoint before any further action", Outcome: "unknown"}
+			failure := *output.Normalize(err)
+			// Preserve definitive server rejection and central timeout/interruption
+			// codes. The checkpoint still forbids sending Apply again: recovery
+			// must reconcile the original identity even after a rejected request.
+			if failure.Outcome != "rejected" {
+				failure.Outcome = "unknown"
+				if failure.Code != 8 && failure.Code != 130 {
+					failure.Code = 9
+				}
+				failure.DomainCode = "PACKAGE_OUTCOME_UNKNOWN"
+			}
+			failure.Message = "Package Apply was sent once; reconcile the existing checkpoint before any further action"
+			return &failure
 		}
 		if err = savePackageObservation(store, &cp, result); err != nil {
 			return err

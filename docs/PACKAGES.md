@@ -1,6 +1,6 @@
 # Portable packages
 
-Package support is being implemented in woobe-cli draft PR #10 and Woobe draft
+Package V1 is implemented in woobe-cli draft PR #10 and Woobe draft
 PR #179. These commands require the matching Package capability/schema catalog;
 the stable CLI's Manifest commands remain independent.
 
@@ -71,10 +71,12 @@ not authorize a second Apply. Existing private operational files are not replace
 by `--yes`.
 
 Native lifecycle phases preserve standalone Agent Production when a Network
-creates Agent Releases. Cross-project roundtrips are qualified locally for Agent
-Draft, Network Staging/Production, and portable Knowledge rebuilt in the destination.
-Knowledge execution is checked after deleting all local source/export files.
-The complete plan acceptance matrix remains under qualification in both draft PRs.
+creates Agent Releases. Qualification covers all four native lifecycles, complete
+cross-project Agent/Network roundtrips, protected HTTP bindings, fresh MCP discovery
+and portable Knowledge rebuilt in the destination. Runtime execution uses a separate
+key after all local package directories have been deleted. The
+[acceptance matrix](https://github.com/A1b3rt0M3rcad0/woobe/blob/feat/portable-package-import-export/docs/testing/PACKAGE_ACCEPTANCE.md)
+maps T01–T26 to the executable gates; exact paired results are in VALIDATION.md.
 
 Export a captured native definition with all declared support files:
 
@@ -112,3 +114,9 @@ private so inheritance cannot expose newly created files. Unsupported or unsafe
 protection fails before sending Apply. File data is synced before replacement;
 Windows does not offer the POSIX directory-fsync guarantee. The six native CI
 runners qualify the same Package parsing, filesystem and checkpoint tests.
+
+Apply preserves central exit codes for server rejection, deadline (`8`) and local
+interruption (`130`). An uncertain acceptance has domain code
+`PACKAGE_OUTCOME_UNKNOWN`; it never permits an automatic second Apply. Polling
+honors a positive server delay; otherwise it uses bounded 2–15 second exponential
+backoff with jitter. A local timeout does not cancel the remote operation.

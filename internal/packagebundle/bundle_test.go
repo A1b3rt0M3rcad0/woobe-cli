@@ -205,3 +205,20 @@ func TestCompleteSharedCompositionFixtureAndInventory(t *testing.T) {
 		t.Fatal("full fixture changed in locked archive")
 	}
 }
+
+func FuzzLockedArchive(f *testing.F) {
+	f.Add([]byte("invalid gzip"))
+	f.Add([]byte{0x1f, 0x8b, 8, 0, 0, 0, 0, 0, 0, 0})
+	f.Fuzz(func(t *testing.T, data []byte) {
+		if len(data) > 65536 {
+			t.Skip()
+		}
+		bundle, err := ReceiveArchive(bytes.NewReader(data), true)
+		if err == nil {
+			defer bundle.Close()
+			if len(bundle.Inventory) == 0 {
+				t.Fatal("empty locked composition")
+			}
+		}
+	})
+}
