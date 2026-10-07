@@ -25,6 +25,8 @@ var Version = "dev"
 var Commit = "unknown"
 
 type App struct {
+	ProjectConfig                                                                            string
+	NoProjectConfig                                                                          bool
 	packageCheckpointPath                                                                    string
 	packageOutputSequence                                                                    int64
 	SchemaSHA                                                                                string
@@ -53,6 +55,8 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	r.SetOut(out)
 	r.SetErr(errOut)
 	f := r.PersistentFlags()
+	f.StringVar(&a.ProjectConfig, "project-config", "", "Optional local development configuration (development commands only)")
+	f.BoolVar(&a.NoProjectConfig, "no-project-config", false, "Ignore the local development registry")
 	f.StringVar(&a.ConfigPath, "config", config.DefaultPath(), "Private config file")
 	f.StringVar(&a.ContextName, "context", "", "Context name")
 	f.StringVar(&a.APIURL, "api-url", "", "API origin")
@@ -122,6 +126,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	r.AddCommand(&cobra.Command{Use: "version", Args: cobra.NoArgs, RunE: func(*cobra.Command, []string) error {
 		return a.emit(map[string]any{"version": Version, "commit": Commit, "go_version": runtime.Version(), "os": runtime.GOOS, "arch": runtime.GOARCH, "schema_version": "1"})
 	}})
+	a.developmentConfigCommands()
 	a.contextCommands()
 	a.requestCommands()
 	a.requestPagesCommand()
