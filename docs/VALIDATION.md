@@ -22,13 +22,22 @@ The implementation uses the exact Package schema catalog from Woobe draft PR
 private checkpoints, lookup after lost Apply responses, public alias masking,
 ordered JSONL completion, backend-compatible Unicode binding digests and race
 detection. Windows Package protection uses native ACL/lock APIs. The complete shared fixture
-and native tests passed all six OS/architecture jobs at `ab19964a2726399c84e1e0cc0ba8c25fffb12fcd`
-([run 37554899408](https://github.com/A1b3rt0M3rcad0/woobe-cli/actions/runs/37554899408)).
+and native tests passed all six OS/architecture jobs at `6cb726ced6514fa9f8b4f907682f476b65cd2762`
+([run 37556624537](https://github.com/A1b3rt0M3rcad0/woobe-cli/actions/runs/37556624537)).
 The workflow runs native Package tests on Linux/macOS/Windows for amd64/arm64,
 plus parser/path fuzzing. Cross-compilation alone is not native qualification.
 
 The current continuation passed `make check`, including full race tests, vet,
 module verification and script regression tests. New bounded reference, lock,
-archive and checkpoint fuzzers passed locally. The backend native regression
-suite passed 1406 tests; focused Package/native lifecycle checks passed 248.
-Paired complete-composition integration is being repeated on the final revisions.
+archive and checkpoint fuzzers passed locally. The backend Package/native Agent/Network/authority/API regression suite passed
+1640 tests; all 85 architecture self-tests passed. The exact supported client/server
+build pairs and their public integration results are published in the
+[Woobe draft PR](https://github.com/A1b3rt0M3rcad0/woobe/pull/179) and
+[CLI draft PR](https://github.com/A1b3rt0M3rcad0/woobe-cli/pull/10).
+
+These tests use separate administrative and Runtime Keys. The full Agent/Network
+fixture compares all portable descriptors and supporting file bytes across two
+Projects, then runs after removing local package directories. The provider/MCP
+peer is deterministic; HTTP auth resolves destination Secret/Environment bindings,
+Knowledge is rebuilt through the native pipeline, and native Network child runs
+retain Tool execution evidence. No external production service is required.

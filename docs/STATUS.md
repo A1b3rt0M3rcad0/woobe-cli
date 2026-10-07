@@ -102,4 +102,4 @@ export and tagged installation/release remain open.
 
 ## Portable Package delivery
 
-Draft PR #10 pairs with Woobe draft PR #179. Package is independent of Manifest and includes native Agent/Network snapshots, protected destination bindings, durable checkpoint reconciliation, fresh MCP discovery, portable Knowledge rebuilding and verified atomic export. The complete shared composition fixture is tested natively on all six distribution targets. Exact paired integration evidence and remaining qualification are recorded in [VALIDATION.md](VALIDATION.md).
+Draft PR #10 pairs with Woobe draft PR #179. Package is independent of Manifest and includes native Agent/Network snapshots, protected destination bindings, durable checkpoint reconciliation, fresh MCP discovery, portable Knowledge rebuilding and verified atomic export. The complete shared composition fixture is tested natively on all six distribution targets. Exact paired integration evidence and the T01–T26 qualification gates are recorded in [VALIDATION.md](VALIDATION.md).
