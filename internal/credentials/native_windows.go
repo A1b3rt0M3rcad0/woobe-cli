@@ -77,7 +77,7 @@ func (s Store) nativeGet(name string) (string, error) {
 	if c == nil || c.BlobSize == 0 || c.BlobSize > 2560 || c.Blob == nil {
 		return "", fmt.Errorf("Invalid Windows credential")
 	}
-	return string(unsafe.Slice(c.Blob, int(c.BlobSize))), nil
+	return strings.TrimSpace(string(unsafe.Slice(c.Blob, int(c.BlobSize)))), nil
 }
 func (s Store) nativeRemove(name string) error {
 	target, e := s.vaultTarget(name)

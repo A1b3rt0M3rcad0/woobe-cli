@@ -139,6 +139,12 @@ func (a *App) loginControl(cmd *cobra.Command, stdin bool, selection string) err
 	if e != nil {
 		return e
 	}
+	if a.DryRun {
+		return a.emit(map[string]any{"executed": false, "context": name, "api_url": v.APIURL, "method": "GET", "path": "/identity/control-key/me", "auth_mode": "cli-key"})
+	}
+	if a.File != "" || a.ValidateBody {
+		return output.New(2, "CLI Key login reads a masked prompt or --stdin; it does not accept --file or --validate-body")
+	}
 	var key []byte
 	if stdin {
 		key, e = io.ReadAll(io.LimitReader(a.In, 65537))
@@ -252,7 +258,13 @@ func (a *App) controlAuthCommands() {
 				found = true
 			}
 		}
-		if v.Project != "" && (!found || v.Workspace != identity.Workspace.ID) {
+		eligibleCount := 0
+		for _, p := range identity.Projects {
+			if p.Eligible && p.Status == "active" && len(p.Permissions) > 0 {
+				eligibleCount++
+			}
+		}
+		if v.Project == "" && eligibleCount > 1 || v.Project != "" && (!found || v.Workspace != identity.Workspace.ID) {
 			state = "project_selection_required"
 		}
 		method := "environment"
@@ -262,7 +274,15 @@ func (a *App) controlAuthCommands() {
 				method = "windows-credential-manager"
 			}
 		}
-		return a.emit(map[string]any{"identity": map[string]any{"schema_version": identity.SchemaVersion, "credential_type": identity.CredentialType, "key_metadata": identity.Key, "workspace": identity.Workspace, "projects": identity.Projects}, "api_url": v.APIURL, "project_id": v.Project, "state": state, "credential_source": method})
+		connectionName := a.ContextName
+		if connectionName == "" {
+			connectionName = os.Getenv("WOOBE_CONTEXT")
+		}
+		if connectionName == "" {
+			saved, _ := config.Load(a.ConfigPath)
+			connectionName = saved.Current
+		}
+		return a.emit(map[string]any{"context": connectionName, "authenticated": true, "identity": map[string]any{"schema_version": identity.SchemaVersion, "credential_type": identity.CredentialType, "key_metadata": identity.Key, "workspace": identity.Workspace, "projects": identity.Projects}, "api_url": v.APIURL, "project_id": v.Project, "state": state, "credential_source": method})
 	}
 	logout, _, _ := a.Root.Find([]string{"auth", "logout"})
 	humanLogout := logout.RunE
@@ -275,6 +295,9 @@ func (a *App) controlAuthCommands() {
 		c, name, v, e := a.savedConnection()
 		if e != nil {
 			return e
+		}
+		if a.DryRun {
+			return a.emit(map[string]any{"executed": false, "context": name, "local_logout": true, "revoked": false})
 		}
 		ref := v.Credential
 		v.Credential = ""

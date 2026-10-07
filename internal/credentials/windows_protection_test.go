@@ -2,6 +2,7 @@ package credentials
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -15,6 +16,11 @@ func TestWindowsProtectionVaultPersistenceAndIsolation(t *testing.T) {
 		t.Fatal(e)
 	}
 	t.Cleanup(func() { _ = store.Remove("private") })
+	child := exec.Command(os.Args[0], "-test.run=^TestWindowsProtectionVaultChild$")
+	child.Env = append(os.Environ(), "WOOBE_TEST_VAULT_DIR="+store.Dir)
+	if out, e := child.CombinedOutput(); e != nil {
+		t.Fatalf("Credential unavailable after process restart: %s", out)
+	}
 	restored := Store{Dir: store.Dir}
 	v, e := restored.Get("private")
 	if e != nil || v != "fixture" {
@@ -35,5 +41,16 @@ func TestWindowsProtectionVaultPersistenceAndIsolation(t *testing.T) {
 	}
 	if _, e = restored.Get("private"); e == nil {
 		t.Fatal("credential survived logout")
+	}
+}
+
+func TestWindowsProtectionVaultChild(t *testing.T) {
+	dir := os.Getenv("WOOBE_TEST_VAULT_DIR")
+	if !nativeStore || dir == "" {
+		t.Skip("Child-process vault probe")
+	}
+	value, err := (Store{Dir: dir}).Get("private")
+	if err != nil || value != "fixture" {
+		t.Fatal("Credential did not persist across processes")
 	}
 }

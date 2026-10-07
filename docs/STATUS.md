@@ -13,7 +13,7 @@ The pagination/backend continuation is `8ab9d13953c1cd77462af85a3a3a957395141edc
 ## Delivered client behavior
 
 - Go 1.22 language minimum, Go 1.27.1 toolchain and pinned runtime SDK; 241 executable handlers including 190 HTTP operations.
-- Explicit Workspace/Project contexts and separate administrative/runtime credential selection; cookie/CSRF sessions and POSIX credential fallback. Native protected providers and Windows protected sessions remain open.
+- Explicit Workspace/Project contexts and separate administrative/runtime credential selection; cookie/CSRF sessions, private POSIX credentials and per-user Windows Credential Manager. Direct CLI Key login discovers its Workspace/Projects per connection; Windows human-session persistence remains open.
 - Registry-derived help, flags and invocation schemas; server OpenAPI discovery and bounded request-body validation, read-only manifest preflight and opt-in validation before writes.
 - Workspace/Project administration; Agent/Network configuration and release lifecycle; Tools HTTP/MCP, Knowledge, providers/models, Skills, ChatSurfaces, key lifecycle, runtime and diagnostics.
 - No automatic mutation retry; strong preconditions and idempotency headers are forwarded where supported. Secret issuance requires an exclusive private destination; ordinary outputs are redacted.
@@ -81,7 +81,7 @@ Thirty additional commits span CLI and the existing backend draft PR. Protected
 manifest references now support Tool/provider configuration through the POSIX
 private-file store, with deferred preflight, in-memory wire values, hash-bound
 checkpoints, echo redaction and explicit refusal of uncertain secret reconciliation
-or skip-unchanged. Native keychains and Windows protection remain partial.
+or skip-unchanged. Windows credential protection is delivered; native Linux/macOS desktop keychains remain optional.
 
 MCP permission inputs are canonical in every direct write and resolved manifest
 write. The backend refuses ambiguous/undiscovered remote names before changing

@@ -5,11 +5,11 @@ Checkpoint: 2026-10-05. Backend implementation is delivered in [Woobe PR #177](h
 | Priority | Work | Completion criterion |
 | --- | --- | --- |
 | 1 | Preserve backend PR #177 integration evidence | Merged on 2026-10-06; historical CLI/server SHA and CI evidence remain recorded. |
-| 2 | Native credential providers and protected sessions | Native store/read/rotate/delete tests, Windows protected session support and live login/refresh/logout. Preserve explicit administrative/runtime credential choice. |
+| 2 | Native credential providers and protected sessions | Private POSIX and Windows Credential Manager key storage are delivered; Windows protected human-session support and live login/refresh/logout. Preserve explicit administrative/runtime credential choice. |
 | 2 | Complete declarative reconciliation | Authorized observe/plan/apply with identity/existence, dependencies, omission-safe projections, revision checks and authoritative uncertain-write recovery; convergent reapply must not duplicate creation. |
 | 2 | Complete input validation | Extend the delivered OpenAPI 3.1 subset, UUID/date/date-time and request direction to exact DTO coverage, arbitrary directional compositions, path/query schemas and create/PATCH differences. Unsupported rules must remain explicit. |
 | 2 | Stream recovery | Reconnect by event cursor, replay deduplication, gap detection and terminal evidence without reissuing the execution. Current reconnect remains disabled. |
-| 2 | Semantic export/import and secret references | Complete authorized resource projections and round trips; category definition import is delivered without implicit grants; applied-grant migration remains; protected POSIX references are delivered; native providers/Windows storage remain. |
+| 2 | Semantic export/import and secret references | Complete authorized resource projections and round trips; category definition import is delivered without implicit grants; applied-grant migration remains; protected POSIX references are delivered; native Linux/macOS keychains remain optional. |
 | 3 | Broader compatibility and phase gates | Audit each operation/principal and full phase criterion; qualify supported client/server versions and native protected providers. A deterministic model fixture is not an external-provider qualification. |
 | 3 | Release | User-reviewed integration, clean installation by tagged binaries/go install, capabilities/changelog and final acceptance. Development artifacts are not a tagged release. |
 

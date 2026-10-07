@@ -173,3 +173,46 @@ func TestControlOldBackendPreservesConfig(t *testing.T) {
 		t.Fatal(code, out)
 	}
 }
+
+func TestControlSelectedGrantRemovalRequiresSelectionWithoutRetargeting(t *testing.T) {
+	projects := []controlProject{eligibleProject("a", "Alpha"), eligibleProject("b", "Beta")}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": map[string]any{"schema_version": "1", "credential_type": "control", "workspace": map[string]string{"id": "workspace", "status": "active"}, "projects": projects}})
+	}))
+	defer srv.Close()
+	path := authConfig(t, srv.URL)
+	code, out := authExecute(t, path, "test-control-key", "auth", "login", "--cli-key", "--stdin", "--select-project", "beta")
+	if code != 0 {
+		t.Fatal(out)
+	}
+	t.Cleanup(func() { _, _ = authExecute(t, path, "", "auth", "logout", "--cli-key") })
+	projects = []controlProject{eligibleProject("a", "Alpha")}
+	code, out = authExecute(t, path, "", "auth", "status")
+	if code != 0 || !strings.Contains(out, "project_selection_required") {
+		t.Fatal(out)
+	}
+	c, _ := config.Load(path)
+	if c.Contexts["first"].Project != "b" {
+		t.Fatal("status silently retargeted selected project")
+	}
+	code, out = authExecute(t, path, "test-control-key", "auth", "login", "--cli-key", "--stdin")
+	if code != 0 {
+		t.Fatal(out)
+	}
+	c, _ = config.Load(path)
+	if c.Contexts["first"].Project != "a" {
+		t.Fatal("explicit login did not refresh grants")
+	}
+}
+func TestControlDryRunDoesNotReadOrPersistKey(t *testing.T) {
+	path := authConfig(t, "https://example.invalid")
+	before, _ := os.ReadFile(path)
+	code, out := authExecute(t, path, "", "auth", "login", "--cli-key", "--dry-run")
+	if code != 0 || !strings.Contains(out, "\"executed\":false") {
+		t.Fatal(out)
+	}
+	after, _ := os.ReadFile(path)
+	if !bytes.Equal(before, after) {
+		t.Fatal("dry run changed config")
+	}
+}

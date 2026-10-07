@@ -328,8 +328,7 @@ reconciliation and applied-category grant migration remain incomplete.
 Sensitive values may use an exact object `{"$secret_ref":"NAME"}` in Tool or
 provider-credential configuration. Import the value with `woobe auth credential import
 --name NAME --stdin < PRIVATE_INPUT` first; lookup uses the protected store beside the
-selected config. Providers are private POSIX files and Windows Credential Manager. Windows
-returns unsupported; native keychains remain a separate pending qualification.
+selected config. Providers are private POSIX files and Windows Credential Manager.
 Environment-variable interpolation, prefixes, remote stores and step-result
 secrets are not supported. The stored value is the complete field value.
 

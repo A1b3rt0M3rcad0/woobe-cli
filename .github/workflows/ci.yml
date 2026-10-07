@@ -130,7 +130,7 @@ jobs:
         shell: bash
         run: |
           go test ./internal/packagefmt ./internal/packagebundle ./internal/packagecheckpoint ./internal/packageapi
-          go test ./internal/cli -run 'Package|Control' 
+          go test ./internal/cli -run 'Package|Control'
           go test ./internal/credentials -run 'WindowsProtection'
       - name: Verify downloaded archives
         shell: bash
