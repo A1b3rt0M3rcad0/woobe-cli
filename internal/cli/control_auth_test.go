@@ -154,6 +154,19 @@ func TestControlOriginOverrideNeverSendsKey(t *testing.T) {
 	if code == 0 || calls != 0 {
 		t.Fatal("credential crossed API origin", out)
 	}
+	saved, _ := config.Load(path)
+	owned := saved.Contexts["first"].Credential
+	otherContext := saved.Contexts["second"]
+	otherContext.APIURL = other.URL
+	saved.Contexts["second"] = otherContext
+	if e := config.Save(path, saved); e != nil {
+		t.Fatal(e)
+	}
+	code, out = authExecute(t, path, "", "--context", "second", "--credential", owned, "auth", "status")
+	if code == 0 || calls != 0 {
+		t.Fatal("A reference override leaked a managed connection credential", out)
+	}
+
 	code, out = authExecute(t, path, "", "context", "update", "first", "--api-url", other.URL)
 	if code != 0 {
 		t.Fatal(out)

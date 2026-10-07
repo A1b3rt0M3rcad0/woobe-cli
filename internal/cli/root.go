@@ -173,6 +173,15 @@ func (a *App) resolve() (config.Context, error) {
 	if v.APIURL == "" {
 		v.APIURL = "http://localhost:8000"
 	}
+	// A managed reference must retain its owner even when a legacy reference
+	// flag/environment override is supplied. Validate before any secret is read.
+	for owner, connection := range c.Contexts {
+		if v.Credential != "" && connection.Credential == v.Credential && isConnectionCredential(connection) {
+			if owner != name || strings.TrimRight(v.APIURL, "/") != connection.AuthAPIURL {
+				return v, output.New(3, "CLI Key reference belongs to another connection or API URL; use its context or log in to this connection")
+			}
+		}
+	}
 	a.Workspace = v.Workspace
 	a.Project = v.Project
 	return v, nil
