@@ -315,6 +315,10 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 	if e == nil {
 		return 0
 	}
+	if failure, ok := e.(*developmentBatchFailure); ok {
+		_ = a.writeOutput(a.Out, failure.Data, nil, failure.Cause, map[string]any{"complete": false})
+		return failure.Cause.Code
+	}
 	if failure, ok := e.(*packageOperationFailure); ok {
 		_ = a.writeOutput(a.Out, failure.Operation, map[string]string{"project_id": failure.Operation.ProjectID}, failure.Cause, a.packageFinalMeta(failure.Operation))
 		return failure.Cause.Code

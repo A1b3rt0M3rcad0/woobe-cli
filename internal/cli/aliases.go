@@ -44,10 +44,10 @@ func (a *App) aliasCommands() {
 			args = args[prefix:]
 			routed := append(append(forwarded, target...), args...)
 			if name == "agent" || name == "network" {
-				actions := map[string]string{"pull": "pull", "sync": "pull", "push": "push", "update": "push", "diff": "diff", "validate": "validate", "status": "status"}
+				actions := map[string]string{"pull": "pull", "sync": "pull", "push": "push", "update": "push", "diff": "diff", "validate": "validate", "status": "status", "create": "create", "reconcile": "reconcile"}
 				if len(args) > 1 && actions[args[1]] != "" && !strings.HasPrefix(args[0], "-") {
 					routed = append(append(forwarded, "develop", name, actions[args[1]], args[0]), args[2:]...)
-				} else if len(args) > 0 && actions[args[0]] != "" && args[0] != "update" {
+				} else if len(args) > 0 && actions[args[0]] != "" && args[0] != "update" && args[0] != "create" {
 					routed = append(append(forwarded, "develop", name, actions[args[0]]), args[1:]...)
 				}
 			}

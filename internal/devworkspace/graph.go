@@ -60,89 +60,104 @@ func LoadGraph(config *Config) (*Graph, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: resource descriptor unavailable", resource.Key)
 		}
-		data, err = requestinput.Decode(data, path, "auto")
+		node, err := decodeNode(resource, data)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", resource.Key, err)
+			return nil, err
 		}
-		decoder := json.NewDecoder(bytes.NewReader(data))
-		decoder.UseNumber()
-		var document map[string]any
-		if err := decoder.Decode(&document); err != nil {
-			return nil, fmt.Errorf("resource descriptor must be an object")
-		}
-		metadata := packagefmt.Object(document["metadata"])
-		if document["kind"] != resource.Kind || metadata["key"] != resource.Key {
-			return nil, fmt.Errorf("resource descriptor identity differs from its registry entry")
-		}
-		node := &Node{Resource: resource, Document: document, Descriptor: path}
-		for _, ref := range packagefmt.References(document) {
-			node.Dependencies = append(node.Dependencies, ref.Key)
-		}
-		spec := packagefmt.Object(document["spec"])
-		if resource.Kind == "Provider" {
-			if err := validateProvider(spec); err != nil {
-				return nil, fmt.Errorf("%s: %w", resource.Key, err)
-			}
-		}
-		if resource.Kind == "Model" {
-			if ref := packagefmt.Text(spec["provider_ref"]); ref != "" {
-				node.Dependencies = append(node.Dependencies, ref)
-			}
-		}
-		if resource.Kind == "Skill" {
-			for _, ref := range packagefmt.List(spec["tool_refs"]) {
-				key := packagefmt.Text(packagefmt.Object(ref)["ref"])
-				if key == "" {
-					return nil, fmt.Errorf("Skill tool_refs require a resource ref")
-				}
-				node.Dependencies = append(node.Dependencies, key)
-			}
-		}
-		if resource.Kind == "Surface" {
-			if ref := packagefmt.Text(spec["target_ref"]); ref != "" {
-				node.Dependencies = append(node.Dependencies, ref)
-			}
-		}
-		sort.Strings(node.Dependencies)
 		graph.Nodes[resource.Key] = node
 	}
-	for key, node := range graph.Nodes {
+	if err := graph.Validate(); err != nil {
+		return nil, err
+	}
+	return graph, nil
+}
+
+func decodeNode(resource Resource, data []byte) (*Node, error) {
+	data, err := requestinput.Decode(data, descriptor(resource), "auto")
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", resource.Key, err)
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	var document map[string]any
+	if err := decoder.Decode(&document); err != nil {
+		return nil, fmt.Errorf("resource descriptor must be an object")
+	}
+	metadata := packagefmt.Object(document["metadata"])
+	if document["kind"] != resource.Kind || metadata["key"] != resource.Key {
+		return nil, fmt.Errorf("resource descriptor identity differs from its registry entry")
+	}
+	node := &Node{Resource: resource, Document: document, Descriptor: descriptor(resource)}
+	for _, ref := range packagefmt.References(document) {
+		node.Dependencies = append(node.Dependencies, ref.Key)
+	}
+	spec := packagefmt.Object(document["spec"])
+	if resource.Kind == "Provider" {
+		if err := validateProvider(spec); err != nil {
+			return nil, fmt.Errorf("%s: %w", resource.Key, err)
+		}
+	}
+	if resource.Kind == "Model" {
+		if ref := packagefmt.Text(spec["provider_ref"]); ref != "" {
+			node.Dependencies = append(node.Dependencies, ref)
+		}
+	}
+	if resource.Kind == "Skill" {
+		for _, ref := range packagefmt.List(spec["tool_refs"]) {
+			key := packagefmt.Text(packagefmt.Object(ref)["ref"])
+			if key == "" {
+				return nil, fmt.Errorf("Skill tool_refs require a resource ref")
+			}
+			node.Dependencies = append(node.Dependencies, key)
+		}
+	}
+	if resource.Kind == "Surface" {
+		if ref := packagefmt.Text(spec["target_ref"]); ref != "" {
+			node.Dependencies = append(node.Dependencies, ref)
+		}
+	}
+	sort.Strings(node.Dependencies)
+	return node, nil
+}
+
+func (g *Graph) Validate() error {
+	for key, node := range g.Nodes {
 		for _, dependency := range node.Dependencies {
-			if graph.Nodes[dependency] == nil {
-				return nil, fmt.Errorf("%s references missing resource %s", key, dependency)
+			if g.Nodes[dependency] == nil {
+				return fmt.Errorf("%s references missing resource %s", key, dependency)
 			}
 		}
 		for _, ref := range packagefmt.References(node.Document) {
-			if graph.Nodes[ref.Key].Resource.Kind != ref.Kind {
-				return nil, fmt.Errorf("resource reference has the wrong kind")
+			if g.Nodes[ref.Key].Resource.Kind != ref.Kind {
+				return fmt.Errorf("resource reference has the wrong kind")
 			}
 		}
 		if node.Resource.Kind == "Model" {
-			if ref := packagefmt.Text(packagefmt.Object(node.Document["spec"])["provider_ref"]); ref != "" && graph.Nodes[ref].Resource.Kind != "Provider" {
-				return nil, fmt.Errorf("Model provider_ref must reference a Provider")
+			if ref := packagefmt.Text(packagefmt.Object(node.Document["spec"])["provider_ref"]); ref != "" && g.Nodes[ref].Resource.Kind != "Provider" {
+				return fmt.Errorf("Model provider_ref must reference a Provider")
 			}
 		}
 
 		if node.Resource.Kind == "Skill" {
 			for _, ref := range packagefmt.List(packagefmt.Object(node.Document["spec"])["tool_refs"]) {
-				if graph.Nodes[packagefmt.Text(packagefmt.Object(ref)["ref"])].Resource.Kind != "Tool" {
-					return nil, fmt.Errorf("Skill tool_refs must reference Tools")
+				if g.Nodes[packagefmt.Text(packagefmt.Object(ref)["ref"])].Resource.Kind != "Tool" {
+					return fmt.Errorf("Skill tool_refs must reference Tools")
 				}
 			}
 		}
 		if node.Resource.Kind == "Surface" {
 			ref := packagefmt.Text(packagefmt.Object(node.Document["spec"])["target_ref"])
-			if ref != "" && graph.Nodes[ref].Resource.Kind != "Agent" && graph.Nodes[ref].Resource.Kind != "Network" {
-				return nil, fmt.Errorf("Surface target_ref must reference an Agent or Network")
+			if ref != "" && g.Nodes[ref].Resource.Kind != "Agent" && g.Nodes[ref].Resource.Kind != "Network" {
+				return fmt.Errorf("Surface target_ref must reference an Agent or Network")
 			}
 		}
 	}
-	for key := range graph.Nodes {
-		if _, err := graph.Closure(key); err != nil {
-			return nil, err
+	for key := range g.Nodes {
+		if _, err := g.Closure(key); err != nil {
+			return err
 		}
 	}
-	return graph, nil
+	return nil
 }
 
 func (g *Graph) Closure(key string) ([]*Node, error) {

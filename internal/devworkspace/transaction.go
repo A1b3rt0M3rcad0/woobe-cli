@@ -12,6 +12,7 @@ import (
 )
 
 type localChange struct {
+	Remove bool   `json:"remove,omitempty"`
 	Path   string `json:"path"`
 	Before []byte `json:"before"`
 	Exists bool   `json:"exists"`
@@ -82,7 +83,7 @@ func (c *Config) Recover() error {
 		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
-		if bytes.Equal(current, change.After) && err == nil {
+		if (change.Remove && os.IsNotExist(err)) || (!change.Remove && bytes.Equal(current, change.After) && err == nil) {
 			continue
 		}
 		if (change.Exists && (err != nil || !bytes.Equal(current, change.Before))) || (!change.Exists && err == nil) {
@@ -90,6 +91,24 @@ func (c *Config) Recover() error {
 		}
 	}
 	for _, change := range journal.Changes {
+		if change.Remove {
+			if _, err := os.Lstat(change.Path); os.IsNotExist(err) {
+				continue
+			}
+			root, err := os.OpenRoot(c.RootPath())
+			if err != nil {
+				return err
+			}
+			relative, err := filepath.Rel(c.RootPath(), change.Path)
+			if err == nil {
+				err = root.Remove(relative)
+			}
+			root.Close()
+			if err != nil {
+				return err
+			}
+			continue
+		}
 		if err := c.writeTransactionFile(change.Path, change.After); err != nil {
 			return err
 		}
@@ -97,7 +116,9 @@ func (c *Config) Recover() error {
 	return os.Remove(file)
 }
 
-func (c *Config) Commit(writes map[string][]byte) error {
+func (c *Config) Commit(writes map[string][]byte) error { return c.CommitFiles(writes, nil) }
+
+func (c *Config) CommitFiles(writes map[string][]byte, removals []string) error {
 	if err := c.Recover(); err != nil {
 		return err
 	}
@@ -119,6 +140,19 @@ func (c *Config) Commit(writes map[string][]byte) error {
 			return err
 		}
 		journal.Changes = append(journal.Changes, localChange{Path: key, Before: before, Exists: err == nil, After: writes[key]})
+	}
+	for _, path := range removals {
+		if _, exists := writes[path]; exists || filepath.Clean(path) == filepath.Clean(c.File) {
+			return fmt.Errorf("transaction cannot remove a write destination or config")
+		}
+		if err := c.validateWrite(path); err != nil {
+			return err
+		}
+		before, err := c.ReadOperationalFile(path, 128<<20)
+		if err != nil {
+			return err
+		}
+		journal.Changes = append(journal.Changes, localChange{Path: path, Before: before, Exists: true, Remove: true})
 	}
 	data, err := json.Marshal(journal)
 	if err != nil {

@@ -211,3 +211,16 @@ importing; packages without requirements need no bindings. Import creates draft
 resources and manages its private recovery checkpoint automatically. See
 [Package guide](docs/PACKAGES.md) for review, environments and recovery. Use
 `woobe package --help` or `woobe help package export agent --output compact`.
+
+
+Managed development includes explicit creation and safe recovery:
+
+```sh
+woobe resources clone agent '@support' --alias support-next
+woobe agent '@support-next' create --yes
+woobe resources diff
+woobe resources push --dry-run
+woobe agent '@support' reconcile
+```
+
+See [local identities, bulk operations and recovery](docs/USAGE.md#explicit-local-identities-and-recovery).

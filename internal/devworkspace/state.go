@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -64,8 +65,12 @@ func (c *Config) ReadState(api, workspace, project string) (*State, error) {
 	decoder.UseNumber()
 	decoder.DisallowUnknownFields()
 	var state State
-	if decoder.Decode(&state) != nil || state.Format != "woobe-development-state@1" || state.RegistryID != c.RegistryID || state.API != api || state.Workspace != workspace || state.Project != project || state.Bindings == nil {
+	if decoder.Decode(&state) != nil || state.Format != "woobe-development-state@1" || state.RegistryID != c.RegistryID || state.API != api || state.Workspace != workspace || state.Project != project || state.Bindings == nil || state.Requirements == nil || state.Credentials == nil {
 		return nil, fmt.Errorf("private state belongs to another registry or destination")
+	}
+	var trailing any
+	if decoder.Decode(&trailing) != io.EOF {
+		return nil, fmt.Errorf("private state contains trailing JSON")
 	}
 	return &state, nil
 }

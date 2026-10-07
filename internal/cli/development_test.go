@@ -62,6 +62,17 @@ func TestManagedDiffIncludesDependencyChangesWithoutNetwork(t *testing.T) {
 	if response["changed"] != true || !strings.Contains(response["changes"].([]any)[0].(map[string]any)["path"].(string), "/dependencies/Model/chat/") {
 		t.Fatal(response)
 	}
+	unregistered := filepath.Join(c.RootPath(), "agents/unregistered/agent.yaml")
+	if err := os.MkdirAll(filepath.Dir(unregistered), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(unregistered, []byte("broken: ["), 0600); err != nil {
+		t.Fatal(err)
+	}
+	code, bulk := invoke(t, []string{"--api-url", server.URL, "--workspace", "workspace", "--project", "project", "resources", "diff", "--output", "json"}, "")
+	if code != 0 || bulk["data"].(map[string]any)["roots"] != float64(1) {
+		t.Fatal(code, bulk)
+	}
 	if requests != 0 {
 		t.Fatal("local diff made network requests")
 	}
