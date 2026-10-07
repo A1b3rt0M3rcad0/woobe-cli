@@ -7,10 +7,27 @@ import json
 import pathlib
 import subprocess
 import sys
+import time
 
 from version import semver_key, validate
 
 REGISTRY = 'https://registry.npmjs.org/'
+
+
+def wait_for_integrity(spec, expected, timeout=300):
+    deadline = time.monotonic() + timeout
+    while True:
+        observed = view(spec, 'dist.integrity')
+        if observed is not None:
+            if observed != expected:
+                raise ValueError('published npm bytes differ from validated candidate')
+            return
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError('npm accepted publication, but the version is still processing; '
+                               'retry the failed job after the registry exposes this version')
+        print(f'{spec}: npm is still processing publication; waiting for registry visibility', flush=True)
+        time.sleep(min(5, remaining))
 
 
 def view(spec, field):
@@ -55,8 +72,7 @@ def publish(commit, version, manifest_sha256):
         tag = 'historical'
     subprocess.run(['npm', 'publish', str(artifact), '--access', 'public', '--provenance',
                     '--tag', tag, '--registry', REGISTRY], check=True, timeout=180)
-    if view(spec, 'dist.integrity') != integrity:
-        raise ValueError('published npm bytes differ from validated candidate')
+    wait_for_integrity(spec, integrity)
     print(f'Published {spec} with tag {tag}; registry integrity verified')
 
 
