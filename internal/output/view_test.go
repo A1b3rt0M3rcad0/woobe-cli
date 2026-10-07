@@ -147,3 +147,30 @@ func TestConciseEmptySuccessHasTerminalConfirmation(t *testing.T) {
 		t.Fatal(text)
 	}
 }
+
+func TestConciseDiscoveryKeepsActualPolicyAndInvocationFields(t *testing.T) {
+	data := map[string]any{"command": "agent get", "availability": "observed", "body_required": false, "path_parameters": []any{"agent_id"}, "permission": "agent:read", "permission_source": "hint", "flags": []any{"verbose"}}
+	_, result := view(t, Options{Mode: "compact", Command: "help"}, data, nil, nil)
+	obj := result["data"].(map[string]any)
+	if obj["availability"] != "observed" || obj["body_required"] != false || obj["path_parameters"] == nil || obj["permission_source"] != "hint" {
+		t.Fatal(result)
+	}
+}
+
+func TestConciseDryRunsAndNestedOperationalDataStayComplete(t *testing.T) {
+	for _, data := range []any{
+		map[string]any{"executed": false, "body": map[string]any{"name": "Created"}, "query": map[string]any{"project_id": "project"}},
+		map[string]any{"kind": "ResourceProjection", "data": map[string]any{"id": "resource"}, "source_command": "agent get"},
+		map[string]any{"agent_id": "agent", "daily_usage": []any{map[string]any{"cost": 12}}},
+		map[string]any{"id": "network", "graph": map[string]any{"nodes": []any{"agent"}}},
+		[]any{map[string]any{"id": "network", "graph": map[string]any{"nodes": []any{"agent"}}}},
+	} {
+		_, result := view(t, Options{Mode: "compact", Command: "request"}, data, nil, nil)
+		expected, _ := normalized(data)
+		a, _ := json.Marshal(result["data"])
+		b, _ := json.Marshal(expected)
+		if string(a) != string(b) {
+			t.Fatal(string(a), string(b))
+		}
+	}
+}

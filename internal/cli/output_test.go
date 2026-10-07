@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/spf13/pflag"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -124,5 +125,27 @@ func TestOutputJSONLStreamFormatAndUsageErrorsStayMachineReadable(t *testing.T) 
 		if code != 2 || !strings.Contains(text, "unknown command") {
 			t.Fatal(code, text)
 		}
+	}
+}
+
+func TestOutputAuditResourceFlagsNeverShadowGlobalFlags(t *testing.T) {
+	app := New(strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	for _, op := range app.Registry {
+		if op.Kind != "http" {
+			continue
+		}
+		cmd, _, err := app.Root.Find(strings.Fields(op.Command))
+		if err != nil {
+			t.Fatal(err)
+		}
+		app.Root.PersistentFlags().VisitAll(func(global *pflag.Flag) {
+			if local := cmd.Flags().Lookup(global.Name); local != nil && local != global {
+				t.Errorf("%s shadows --%s", op.Command, global.Name)
+			}
+		})
+	}
+	code, result := invoke(t, []string{"project", "agent", "model-config", "get", "agent", "model-config", "--dry-run"}, "")
+	if code != 0 || result["data"].(map[string]any)["path"] != "/ai/agents/agent/model-configs/model-config" {
+		t.Fatal(code, result)
 	}
 }

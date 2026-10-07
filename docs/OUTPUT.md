@@ -89,3 +89,18 @@ from the repository root with:
 go build -o bin/woobe ./cmd/woobe
 python3 scripts/output_examples.py --binary bin/woobe
 ```
+
+The [complete command audit](OUTPUT_AUDIT.md) lists every discovered operation,
+with sizes and scenario limitations; the [CSV](OUTPUT_AUDIT.csv) is sortable.
+HTTP measurements use a loopback presentation fixture and do not validate real
+backend writes or authoritative DTOs. Entries without a dedicated valid scenario
+are marked as not measured; scripts, aliases and JSONL streams are classified
+separately. Schemas and recovery data intentionally retain their information.
+
+```sh
+python3 scripts/output_audit.py --binary bin/woobe
+```
+
+Resource IDs do not shadow global configuration/credential flags. For example,
+`project agent model-config get` accepts a positional configuration ID or
+`--config-id`; `--config` continues to select the local CLI configuration file.

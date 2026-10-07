@@ -114,7 +114,7 @@ func unwrap(v any) (any, map[string]any) {
 				}
 			}
 		}
-		for _, k := range []string{"has_next", "next_cursor", "next_before_revision", "total", "page_count", "traversal_complete", "collection_complete", "next_query", "started_from_marker", "continuation"} {
+		for _, k := range []string{"has_next", "next_cursor", "next_revision", "next_before_revision", "total", "page_count", "traversal_complete", "collection_complete", "next_query", "started_from_marker", "continuation"} {
 			if value, ok := obj[k]; ok {
 				meta[k] = value
 			}
@@ -204,7 +204,7 @@ func summarize(command string, value any) any {
 		fields := relevantFields
 		switch command {
 		case "help":
-			fields = []string{"command", "method", "scope", "effect", "status"}
+			fields = []string{"command", "method", "scope", "effect", "availability"}
 		case "project agent list":
 			fields = []string{"name", "status", "model", "id"}
 		case "project network list":
@@ -212,6 +212,9 @@ func summarize(command string, value any) any {
 		}
 		for i, row := range rows {
 			selected := project(row, fields, false)
+			if command != "project agent list" && command != "project network list" && command != "help" {
+				selected = summarize("", row)
+			}
 			if obj, ok := selected.(map[string]any); ok && len(obj) == 0 {
 				selected = row // Unknown DTOs retain their data rather than show an empty result.
 			}
@@ -242,7 +245,7 @@ func summarize(command string, value any) any {
 		return map[string]any{"client_version": obj["client_version"], "checks": checks, "complete": obj["complete"], "advertised_routes": advertised, "reviewed_routes": total, "authorization": "not_evaluated"}
 	}
 	if command == "help" {
-		return project(obj, []string{"command", "usage", "method", "path", "scope", "effect", "status", "params", "body"}, false)
+		return project(obj, []string{"command", "usage", "method", "path", "scope", "effect", "availability", "path_parameters", "body_required", "permission", "permission_source"}, false)
 	}
 	if command == "version" {
 		return project(obj, []string{"version", "commit", "os", "arch", "go_version"}, false)
@@ -260,6 +263,23 @@ func summarize(command string, value any) any {
 			}
 		}
 		return rows
+	}
+	if command == "project agent get" || command == "project agent create" || command == "project agent update" {
+		return project(obj, relevantFields, false)
+	}
+	if strings.HasPrefix(command, "context ") || strings.HasPrefix(command, "auth credential ") {
+		return obj
+	}
+	if obj["executed"] == false || obj["kind"] == "ResourceProjection" || obj["kind"] == "ManifestProjection" {
+		return obj
+	}
+	// Unknown nested documents may contain usage, snapshots, graphs or bindings.
+	// Never discard them just because their parent also has an ID or status.
+	for _, sub := range obj {
+		switch sub.(type) {
+		case map[string]any, []any:
+			return obj
+		}
 	}
 	out := project(obj, relevantFields, false).(map[string]any)
 	if len(out) == 0 {
