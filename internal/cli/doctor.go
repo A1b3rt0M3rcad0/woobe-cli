@@ -12,10 +12,14 @@ func (a *App) doctorCommand() {
 		if e != nil {
 			return e
 		}
+		identityPath := "/identity/users/me"
+		if client.Token != "" {
+			identityPath = "/identity/control-key/me"
+		}
 		checks := map[string]any{}
 		passed := 0
 		var doc map[string]any
-		for _, check := range []struct{ name, path string }{{"instance", "/identity/instance/status"}, {"identity", "/identity/users/me"}, {"openapi", "/openapi.json"}} {
+		for _, check := range []struct{ name, path string }{{"instance", "/identity/instance/status"}, {"identity", identityPath}, {"openapi", "/openapi.json"}} {
 			v, h, e := client.Request(cmd.Context(), "GET", check.path, nil, nil)
 			if e != nil {
 				checks[check.name] = map[string]any{"success": false, "error": output.Normalize(e)}

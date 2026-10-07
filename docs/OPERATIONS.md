@@ -265,3 +265,12 @@ Providers and OAuth configuration belong to the destination. Export artifacts
 expire and require their captured closure grants again at download. Private
 operational files use POSIX mode/locks or Windows owner/DACL/native locks; unsafe
 protection fails closed. See [PACKAGES.md](PACKAGES.md).
+
+## Connection authentication
+
+`auth login --cli-key` and `context project select` are discovery workflows using
+`GET /identity/control-key/me` with `access:self`. `auth status` selects this endpoint
+for machine keys and `/identity/users/me` for human sessions. `auth logout --cli-key`
+is local only. The original human login/register/refresh/logout remains supported.
+`--cli-key` is a boolean, never a secret argument. `--stdin`, `--select-project`,
+and `--no-input` support automation. API overrides cannot reuse a saved connection key.

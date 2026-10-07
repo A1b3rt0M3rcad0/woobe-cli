@@ -56,7 +56,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.StringVar(&a.Mode, "output", "json", "json, jsonl or table")
 	f.DurationVar(&a.Timeout, "timeout", 30*time.Second, "HTTP deadline")
 	f.BoolVar(&a.Yes, "yes", false, "Accept the specified destructive operation")
-	f.BoolVar(&a.NoInput, "no-input", false, "Deterministic execution (always enabled)")
+	f.BoolVar(&a.NoInput, "no-input", false, "Disable interactive authentication and project prompts")
 	f.StringVar(&a.SchemaSHA, "schema-sha256", "", "Expected advertised OpenAPI snapshot SHA-256 when validating bodies")
 	f.BoolVar(&a.ValidateParameters, "validate-parameters", false, "Validate advertised path and query schemas before a canonical HTTP operation")
 	f.BoolVar(&a.ValidateBody, "validate-body", false, "Validate the advertised request-body schema before a canonical write")
@@ -115,6 +115,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.keysCommands()
 	a.permissionCommands()
 	a.authCommands()
+	a.controlAuthCommands()
 	a.runtimeCommands()
 	a.manifestCommands()
 	a.packageCommands()
@@ -180,6 +181,9 @@ func (a *App) client() (*controlplane.Client, error) {
 	v, e := a.resolve()
 	if e != nil {
 		return nil, e
+	}
+	if v.AuthAPIURL != "" && strings.TrimRight(v.APIURL, "/") != v.AuthAPIURL {
+		return nil, output.New(3, "CLI Key belongs to a different API URL; update the context and log in again")
 	}
 	key := os.Getenv("WOOBE_CONTROL_KEY")
 	if v.Credential != "" {

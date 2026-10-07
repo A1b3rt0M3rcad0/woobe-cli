@@ -15,15 +15,29 @@ Discovery covers all executable handlers and flags; local schemas describe invoc
 ## Context and credentials
 
 ```sh
-woobe auth credential import --name editor --stdin < editor.key
-woobe context create dev --api-url http://localhost:8000
-woobe context credential attach dev --credential editor
-woobe context use dev
-woobe context set --workspace WORKSPACE --project PROJECT
+woobe context create minha-woobe --api-url https://YOUR_WOOBE_API
+woobe context use minha-woobe
+woobe auth login --cli-key
 woobe project agent list
 ```
 
-Precedence: explicit flag, corresponding `WOOBE_*` environment variable, selected context, documented default. `WOOBE_CONFIG` selects the config file. Scope variables are `WOOBE_WORKSPACE_ID` and `WOOBE_PROJECT_ID`. Credentials may be imported from stdin on POSIX; environment fallbacks are `WOOBE_CONTROL_KEY` and `WOOBE_RUNTIME_KEY`. Runtime never falls back to an administrative key. Secret values have no command-line flag.
+Paste the key at the masked prompt; do not put it in arguments. The CLI validates
+it against this connection, discovers its Workspace and selects a single eligible
+Project automatically. For several Projects, choose by name/number. Switch later
+with `woobe context project select` or `woobe context project select production`.
+No Project grants means Workspace-only authentication. No UUIDs or environment
+variables are required. Linux/macOS store credentials in private files; Windows
+uses the current user's Credential Manager. Reopening the terminal retains the
+connection. Each named context has its own key and selected Project.
+
+For automation, pipe a secret from your secret manager into
+`woobe auth login --cli-key --stdin --select-project production --no-input`.
+Without a selection, multiple Projects produce `project_selection_required`.
+`woobe auth status` inspects the current key and scope;
+`woobe auth logout --cli-key` clears local authentication without server revocation.
+Changing the API URL requires login again. Runtime Keys remain separate.
+
+Precedence: explicit flag, corresponding `WOOBE_*` environment variable, selected context, documented default. `WOOBE_CONFIG` selects the config file. Scope variables are `WOOBE_WORKSPACE_ID` and `WOOBE_PROJECT_ID`. Credentials may be imported from stdin on all supported systems; environment fallbacks are `WOOBE_CONTROL_KEY` and `WOOBE_RUNTIME_KEY`. Runtime never falls back to an administrative key. Secret values have no command-line flag.
 
 Select a different Workspace and the previously selected Project is cleared by `context set`. Context references are local preferences; the server resolves and verifies resource ownership. Direct known resource IDs can be read without first listing every Project.
 
@@ -314,7 +328,7 @@ reconciliation and applied-category grant migration remain incomplete.
 Sensitive values may use an exact object `{"$secret_ref":"NAME"}` in Tool or
 provider-credential configuration. Import the value with `woobe auth credential import
 --name NAME --stdin < PRIVATE_INPUT` first; lookup uses the protected store beside the
-selected config. The delivered provider is the POSIX private-file store. Windows
+selected config. Providers are private POSIX files and Windows Credential Manager. Windows
 returns unsupported; native keychains remain a separate pending qualification.
 Environment-variable interpolation, prefixes, remote stores and step-result
 secrets are not supported. The stored value is the complete field value.
