@@ -13,6 +13,23 @@ import publish_npm
 
 
 class NpmPublicationTests(unittest.TestCase):
+    def test_delayed_visibility_is_not_an_integrity_conflict(self):
+        with patch.object(publish_npm, 'view', side_effect=[None, None, 'expected']), patch.object(publish_npm.time, 'sleep') as sleep:
+            publish_npm.wait_for_integrity('woobe-cli@1.2.3', 'expected')
+            self.assertEqual(sleep.call_count, 2)
+
+    def test_visible_integrity_conflict_fails_immediately(self):
+        with patch.object(publish_npm, 'view', return_value='different'), patch.object(publish_npm.time, 'sleep') as sleep:
+            with self.assertRaisesRegex(ValueError, 'different'):
+                publish_npm.wait_for_integrity('woobe-cli@1.2.3', 'expected')
+            sleep.assert_not_called()
+
+    def test_processing_timeout_is_reported_without_republishing(self):
+        with patch.object(publish_npm, 'view', return_value=None), patch.object(publish_npm.time, 'monotonic', side_effect=[0, 301]), patch.object(publish_npm.subprocess, 'run') as run:
+            with self.assertRaisesRegex(TimeoutError, 'still processing'):
+                publish_npm.wait_for_integrity('woobe-cli@1.2.3', 'expected')
+            run.assert_not_called()
+
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
