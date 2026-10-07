@@ -264,3 +264,18 @@ func TestPackageAutomaticCheckpointScopeAndSourceNormalization(t *testing.T) {
 		t.Fatal(first, different, err)
 	}
 }
+
+func TestPackageReleaseDiscoveryUsesSelectedProject(t *testing.T) {
+	t.Setenv("WOOBE_CONTROL_KEY", "test-control")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/network/"+exportUUID+"/versions" || r.URL.Query().Get("project_id") != "project" {
+			t.Error("release discovery lost project", r.URL)
+		}
+		json.NewEncoder(w).Encode(map[string]any{"success": true, "data": []any{map[string]string{"version": "v1.0.20261007.01", "kind": "release"}}})
+	}))
+	defer server.Close()
+	code, result := invoke(t, []string{"network", "version", "list", exportUUID, "--api-url", server.URL, "--project", "project"}, "")
+	if code != 0 {
+		t.Fatal(code, result)
+	}
+}
