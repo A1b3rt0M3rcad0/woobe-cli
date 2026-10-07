@@ -10,6 +10,7 @@ import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 	"io"
 	"net/url"
 	"os"
@@ -36,6 +37,9 @@ type App struct {
 	File, IfMatch, IdempotencyKey, SecretFile                                                string
 	Query                                                                                    []string
 	Registry                                                                                 []Operation
+	OutputFields                                                                             []string
+	OutputWide                                                                               bool
+	outputCommand                                                                            string
 }
 
 func New(in io.Reader, out, errOut io.Writer) *App {
@@ -53,7 +57,13 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.StringVar(&a.Project, "project", "", "Project ID")
 	f.StringVar(&a.Credential, "credential", "", "Administrative credential reference")
 	f.StringVar(&a.RuntimeCredential, "runtime-credential", "", "Runtime credential reference")
-	f.StringVar(&a.Mode, "output", "json", "json, jsonl or table")
+	defaultOutput := os.Getenv("WOOBE_OUTPUT")
+	if defaultOutput == "" {
+		defaultOutput = "auto"
+	}
+	f.StringVar(&a.Mode, "output", defaultOutput, "auto (text in terminals, JSON in pipes), text, table, compact, json or jsonl")
+	f.StringSliceVar(&a.OutputFields, "fields", nil, "Response fields to display, comma-separated; dotted paths supported (text/table/compact)")
+	f.BoolVar(&a.OutputWide, "wide", false, "Show all response fields in text/table/compact output")
 	f.DurationVar(&a.Timeout, "timeout", 30*time.Second, "HTTP deadline")
 	f.BoolVar(&a.Yes, "yes", false, "Accept the specified destructive operation")
 	f.BoolVar(&a.NoInput, "no-input", false, "Disable interactive authentication and project prompts")
@@ -68,6 +78,17 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.StringVar(&a.SecretFile, "secret-file", "", "Exclusive private destination for issued secret")
 	r.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		path := strings.TrimPrefix(cmd.CommandPath(), "woobe ")
+		a.outputCommand = path
+		if !output.ValidMode(a.Mode) {
+			return output.New(2, "invalid output mode")
+		}
+		a.selectOutput()
+		if err := output.ValidateFields(a.OutputFields); err != nil {
+			return err
+		}
+		if len(a.OutputFields) > 0 && (a.Mode == "json" || a.Mode == "jsonl") {
+			return output.New(2, "--fields requires --output text, table or compact; full JSON output is unchanged")
+		}
 		if a.SchemaSHA != "" {
 			if len(a.SchemaSHA) != 64 || strings.Trim(a.SchemaSHA, "0123456789abcdef") != "" {
 				return output.New(2, "schema-sha256 must be 64 lowercase hexadecimal characters")
@@ -88,9 +109,6 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 			if !(packageHTTPCommand(path) || path == "manifest apply" || path == "manifest preflight" || path == "validate-input" || (ok && op.Kind == "http" && op.Method != "GET" && op.Method != "HEAD")) {
 				return output.New(9, "--validate-body requires a canonical HTTP write or manifest apply/preflight")
 			}
-		}
-		if a.Mode != "json" && a.Mode != "jsonl" && a.Mode != "table" {
-			return output.New(2, "invalid output mode")
 		}
 		if a.Timeout <= 0 {
 			return output.New(2, "timeout must be positive")
@@ -130,7 +148,26 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	return a
 }
 func (a *App) emit(v any) error {
-	return output.Write(a.Out, a.Mode, output.Redact(v), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, nil)
+	return a.writeOutput(a.Out, output.Redact(v), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, nil, nil)
+}
+
+func (a *App) selectOutput() {
+	if a.Mode != "auto" {
+		return
+	}
+	a.Mode = "json"
+	if f, ok := a.Out.(interface{ Fd() uintptr }); ok && term.IsTerminal(int(f.Fd())) {
+		a.Mode = "text"
+	}
+}
+
+func (a *App) writeOutput(w io.Writer, data any, scope map[string]string, err error, meta map[string]any) error {
+	a.selectOutput()
+	mode := a.Mode
+	if !output.ValidMode(mode) {
+		mode = "json"
+	}
+	return output.WriteView(w, output.Options{Mode: mode, Command: a.outputCommand, Fields: a.OutputFields, Wide: a.OutputWide}, data, scope, err, meta)
 }
 func (a *App) store() credentials.Store {
 	return credentials.Store{Dir: filepath.Join(filepath.Dir(a.ConfigPath), "credentials")}
@@ -267,7 +304,7 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 		return 0
 	}
 	if failure, ok := e.(*packageOperationFailure); ok {
-		_ = output.WriteWithMeta(a.Out, a.Mode, failure.Operation, map[string]string{"project_id": failure.Operation.ProjectID}, failure.Cause, a.packageFinalMeta(failure.Operation))
+		_ = a.writeOutput(a.Out, failure.Operation, map[string]string{"project_id": failure.Operation.ProjectID}, failure.Cause, a.packageFinalMeta(failure.Operation))
 		return failure.Cause.Code
 	}
 	if failure, ok := e.(*packageFailure); ok {
@@ -275,7 +312,7 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 		if failure.Diagnostic.Code == "PACKAGE_UNSUPPORTED" {
 			code = 9
 		}
-		_ = output.Write(a.Out, a.Mode, map[string]any{"package_schema_version": "1.0", "valid": false, "diagnostics": []*packagefmt.Diagnostic{failure.Diagnostic}, "executed": false}, nil, output.New(code, failure.Diagnostic.Message))
+		_ = a.writeOutput(a.Out, map[string]any{"package_schema_version": "1.0", "valid": false, "diagnostics": []*packagefmt.Diagnostic{failure.Diagnostic}, "executed": false}, nil, output.New(code, failure.Diagnostic.Message), nil)
 		return code
 	}
 	if p, ok := e.(*preflightFailure); ok {
@@ -292,11 +329,11 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 			failure.Status = cause.Status
 			failure.RequestID = cause.RequestID
 		}
-		_ = output.WriteWithMeta(a.Out, a.Mode, output.Redact(partial.Data), nil, failure, partial.Meta)
+		_ = a.writeOutput(a.Out, output.Redact(partial.Data), nil, failure, partial.Meta)
 		return partial.Code
 	}
 	if partial, ok := e.(*diagnosticPartial); ok {
-		_ = output.Write(a.Out, a.Mode, output.Redact(partial.Data), nil, &output.Error{Code: 10, Message: partial.Error()})
+		_ = a.writeOutput(a.Out, output.Redact(partial.Data), nil, &output.Error{Code: 10, Message: partial.Error()}, nil)
 		return 10
 	}
 	if _, ok := e.(*output.Error); !ok {
@@ -309,10 +346,6 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 	if a.Mode == "jsonl" {
 		w = a.Err
 	}
-	mode := a.Mode
-	if mode != "json" && mode != "jsonl" && mode != "table" {
-		mode = "json"
-	}
-	_ = output.Write(w, mode, nil, map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, e)
+	_ = a.writeOutput(w, nil, map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, e, nil)
 	return output.Normalize(e).Code
 }

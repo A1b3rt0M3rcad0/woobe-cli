@@ -24,7 +24,7 @@ func (a *App) emitManifestPartial(e *manifestPartial) int {
 	if e.Cause != nil {
 		data["cause"] = e.Cause
 	}
-	_ = output.Write(a.Out, a.Mode, output.Redact(data), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, &output.Error{Code: 10, Message: e.Message, Outcome: e.Outcome})
+	_ = a.writeOutput(a.Out, output.Redact(data), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, &output.Error{Code: 10, Message: e.Message, Outcome: e.Outcome}, nil)
 	return 10
 }
 

@@ -140,9 +140,9 @@ type preflightFailure struct {
 func (e *preflightFailure) Error() string { return "manifest body preflight failed" }
 
 func (a *App) emitPreflight(data map[string]any, cause *output.Error) error {
-	if a.Mode == "table" {
-		return output.Write(a.Out, a.Mode, output.Redact(data), nil, cause)
+	var err error
+	if cause != nil {
+		err = cause
 	}
-	env := output.Envelope{SchemaVersion: "1", Success: cause == nil, Context: map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, Data: output.Redact(data), Error: cause, Meta: map[string]any{"complete": data["complete"] == true}}
-	return json.NewEncoder(a.Out).Encode(env)
+	return a.writeOutput(a.Out, output.Redact(data), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, err, map[string]any{"complete": data["complete"] == true})
 }

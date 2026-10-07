@@ -253,7 +253,7 @@ func (a *App) discoveryCommands() {
 						return output.New(2, "manifest-version must be 1 or 2")
 					}
 				}
-				return output.Write(a.Out, a.Mode, schema, nil, nil)
+				return a.writeOutput(a.Out, schema, nil, nil, nil)
 			}
 		}
 		return output.New(2, "unknown operation")

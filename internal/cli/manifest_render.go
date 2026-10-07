@@ -44,5 +44,5 @@ func (a *App) emitManifestPlan(data any) error {
 		}
 		return v
 	}
-	return output.Write(a.Out, a.Mode, redact(value), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, nil)
+	return a.writeOutput(a.Out, redact(value), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, nil, nil)
 }

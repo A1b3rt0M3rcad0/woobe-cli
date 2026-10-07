@@ -106,7 +106,15 @@ For uncertain writes: `woobe manifest reconcile STEP --resource-id ID --file res
 
 ## Output and advertised extensions
 
-`--output table` renders rows/fields; JSON envelopes remain stable. Proposed extension endpoints require the exact route/method in `/openapi.json`; actual requests still require server authorization.
+The default `--output auto` shows concise text in an interactive terminal and
+preserves the existing JSON envelope in pipes. `--output text` or `table` selects
+relevant rows/fields. AI agents can use `--output compact`, optionally with
+`--fields id,name,status`. `--wide` shows all data fields; `--output json` retains
+the complete envelope. Error and collection evidence remain visible. See
+[format contracts and examples](OUTPUT.md).
+
+Proposed extension endpoints require the exact route/method in `/openapi.json`;
+actual requests still require server authorization.
 
 ## Exit codes
 
