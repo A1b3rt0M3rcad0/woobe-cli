@@ -19,7 +19,7 @@ def smoke(root, commit):
     if manifest['commit'] != commit:
         raise ValueError('artifact source commit differs from expected checkout')
     system = {'Linux': 'linux', 'Darwin': 'darwin', 'Windows': 'windows'}[platform.system()]
-    arch = {'x86_64': 'amd64', 'AMD64': 'amd64', 'arm64': 'arm64', 'aarch64': 'arm64'}[platform.machine()]
+    arch = {'x86_64': 'amd64', 'AMD64': 'amd64', 'arm64': 'arm64', 'ARM64': 'arm64', 'aarch64': 'arm64'}[platform.machine()]
     matches = [a for a in manifest['artifacts'] if a['os'] == system and a['arch'] == arch]
     if len(matches) != 1:
         raise ValueError('exactly one archive must match the native host')

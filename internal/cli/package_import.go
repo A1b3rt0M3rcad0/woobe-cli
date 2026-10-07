@@ -224,6 +224,29 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 			}
 		}
 		plan := receipt.Plan
+		if readErr == nil && planPath == "" {
+			bundle, err := loadPackage(args[0], locked)
+			if err != nil {
+				return err
+			}
+			defer bundle.Close()
+			if bundle.ArtifactDigest != plan.ArtifactDigest {
+				return output.New(2, "Prepared source differs from its approved artifact")
+			}
+			if bindingsPath != "" || len(shortcuts) > 0 {
+				bindings, err := packagefmt.LoadBindings(bindingsPath, shortcuts, bundle.Graph)
+				if err != nil {
+					return packageError(err)
+				}
+				digest, err := packageapi.BindingsDigest(bindings)
+				if err != nil || digest != plan.BindingsDigest {
+					return output.New(2, "Prepared bindings differ from their approved identities")
+				}
+			}
+			if cmd.Flags().Changed("lifecycle") && lifecycle != plan.Lifecycle || notes != "" && (plan.ReleaseNotes == nil || notes != *plan.ReleaseNotes) || reason != "" && (plan.Reason == nil || reason != *plan.Reason) {
+				return output.New(2, "Prepared lifecycle or audit fields differ from the approved plan")
+			}
+		}
 		if receipt.PrincipalFingerprint != capabilities.PrincipalFingerprint || plan.APIOrigin != client.Control.Base || plan.ProjectID != client.ProjectID {
 			return output.New(3, "Approved plan belongs to different destination authority")
 		}

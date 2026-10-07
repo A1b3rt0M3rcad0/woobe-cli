@@ -4,7 +4,7 @@ Updated 2026-10-05 (America/Sao_Paulo). The canonical Go client is in `A1b3rt0M3
 
 ## Backend acceptance
 
-[Woobe PR #177](https://github.com/A1b3rt0M3rcad0/woobe/pull/177) at `77c53832f0e5b35488d1574b3cf62777486f5189` is **draft and unmerged**, awaiting user approval. Seven backend workflows passed on that SHA. Required tests compile the pinned Go client and run API, workers, PostgreSQL, Redis, RabbitMQ and MongoDB with a deterministic model provider.
+[Woobe PR #177](https://github.com/A1b3rt0M3rcad0/woobe/pull/177) at `77c53832f0e5b35488d1574b3cf62777486f5189` was **merged on 2026-10-06**. Seven backend workflows passed on that SHA. Required tests compile the pinned Go client and run API, workers, PostgreSQL, Redis, RabbitMQ and MongoDB with a deterministic model provider.
 
 Verified scenarios include Project/provider/Agent/Network configuration, staging and production publication, Agent and Network rollback, runtime execution with separate keys, category lifecycle, revision-fixed grants, stale ETags, constrained authority, administrative replay, key rotation and old-key refusal. This evidence replaces the older claim that backend acceptance was entirely unavailable. It does not imply approval, merged availability or complete acceptance of every roadmap phase.
 
@@ -45,7 +45,7 @@ The backend continuation adds advertised DTO body contracts to Agent,
 provider/model, prompt/contract, model configuration/release-test, Knowledge,
 Tools, session/message/job and identity operations, plus consumed Agent-session
 query filters. The live acceptance workflow now requires this client validation.
-Final remote backend validation is tracked in PR #177; local unit/schema checks
+Historical backend validation is recorded in merged PR #177; local unit/schema checks
 are not a substitute for the required live gate. Full input validation remains
 partial: arbitrary dialects/compositions, object/content parameter serialization,
 header/cookie coverage and DTO/controller custom validation remain unqualified.
@@ -98,3 +98,8 @@ criterion is met; full phase acceptance is a distinct criterion and remains
 unverified. Grant/assignment migration, exhaustive reconciliation, native
 credentials/sessions, full DTO/dialect coverage, stream recovery, semantic
 export and tagged installation/release remain open.
+
+
+## Portable Package delivery
+
+Draft PR #10 pairs with Woobe draft PR #179. Package is independent of Manifest and includes native Agent/Network snapshots, protected destination bindings, durable checkpoint reconciliation, fresh MCP discovery, portable Knowledge rebuilding and verified atomic export. The complete shared composition fixture is tested natively on all six distribution targets. Exact paired integration evidence and remaining qualification are recorded in [VALIDATION.md](VALIDATION.md).

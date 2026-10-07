@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packageapi"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagebundle"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagecheckpoint"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 )
@@ -91,5 +93,71 @@ func TestPackageImportOfflineAndFlagErrorsNeverContactServer(t *testing.T) {
 	code, result = invoke(t, []string{"package", "import", localPackageFixture(t), "--plan-file", "missing", "--checkpoint", "missing", "--api-url", server.URL}, "")
 	if code != 2 || requests.Load() != 0 {
 		t.Fatal(code, result)
+	}
+}
+
+func TestPackagePreparedCheckpointRejectsChangedSourceBindingsAndLifecycle(t *testing.T) {
+	t.Setenv("WOOBE_CONTROL_KEY", "test-control")
+	var writes atomic.Int32
+	fingerprint := strings.Repeat("b", 64)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, "/capabilities") {
+			writes.Add(1)
+			t.Error("unexpected request", r.URL.Path)
+		}
+		json.NewEncoder(w).Encode(map[string]any{"success": true, "data": map[string]any{"package_schema_version": "1.0", "schema_catalog_sha256": packagefmt.CatalogDigest(), "supported_operations": []string{"apply"}, "principal_fingerprint": fingerprint}})
+	}))
+	defer server.Close()
+	for _, scenario := range []string{"source", "bindings", "lifecycle"} {
+		t.Run(scenario, func(t *testing.T) {
+			source := localPackageFixture(t)
+			bundle, err := packagebundle.Load(source, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer bundle.Close()
+			bindings, err := packagefmt.LoadBindings("", []string{packageBindingShortcut}, bundle.Graph)
+			if err != nil {
+				t.Fatal(err)
+			}
+			digest, err := packageapi.BindingsDigest(bindings)
+			if err != nil {
+				t.Fatal(err)
+			}
+			now := time.Now().UTC()
+			fixed := strings.Repeat("a", 64)
+			receipt := packageapi.PlanReceipt{Format: "woobe-package-plan-receipt", SchemaVersion: "1.0", PrincipalFingerprint: fingerprint, Plan: packageapi.Plan{PackageSchemaVersion: "1.0", APIOrigin: server.URL, ProjectID: "project", UploadID: "upload", PlanID: "plan", PlanDigest: fixed, ArtifactDigest: bundle.ArtifactDigest, DefinitionDigest: fixed, CapabilitiesDigest: fixed, BindingsDigest: digest, Lifecycle: "draft", CreatedAt: now.Format(time.RFC3339Nano), ExpiresAt: now.Add(time.Hour).Format(time.RFC3339Nano), Effects: []packageapi.Effect{{Key: "agent:x", Owner: "agent", Action: "prepare_inactive_agent", Permission: "agent:write"}}, Bindings: bindings}}
+			checkpoint := filepath.Join(t.TempDir(), "checkpoint.json")
+			if err = receipt.Save(checkpoint + ".plan.json"); err != nil {
+				t.Fatal(err)
+			}
+			store, err := packagecheckpoint.Open(checkpoint)
+			if err != nil {
+				t.Fatal(err)
+			}
+			cp := packagecheckpoint.Checkpoint{Format: "woobe-package-checkpoint", SchemaVersion: "1.0", APIOrigin: server.URL, ProjectID: "project", ArtifactDigest: bundle.ArtifactDigest, UploadID: "upload", PlanID: "plan", PlanDigest: fixed, IdempotencyKey: "original-key", PrincipalFingerprint: fingerprint, RequestIdentity: fixed, Lifecycle: "draft", State: packagecheckpoint.Prepared, CreatedAt: now, UpdatedAt: now}
+			if err = store.Save(cp); err != nil {
+				t.Fatal(err)
+			}
+			store.Close()
+			args := []string{"package", "import", source, "--checkpoint", checkpoint, "--api-url", server.URL, "--project", "project"}
+			switch scenario {
+			case "source":
+				file, err := os.OpenFile(filepath.Join(source, "agent.yaml"), os.O_APPEND|os.O_WRONLY, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
+				file.WriteString("\n")
+				file.Close()
+			case "bindings":
+				args = append(args, "--bind", "credential.primary-key=00000000-0000-4000-8000-000000000002")
+			case "lifecycle":
+				args = append(args, "--lifecycle", "staging")
+			}
+			code, result := invoke(t, args, "")
+			if code != 2 || writes.Load() != 0 {
+				t.Fatal(code, result, writes.Load())
+			}
+		})
 	}
 }

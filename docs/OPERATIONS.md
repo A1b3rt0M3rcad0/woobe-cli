@@ -245,3 +245,23 @@ Generated from discovery: 241 executable entries, including 190 HTTP operations.
 | `workspace member remove` | `http` | `DELETE /identity/workspaces/{workspace_id}/members/{user_id}` | `observed` | — | — |
 | `workspace project-access list` | `http` | `GET /core/workspaces/{workspace_id}/project-access` | `observed` | — | — |
 | `workspace update` | `http` | `PATCH /identity/workspaces/{workspace_id}` | `observed` | — | — |
+
+
+## Package operation recovery
+
+Keep the private plan receipt and Package checkpoint outside the portable bundle.
+Use `woobe package status --checkpoint PATH` to observe an accepted or uncertain
+request. The checkpoint binds API origin, Project, principal fingerprint, original
+plan/artifact, idempotency key and observed revision. A lost Apply response is
+reconciled by the original key; a lookup miss never authorizes another Apply.
+
+`resume --checkpoint PATH --revision REVISION` uses the observed wait revision.
+A conflict means re-observe; it is not a reason to replay a stale mutation.
+`cancel --checkpoint PATH` fences later effects and retains committed inventory.
+Timeout/Ctrl+C leaves the remote operation running unless explicitly cancelled.
+
+Check native VectorSnapshot/MCP readiness before resuming dependency waits.
+Providers and OAuth configuration belong to the destination. Export artifacts
+expire and require their captured closure grants again at download. Private
+operational files use POSIX mode/locks or Windows owner/DACL/native locks; unsafe
+protection fails closed. See [PACKAGES.md](PACKAGES.md).

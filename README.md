@@ -152,4 +152,4 @@ permissions the server does not provide.
 
 ## Portable packages
 
-See [Package validation, destination planning and current implementation status](docs/PACKAGES.md). The complete import/export workflow is under implementation in the paired draft PRs.
+See [portable Agent and Network packages](docs/PACKAGES.md) for offline validation, approved plans, durable import/recovery, Knowledge rebuilding and complete snapshot export. The paired draft PRs carry the supported CLI/server revisions and qualification evidence.

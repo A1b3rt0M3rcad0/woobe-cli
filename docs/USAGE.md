@@ -354,3 +354,15 @@ selective update and requires a valid MCP discovery. Bulk affects only that
 provider's discovered tools. `review` keeps a tool unavailable; it does not create
 a per-call approval dialog. Rediscovery preserves saved modes by remote name and
 new tools start in review. Existing immutable release snapshots are unaffected.
+
+
+## Portable composition
+
+Use `woobe package validate`, `plan`, `import`, `status`, `resume`, `cancel`, and
+`export agent|network` for complete native author definitions. A Package requires
+the matching backend capability catalog; it does not fall back to Manifest.
+`--destination` is the export path, while `--output` selects text/JSON/JSONL.
+Knowledge can be rebuilt from portable documents or resolved through an external
+binding. See [PACKAGES.md](PACKAGES.md) for flags, lifecycle, protection, recovery
+and the supported CLI/server pair. Existing resource projections and Manifest
+semantic-upsert limitations remain described above.
