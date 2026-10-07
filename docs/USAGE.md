@@ -562,6 +562,7 @@ publication does not upload local changes implicitly.
 ```powershell
 woobe agent '@support' push
 woobe agent '@support' stage --yes
+woobe agent '@support' test --file ./support-test.yaml --yes
 woobe agent '@support' publish --notes "Reviewed support changes" --yes
 woobe agent '@support' activate --version 1.2.0 --notes "Deploy approved release" --yes
 woobe agent '@support' rollback --version 1.1.0 --notes "Restore previous behavior" --yes
@@ -575,3 +576,32 @@ Native UUIDs work without a development config. Explicit `@alias` and local
 paths use bindings scoped to the selected connection, Workspace and Project.
 The canonical forms (for example `agent release promote UUID RELEASE_UUID
 --file promotion.yaml --yes`) remain available with JSON or YAML input.
+
+### Execute and record a release test
+
+`agent REFERENCE test` executes the saved Staging snapshot by default. It records
+the actual answer, parsed output, Run identity, latency and validation errors in
+Woobe. Use `--env draft`, `--env production`, or `--env release --version 1.2.0`
+to select a different saved snapshot. The same UUID, alias and path resolution
+applies. Both Agent versioning and Run execution permissions are required.
+
+```yaml
+# support-test.yaml
+message: "Explain how to reset my password"
+# Optional exact assertion against parsed output, or {answer: ...} for text:
+# expected_output:
+#   answer: "The exact expected answer"
+# external_context:
+#   customer_tier: premium
+```
+
+```powershell
+woobe agent '@support' test --file ./support-test.yaml --yes
+woobe agent UUID test --env release --version 1.2.0 --file ./support-test.yaml --yes
+woobe agent UUID release tests SNAPSHOT_UUID
+```
+
+Failed execution or assertion exits with code 6 and includes the recorded test
+result. A network timeout is not retried automatically. The older `agent release
+test` operation only registers a test record; `agent REFERENCE test` and the
+canonical `agent release run-test` perform the actual execution.

@@ -7,6 +7,7 @@ func (a *App) releaseCommands() {
 		{Command: "project agent release get", Method: "GET", Path: "/ai/agents/{agent_id}/releases/{release_id}", Scope: "project", Body: false},
 		{Command: "project agent release delete", Method: "DELETE", Path: "/ai/agents/{agent_id}/releases/{release_id}", Scope: "project", Body: false},
 		{Command: "project agent release test", Method: "POST", Path: "/ai/agents/{agent_id}/release-tests", Scope: "project", Body: true, Effect: "execution"},
+		{Command: "project agent release run-test", Method: "POST", Path: "/ai/agents/{agent_id}/release-tests/run", Scope: "project", Body: true, Effect: "execution"},
 		{Command: "project agent release tests", Method: "GET", Path: "/ai/agents/{agent_id}/releases/{release_id}/tests", Scope: "project", Body: false},
 		{Command: "project agent release activations", Method: "GET", Path: "/ai/agents/{agent_id}/release-activations", Scope: "project", Body: false},
 		{Command: "project agent environment list", Method: "GET", Path: "/ai/agents/{agent_id}/runtime-environments", Scope: "project", Body: false},

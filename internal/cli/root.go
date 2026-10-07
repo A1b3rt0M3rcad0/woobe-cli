@@ -129,6 +129,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.developmentConfigCommands()
 	a.developmentCommands()
 	a.developmentLifecycleCommands()
+	a.developmentTestCommands()
 	a.contextCommands()
 	a.requestCommands()
 	a.requestPagesCommand()
@@ -315,6 +316,10 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 	command, e := a.Root.ExecuteContextC(ctx)
 	if e == nil {
 		return 0
+	}
+	if failure, ok := e.(*releaseTestFailure); ok {
+		_ = a.writeOutput(a.Out, failure.Data, nil, failure.Cause, map[string]any{"complete": true, "executed": true})
+		return failure.Cause.Code
 	}
 	if failure, ok := e.(*developmentBatchFailure); ok {
 		_ = a.writeOutput(a.Out, failure.Data, nil, failure.Cause, map[string]any{"complete": false})
