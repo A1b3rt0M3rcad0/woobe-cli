@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/devworkspace"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -26,11 +27,22 @@ func TestMalformedProjectConfigDoesNotAffectDirectCommands(t *testing.T) {
 	}
 }
 
-func TestDevelopmentInitAndOfflineValidation(t *testing.T) {
+func TestPackageDevelopmentInitAndOfflineValidation(t *testing.T) {
 	t.Chdir(t.TempDir())
 	code, result := invoke(t, []string{"init", "--root", "definitions"}, "")
 	if code != 0 {
 		t.Fatal(code, result)
+	}
+	c, err := devworkspace.Load(filepath.Join(".", ".woobe-config"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	unlock, err := c.Lock()
+	if err != nil {
+		t.Fatalf("initialized registry cannot acquire its operational lock: %v", err)
+	}
+	if err := unlock(); err != nil {
+		t.Fatal(err)
 	}
 	code, result = invoke(t, []string{"config", "check"}, "")
 	if code != 0 || result["data"].(map[string]any)["valid"] != true {
