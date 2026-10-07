@@ -3,8 +3,51 @@ package devworkspace
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 )
+
+func TestCloneAgentOwnsIndependentPromptAndContractAndOwnedTool(t *testing.T) {
+	c, err := Create(t.TempDir(), ".woobe", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range []string{"Prompt", "Contract", "Tool"} {
+		key := strings.ToLower(kind)
+		_, err = c.Add(kind, key, "", map[string]any{"kind": kind, "metadata": map[string]any{"name": key}, "spec": map[string]any{}}, nil, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	a, err := c.Add("Agent", "support", "", map[string]any{"kind": "Agent", "metadata": map[string]any{"name": "Support"}, "spec": map[string]any{"prompt_ref": "prompt", "output": map[string]any{"contract_ref": "contract"}, "tools": []any{map[string]any{"ref": "tool"}}}}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tool, _ := c.Resolve("Tool", "@tool")
+	state := &State{Bindings: map[string]Binding{a.UID: {ResourceID: "original-agent"}, tool.UID: {OwnerAgentID: "original-agent"}}}
+	cloned, err := c.CloneWithState("Agent", "@support", "copy", "", state, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	graph, err := LoadGraph(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	refs := packagefmt.References(graph.Nodes[cloned.Key].Document)
+	for _, ref := range refs {
+		if !strings.HasPrefix(ref.Key, "copy-") {
+			t.Fatal("owned artifact shared", ref)
+		}
+		if graph.Nodes[ref.Key].Resource.UID == graph.Nodes[strings.TrimPrefix(ref.Key, "copy-")].Resource.UID {
+			t.Fatal("clone retained owned UID")
+		}
+	}
+	if len(refs) != 3 || len(c.Resources) != 8 {
+		t.Fatal("incomplete cloned closure")
+	}
+}
 
 func TestLocalCreateCloneShareDependenciesAndUnregisterNeverDeletes(t *testing.T) {
 	c, err := Create(t.TempDir(), ".woobe", "")

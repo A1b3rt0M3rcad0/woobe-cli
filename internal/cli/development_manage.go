@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/devworkspace"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
@@ -68,7 +69,14 @@ func (a *App) developmentManageCommands() {
 				if alias == "" || file != "" {
 					return output.New(2, "clone requires --alias for its new identity")
 				}
-				resource, err = c.Clone(kind, args[1], alias, destination, a.DryRun)
+				var state *devworkspace.State
+				if connection, resolveErr := a.resolve(); resolveErr == nil {
+					state, err = c.ReadState(strings.TrimRight(connection.APIURL, "/"), a.Workspace, a.Project)
+					if err != nil {
+						return output.New(2, err.Error())
+					}
+				}
+				resource, err = c.CloneWithState(kind, args[1], alias, destination, state, a.DryRun)
 			case "move":
 				if destination == "" || alias != "" || file != "" {
 					return output.New(2, "move requires --path relative to the configured root")

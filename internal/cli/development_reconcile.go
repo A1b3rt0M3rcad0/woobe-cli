@@ -121,6 +121,13 @@ func (a *App) developmentReconcile(ctx context.Context, client *packageapi.Clien
 			continue
 		}
 		if result.State != "succeeded" && (target.DefinitionDigest == "" || remote.DefinitionDigest != target.DefinitionDigest || remote.OperationID != result.OperationID) {
+			// A committed prepare phase owns the native root even if a later
+			// phase failed. Retain identity without accepting the author base.
+			if remote.OperationID == result.OperationID && remote.ResourceID != "" && (remote.Kind == "Agent" || remote.Kind == "Network") {
+				local := state.Bindings[remote.ResourceUID]
+				local.ResourceID, local.Revision = remote.ResourceID, remote.Revision
+				state.Bindings[remote.ResourceUID] = local
+			}
 			continue
 		}
 		local := state.Bindings[remote.ResourceUID]

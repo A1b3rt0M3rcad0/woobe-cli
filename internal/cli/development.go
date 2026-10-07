@@ -190,10 +190,6 @@ func (a *App) developmentCommands() {
 					node := graph.Nodes[key]
 					binding := state.Bindings[node.Resource.UID]
 					target := packageapi.DevelopmentTarget{ResourceUID: node.Resource.UID, ResourceID: binding.ResourceID, ExpectedRevision: binding.Revision, SourceExportID: binding.ExportID, SourceComponent: binding.SourceComponent}
-					if node.Resource.Kind == "Prompt" || node.Resource.Kind == "Contract" {
-						target.ResourceID = ""
-						target.ExpectedRevision = nil
-					}
 					if node.Resource.Frozen {
 						target.SnapshotID = binding.SnapshotID
 						target.SourceExportID = binding.ExportID

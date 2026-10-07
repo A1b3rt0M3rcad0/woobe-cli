@@ -91,6 +91,10 @@ func (c *Config) Add(kind, alias, destination string, document map[string]any, s
 }
 
 func (c *Config) Clone(kind, reference, alias, destination string, dryRun bool) (Resource, error) {
+	return c.CloneWithState(kind, reference, alias, destination, nil, dryRun)
+}
+
+func (c *Config) CloneWithState(kind, reference, alias, destination string, state *State, dryRun bool) (Resource, error) {
 	resource, err := c.Resolve(kind, reference)
 	if err != nil {
 		return Resource{}, err
@@ -100,6 +104,9 @@ func (c *Config) Clone(kind, reference, alias, destination string, dryRun bool) 
 		return Resource{}, err
 	}
 	node := graph.Nodes[resource.Key]
+	if kind == "Agent" {
+		return c.cloneAgent(graph, node, alias, destination, state, dryRun)
+	}
 	sources, err := packagebundle.SupportPaths(node.Document, node.Descriptor)
 	if err != nil {
 		return Resource{}, err
