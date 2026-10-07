@@ -129,6 +129,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.developmentConfigCommands()
 	a.developmentCommands()
 	a.developmentLifecycleCommands()
+	a.developmentNetworkLifecycleCommands()
 	a.developmentTestCommands()
 	a.contextCommands()
 	a.requestCommands()

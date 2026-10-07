@@ -45,8 +45,11 @@ func (a *App) aliasCommands() {
 			routed := append(append(forwarded, target...), args...)
 			if name == "agent" || name == "network" {
 				actions := map[string]string{"pull": "pull", "sync": "pull", "push": "push", "update": "push", "diff": "diff", "validate": "validate", "status": "status", "create": "create", "reconcile": "reconcile"}
+				for _, action := range []string{"stage", "publish", "activate", "rollback"} {
+					actions[action] = action
+				}
 				if name == "agent" {
-					for _, action := range []string{"stage", "publish", "activate", "rollback", "archive", "test"} {
+					for _, action := range []string{"archive", "delete", "test"} {
 						actions[action] = action
 					}
 				}

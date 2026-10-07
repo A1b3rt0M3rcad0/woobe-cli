@@ -5,6 +5,7 @@ func (a *App) agentCommands() {
 		{Command: "project agent list", Method: "GET", Path: "/ai/agents", Scope: "project", Body: false, QueryScope: "project_id"},
 		{Command: "project agent create", Method: "POST", Path: "/ai/agents", Scope: "project", Body: true},
 		{Command: "project agent get", Method: "GET", Path: "/ai/agents/{agent_id}", Scope: "project", Body: false},
+		{Command: "project agent delete", Method: "DELETE", Path: "/ai/agents/{agent_id}", Scope: "project", Body: false, Effect: "deletion"},
 		{Command: "project agent update", Method: "PATCH", Path: "/ai/agents/{agent_id}", Scope: "project", Body: true},
 		{Command: "project agent prompt list", Method: "GET", Path: "/ai/agents/{agent_id}/prompts", Scope: "project", Body: false},
 		{Command: "project agent prompt create", Method: "POST", Path: "/ai/agents/{agent_id}/prompts", Scope: "project", Body: true},
