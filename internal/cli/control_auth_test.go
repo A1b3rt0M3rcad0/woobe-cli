@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/config"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/credentials"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/schemacheck"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -214,5 +215,39 @@ func TestControlDryRunDoesNotReadOrPersistKey(t *testing.T) {
 	after, _ := os.ReadFile(path)
 	if !bytes.Equal(before, after) {
 		t.Fatal("dry run changed config")
+	}
+}
+
+func TestControlLoginInvocationSchemaDistinguishesHumanAndKeyModes(t *testing.T) {
+	app := New(strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{})
+	op, ok := app.operation("auth login")
+	if !ok {
+		t.Fatal("Login not discoverable")
+	}
+	for _, flag := range op.Flags {
+		if flag.Name == "file" && flag.Required {
+			t.Fatal("CLI Key login incorrectly requires file")
+		}
+	}
+	schema := commandSchema(op, "input")["properties"].(map[string]any)["flags"]
+	raw, _ := json.Marshal(schema)
+	var decoded any
+	_ = json.Unmarshal(raw, &decoded)
+	for _, test := range []struct {
+		flags map[string]any
+		valid bool
+	}{
+		{map[string]any{"cli-key": true}, true},
+		{map[string]any{"cli-key": true, "stdin": true, "select-project": "production"}, true},
+		{map[string]any{"file": "login.json"}, true},
+		{map[string]any{"cli-key": false, "file": "login.json"}, true},
+		{map[string]any{}, false},
+		{map[string]any{"cli-key": true, "file": "secret.json"}, false},
+		{map[string]any{"file": "login.json", "stdin": true}, false},
+		{map[string]any{"cli-key": true, "validate-parameters": true}, false},
+	} {
+		if err := schemacheck.Check(decoded, test.flags, decoded); (err == nil) != test.valid {
+			t.Fatalf("schema validity=%v, expected=%v: %v", err == nil, test.valid, err)
+		}
 	}
 }

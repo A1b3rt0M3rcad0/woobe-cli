@@ -142,8 +142,8 @@ func (a *App) loginControl(cmd *cobra.Command, stdin bool, selection string) err
 	if a.DryRun {
 		return a.emit(map[string]any{"executed": false, "context": name, "api_url": v.APIURL, "method": "GET", "path": "/identity/control-key/me", "auth_mode": "cli-key"})
 	}
-	if a.File != "" || a.ValidateBody {
-		return output.New(2, "CLI Key login reads a masked prompt or --stdin; it does not accept --file or --validate-body")
+	if a.File != "" || a.ValidateBody || a.ValidateParameters || a.SchemaSHA != "" {
+		return output.New(2, "CLI Key login reads a masked prompt or --stdin; it does not accept JSON body files or canonical HTTP schema-validation flags")
 	}
 	var key []byte
 	if stdin {
