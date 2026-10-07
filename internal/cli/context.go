@@ -27,6 +27,8 @@ func (a *App) contextCommands() {
 			if len(args) == 1 {
 				name = args[0]
 			}
+			oldCredential := c.Contexts[name].Credential
+			oldManaged := isConnectionCredential(c.Contexts[name])
 			switch action {
 			case "list":
 				return a.emit(c)
@@ -65,6 +67,12 @@ func (a *App) contextCommands() {
 					}
 				case "update", "set":
 					if a.APIURL != "" {
+						if strings.TrimRight(v.APIURL, "/") != strings.TrimRight(a.APIURL, "/") {
+							v.Credential = ""
+							v.AuthAPIURL = ""
+							v.Workspace = ""
+							v.Project = ""
+						}
 						v.APIURL = a.APIURL
 					}
 					if a.Workspace != "" && a.Workspace != v.Workspace {
@@ -79,6 +87,11 @@ func (a *App) contextCommands() {
 			}
 			if e = config.Save(a.ConfigPath, c); e != nil {
 				return e
+			}
+			if oldManaged && c.Contexts[name].Credential != oldCredential {
+				if e = a.store().Remove(oldCredential); e != nil {
+					return output.New(3, "Context saved, but previous credential cleanup failed")
+				}
 			}
 			return a.emit(map[string]string{"context": name, "action": action})
 		}}
@@ -102,6 +115,7 @@ func (a *App) contextCommands() {
 				v.Project = ""
 			case "credential":
 				v.Credential = ""
+				v.AuthAPIURL = ""
 			case "runtime-credential":
 				v.RuntimeCredential = ""
 			default:
@@ -137,6 +151,11 @@ func (a *App) contextCommands() {
 					ref = a.RuntimeCredential
 				}
 				if action == "attach" {
+					for _, connection := range c.Contexts {
+						if connection.Credential == ref && isConnectionCredential(connection) {
+							return output.New(2, "Connection credentials are private to their context; use auth login --cli-key")
+						}
+					}
 					if ref == "" {
 						return output.New(2, "credential reference flag required")
 					}
@@ -147,12 +166,14 @@ func (a *App) contextCommands() {
 						v.RuntimeCredential = ref
 					} else {
 						v.Credential = ref
+						v.AuthAPIURL = ""
 					}
 				} else {
 					if runtimeCredential {
 						v.RuntimeCredential = ""
 					} else {
 						v.Credential = ""
+						v.AuthAPIURL = ""
 					}
 				}
 				c.Contexts[args[0]] = v

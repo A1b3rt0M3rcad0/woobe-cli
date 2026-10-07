@@ -14,6 +14,7 @@ import (
 
 type Context struct {
 	APIURL            string `json:"api_url"`
+	AuthAPIURL        string `json:"auth_api_url,omitempty"`
 	Workspace         string `json:"workspace_id,omitempty"`
 	Project           string `json:"project_id,omitempty"`
 	Credential        string `json:"credential,omitempty"`

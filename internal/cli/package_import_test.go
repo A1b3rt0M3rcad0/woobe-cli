@@ -186,7 +186,12 @@ func TestPackageImportPreservesRejectionAndDeadlineWithoutReplay(t *testing.T) {
 				if strings.HasSuffix(r.URL.Path, "/apply") {
 					posts.Add(1)
 					if scenario.status == 0 {
-						time.Sleep(400 * time.Millisecond)
+						// Hold the accepted request until the client's deadline instead
+						// of racing a short sleep against runner scheduling.
+						select {
+						case <-r.Context().Done():
+						case <-time.After(10 * time.Second):
+						}
 						return
 					}
 					w.WriteHeader(scenario.status)
@@ -205,7 +210,13 @@ func TestPackageImportPreservesRejectionAndDeadlineWithoutReplay(t *testing.T) {
 			if err := receipt.Save(planPath); err != nil {
 				t.Fatal(err)
 			}
-			args := []string{"package", "import", "--plan-file", planPath, "--checkpoint", checkpoint, "--api-url", server.URL, "--project", "project", "--wait-timeout", "200ms"}
+			timeout := "30s"
+			if scenario.status == 0 {
+				// Allow capability discovery and checkpoint I/O to reach Apply
+				// even on a busy native runner before testing deadline expiry.
+				timeout = "5s"
+			}
+			args := []string{"package", "import", "--plan-file", planPath, "--checkpoint", checkpoint, "--api-url", server.URL, "--project", "project", "--wait-timeout", timeout}
 			code, result := invoke(t, args, "")
 			failure := result["error"].(map[string]any)
 			if code != scenario.code || failure["write_outcome"] != scenario.outcome || posts.Load() != 1 || strings.Contains(failure["message"].(string), "private-provider-value") {

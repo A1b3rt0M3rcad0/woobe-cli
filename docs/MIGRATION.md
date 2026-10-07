@@ -44,7 +44,7 @@ Precedência: flag explícito → variável de ambiente → contexto → default
 
 Configuração v1 recusa campos desconhecidos, duplicados, versão incompatível, contexto ativo inexistente, nomes inválidos e URLs com credenciais/query/fragment. Leitura é limitada a 1 MiB. Correções devem preservar o formato documentado; falha de validação não substitui um arquivo existente.
 
-POSIX oferece arquivos privados como fallback; não há migração automática para keychains. Windows usa `WOOBE_CONTROL_KEY`/`WOOBE_RUNTIME_KEY` enquanto armazenamento protegido nativo e sessões persistidas não estiverem entregues. Cookies humanos não são importados do protótipo; autentique novamente contra a API suportada.
+POSIX oferece arquivos privados como fallback; não há migração automática para keychains. Windows usa Credential Manager para Control/Runtime Keys locais; variáveis de ambiente continuam opcionais. Cookies humanos não são importados do protótipo; autentique novamente contra a API suportada.
 
 ## Scripts, saída e recuperação
 
@@ -62,3 +62,5 @@ Finalize a migração verificando discovery local, contexto resolvido e leituras
 Scripts podem optar por `--validate-body` em comandos HTTP canônicos ou apply. O flag acrescenta uma leitura OpenAPI antes da escrita; não deve ser adicionado a request genérico, upload multipart ou runtime SDK. `manifest preflight` fornece evidências somente de bodies; leia a completude e use `--require-complete` quando uma validação incompleta precisa bloquear o pipeline.
 
 Checkpoints existentes preservam o hash do plano. Arquivos com IDs/resultados fora do plano, passos terminais sem resultado ou dependências incompletas são recusados. Não corrija isso apagando um checkpoint incerto e repetindo a criação: reconcilie primeiro o que o servidor efetivamente aceitou. O novo estado `not_attempted` identifica uma escrita que não foi enviada; apply pode repetir esse passo depois de corrigir o pré-requisito, preservando os já concluídos.
+
+O onboarding recomendado é `context create`, `context use`, `auth login --cli-key`. A descoberta requer o novo endpoint de self-discovery na Woobe; backends anteriores continuam aceitando o fluxo explícito legado.

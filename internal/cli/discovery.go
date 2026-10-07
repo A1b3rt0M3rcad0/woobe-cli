@@ -111,7 +111,7 @@ func (a *App) completeDiscovery() {
 			cmd.Flags().VisitAll(add)
 			op.Flags = nil
 			for _, f := range flags {
-				if f.Name == "file" && op.Body {
+				if f.Name == "file" && op.Body && path != "auth login" {
 					f.Required = true
 				}
 				op.Flags = append(op.Flags, f)
@@ -155,6 +155,13 @@ func commandSchema(op Operation, kind string) map[string]any {
 			}
 		}
 		s["properties"] = map[string]any{"args": map[string]any{"type": "array", "items": map[string]any{"type": "string"}}, "flags": map[string]any{"type": "object", "properties": props, "required": required, "additionalProperties": false}, "body": map[string]any{"description": "Endpoint body; consult server-schema for authoritative domain fields"}}
+		if op.Command == "auth login" {
+			flags := s["properties"].(map[string]any)["flags"].(map[string]any)
+			flags["anyOf"] = []any{
+				map[string]any{"required": []string{"cli-key"}, "properties": map[string]any{"cli-key": map[string]any{"const": true}, "file": map[string]any{"const": ""}, "validate-body": map[string]any{"const": false}, "validate-parameters": map[string]any{"const": false}, "schema-sha256": map[string]any{"const": ""}}},
+				map[string]any{"required": []string{"file"}, "properties": map[string]any{"cli-key": map[string]any{"const": false}, "stdin": map[string]any{"const": false}, "select-project": map[string]any{"const": ""}}},
+			}
+		}
 		s["additionalProperties"] = false
 		s["description"] = "CLI invocation transport schema. Resource IDs accept positional arguments or named flags; server owns domain validation and authorization."
 	} else if op.Kind == "shell-completion" {

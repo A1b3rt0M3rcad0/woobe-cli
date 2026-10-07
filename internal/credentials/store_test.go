@@ -18,9 +18,10 @@ func TestPrivateReferences(t *testing.T) {
 		t.Fatal(e)
 	}
 	info, e := os.Stat(filepath.Join(s.Dir, "fixture.json"))
-	if e != nil || info.Mode().Perm() != 0600 {
+	if !nativeStore && (e != nil || info.Mode().Perm() != 0600) {
 		t.Fatal(info, e)
 	}
+	t.Cleanup(func() { _ = s.Remove("fixture") })
 	v, e := s.Get("fixture")
 	if e != nil || v != "secret" {
 		t.Fatal(v, e)

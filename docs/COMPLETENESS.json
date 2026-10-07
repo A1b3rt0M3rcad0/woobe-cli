@@ -208,7 +208,7 @@
       "phase": 2,
       "requirement": "Implementar importação e referências protegidas de Control/Runtime Keys.",
       "status": "partial",
-      "evidence": "POSIX credential references/environment fallback exist; native keychains/Windows protection remain."
+      "evidence": "Control/Runtime credential references now use private POSIX files or per-user Windows Credential Manager, with create/read/list/delete and restart/isolation tests. CLI Key discovery login is connection-scoped; native Linux desktop/macOS keychain providers remain optional future work."
     },
     {
       "id": "2.8",
@@ -635,7 +635,7 @@
       "phase": 8,
       "requirement": "Referências protegidas para credenciais.",
       "status": "done",
-      "evidence": "Exact {$secret_ref:NAME} objects in Tool/provider credential configuration resolve from the selected POSIX private-file store only during apply. Preflight defers without reading values; compile preserves markers; checkpoint hashes bind values, changed/missing credentials refuse resume, outputs redact echoed values, and uncertain writes cannot replay or reconcile from redacted getters. Unit/native-plan fixtures pass and live provider import/resume is required in PR #177. Native OS keychains and Windows protected storage remain partial in 2.7; environment interpolation/remote secret providers are unsupported."
+      "evidence": "Exact {$secret_ref:NAME} objects in Tool/provider credential configuration resolve from the selected POSIX private-file store only during apply. Preflight defers without reading values; compile preserves markers; checkpoint hashes bind values, changed/missing credentials refuse resume, outputs redact echoed values, and uncertain writes cannot replay or reconcile from redacted getters. Unit/native-plan fixtures pass and live provider import/resume is required in PR #177. Windows protected credential storage is delivered; native Linux desktop/macOS keychains remain optional future work; environment interpolation/remote secret providers are unsupported."
     },
     {
       "id": "8.9",

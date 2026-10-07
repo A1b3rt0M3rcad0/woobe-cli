@@ -40,21 +40,30 @@ dependency/toolchain license notices. No administrator privileges are required.
 
 ## Connect Woobe
 
-Create a Control Key at **Workspace settings → CLI Keys** with the Workspace
-permissions and Project grants your integration needs. Import it from stdin:
+Create a Control Key at **Workspace settings → CLI Keys**.
 
 ```sh
-woobe auth credential import --name workspace-cli --stdin < workspace.key
-woobe context create woobe --api-url https://YOUR_WOOBE_API
-woobe context credential attach woobe --credential workspace-cli
-woobe context use woobe
-woobe context set --workspace WORKSPACE_ID --project PROJECT_ID
+woobe context create minha-woobe --api-url https://YOUR_WOOBE_API
+woobe context use minha-woobe
+woobe auth login --cli-key
 woobe project agent list
 ```
 
-Use the backend API URL. Runtime credentials are separate. See [USAGE.md](USAGE.md)
-for secret handling, runtime and manifests. Distribution does not change server
-authorization or the [functional coverage](STATUS.md).
+Paste the key at the masked prompt; do not put it in arguments. The CLI validates
+it against this connection, discovers its Workspace and selects a single eligible
+Project automatically. For several Projects, choose by name/number. Switch later
+with `woobe context project select` or `woobe context project select production`.
+No Project grants means Workspace-only authentication. No UUIDs or environment
+variables are required. Linux/macOS store credentials in private files; Windows
+uses the current user's Credential Manager. Reopening the terminal retains the
+connection. Each named context has its own key and selected Project.
+
+For automation, pipe a secret from your secret manager into
+`woobe auth login --cli-key --stdin --select-project production --no-input`.
+Without a selection, multiple Projects produce `project_selection_required`.
+`woobe auth status` inspects the current key and scope;
+`woobe auth logout --cli-key` clears local authentication without server revocation.
+Changing the API URL requires login again. Runtime Keys remain separate.
 
 ## Automatic release
 

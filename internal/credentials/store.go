@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 )
 
@@ -26,8 +25,8 @@ func (s Store) Get(name string) (string, error) {
 	if e != nil {
 		return "", e
 	}
-	if runtime.GOOS == "windows" {
-		return "", output.New(9, "private-file credential store requires POSIX permissions; use explicit environment credentials on Windows")
+	if nativeStore {
+		return s.nativeGet(name)
 	}
 	info, e := os.Lstat(p)
 	if e != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 {
@@ -53,15 +52,15 @@ func (s Store) Get(name string) (string, error) {
 	return v, nil
 }
 func (s Store) Put(name, value string) error {
-	if runtime.GOOS == "windows" {
-		return output.New(9, "private-file credential store requires POSIX permissions")
-	}
 	p, e := s.path(name)
 	if e != nil {
 		return e
 	}
 	if strings.TrimSpace(value) == "" || len(value) > 64<<10 {
 		return output.New(2, "credential must contain 1 to 65536 bytes")
+	}
+	if nativeStore {
+		return s.nativePut(name, value)
 	}
 	return config.AtomicWrite(p, []byte(value), 0600)
 }
@@ -70,9 +69,19 @@ func (s Store) Remove(name string) error {
 	if e != nil {
 		return e
 	}
-	return os.Remove(p)
+	if nativeStore {
+		return s.nativeRemove(name)
+	}
+	err := os.Remove(p)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	return err
 }
 func (s Store) List() ([]string, error) {
+	if nativeStore {
+		return s.nativeList()
+	}
 	es, e := os.ReadDir(s.Dir)
 	if os.IsNotExist(e) {
 		return []string{}, nil
