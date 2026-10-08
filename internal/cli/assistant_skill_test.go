@@ -1,10 +1,62 @@
 package cli
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
+
+	assistantskill "github.com/A1b3rt0M3rcad0/woobe-cli/packages/woobe-cli-skill"
 )
+
+func TestAssistantSkillPresetCommandLifecycle(t *testing.T) {
+	payload, err := assistantskill.Payload()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, group := range []string{"skill", "skills"} {
+		for agent, preset := range assistantskill.Presets {
+			t.Run(group+"/"+agent, func(t *testing.T) {
+				root, err := filepath.EvalSymlinks(t.TempDir())
+				if err != nil {
+					t.Fatal(err)
+				}
+				target := filepath.Join(root, preset.Project, "woobe-cli")
+				call := func(action string, extra ...string) map[string]any {
+					t.Helper()
+					args := []string{group, action, "--agent", agent, "--project-dir", root, "--output", "json"}
+					code, result := invoke(t, append(args, extra...), "")
+					if code != 0 || result["success"] != true {
+						t.Fatalf("%s: exit %d: %v", action, code, result)
+					}
+					return result["data"].(map[string]any)
+				}
+				if call("install", "--dry-run")["executed"] != false {
+					t.Fatal("dry-run executed installation")
+				}
+				if _, err := os.Stat(target); !os.IsNotExist(err) {
+					t.Fatal("dry-run created destination", err)
+				}
+				call("install")
+				for name, expected := range payload {
+					actual, err := os.ReadFile(filepath.Join(target, filepath.FromSlash(name)))
+					if err != nil || !bytes.Equal(actual, expected) {
+						t.Fatalf("embedded payload mismatch %s: %v", name, err)
+					}
+				}
+				call("install") // An unchanged managed installation is safely repeatable.
+				rows := call("status")["installations"].([]any)
+				if len(rows) != 1 || rows[0].(map[string]any)["status"] != "managed" {
+					t.Fatal("installation not recognized", rows)
+				}
+				call("uninstall")
+				if _, err := os.Stat(target); !os.IsNotExist(err) {
+					t.Fatal("uninstall retained destination", err)
+				}
+			})
+		}
+	}
+}
 
 func TestEmbeddedAssistantSkillOfflineAliasesAndRuntimeBoundary(t *testing.T) {
 	root := t.TempDir()

@@ -14,6 +14,11 @@ Nine concrete jobs execute. The stable `ci` check can be required by repository
 branch rules; the workflow does not change those rules. Permissions are read-only.
 The native installer embeds the same reviewed files as npm and needs no Node/npm.
 Both installers share managed receipts and never call Woobe, edit credentials or modify agent settings.
+Preset command regression tests cover both `skill` and `skills` for all six
+destinations, dry-run, exact payload bytes, repeat installation, status and removal.
+Each packaged native executable additionally runs the project-local commands
+`woobe skill install --agent codex` and `--agent codex-legacy` without a connection
+or `--project-dir`, including both Windows architectures.
 Its tests cover managed update/removal, local edit protection, multi-target preflight,
 links/hardlinks, receipts, locks, rollback and preservation of concurrent edits.
 

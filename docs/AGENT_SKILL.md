@@ -42,6 +42,23 @@ instructions. Re-run install after upgrading the CLI to update unchanged managed
 skills. The CLI and npm installer recognize each other's receipts; edited files
 remain protected across both. Outputs use the normal CLI text/compact/JSON modes.
 
+## If `--agent` is unknown after upgrading
+
+CLI 0.13.7 does not include the built-in installer. A merge starts the release
+workflow, but `npm install -g woobe-cli@latest` continues installing the previous
+version until npm publication succeeds. Check the registry and executable:
+
+```powershell
+npm view woobe-cli version
+woobe version
+Get-Command woobe -All | Select-Object Source
+```
+
+Once the registry offers the release containing this feature, reinstall and open
+a new terminal if necessary. If `woobe version` still shows an older version,
+check for another executable earlier on PATH. Installing an unchanged `latest`
+repeatedly cannot add commands that have not been published.
+
 ## Optional npm installation
 
 After the package's initial publication:

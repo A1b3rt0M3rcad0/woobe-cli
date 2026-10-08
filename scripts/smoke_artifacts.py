@@ -54,6 +54,26 @@ def smoke(root, commit):
                 raise ValueError(f'{args}: structured error code differs from exit code')
             return envelope
 
+        # Exact project-local commands reported by Windows users. Run the real
+        # packaged executable, without --project-dir or a saved connection.
+        for agent, folder in [('codex', '.agents'), ('codex-legacy', '.codex')]:
+            target = pathlib.Path(directory) / folder / 'skills' / 'woobe-cli'
+            invoke(['skill', 'install', '--agent', agent, '--dry-run'])
+            if target.exists():
+                raise ValueError(f'{agent}: dry-run wrote the project skill')
+            invoke(['skill', 'install', '--agent', agent])
+            source = pathlib.Path('packages/woobe-cli-skill/skills/woobe-cli')
+            for file in source.rglob('*'):
+                if file.is_file() and (target / file.relative_to(source)).read_bytes() != file.read_bytes():
+                    raise ValueError(f'{agent}: project skill differs from embedded source: {file}')
+            invoke(['skill', 'install', '--agent', agent])
+            state = invoke(['skill', 'status', '--agent', agent])['data']
+            if state['installations'][0]['status'] != 'managed':
+                raise ValueError(f'{agent}: project skill not recognized')
+            invoke(['skill', 'uninstall', '--agent', agent])
+            if target.exists():
+                raise ValueError(f'{agent}: project skill retained after removal')
+
         skill_root = pathlib.Path(directory) / 'assistant-skills'
         installed_skill = invoke(['skill', 'install', '--path', str(skill_root)])['data']
         skill_target = skill_root / 'woobe-cli'
@@ -258,7 +278,7 @@ def smoke(root, commit):
             server.server_close()
             thread.join(timeout=5)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
-            'archive': artifact['name'], 'success': True, 'checks': ['embedded-assistant-skill', 'native-npm-receipt-compatibility', 'linked-skill-destination-refusal', 'identity', 'discovery', 'schemas', 'complete-package-offline', 'package-python-inventory-parity', 'package-lock-tamper', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff', 'protected-reference-compile', 'canonical-mcp-permissions'],
+            'archive': artifact['name'], 'success': True, 'checks': ['project-codex-preset-lifecycle', 'project-codex-legacy-preset-lifecycle', 'embedded-assistant-skill', 'native-npm-receipt-compatibility', 'linked-skill-destination-refusal', 'identity', 'discovery', 'schemas', 'complete-package-offline', 'package-python-inventory-parity', 'package-lock-tamper', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff', 'protected-reference-compile', 'canonical-mcp-permissions'],
             'local_registry_checks': ['readable-yaml', 'yaml-json-move', 'json-clone', 'stale-registry-preview', 'explicit-stale-registry-prune'],
             'backend_acceptance': 'not_evaluated', 'credential_provider_acceptance': 'not_evaluated'}
 
