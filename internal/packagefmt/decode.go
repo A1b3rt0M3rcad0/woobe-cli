@@ -56,18 +56,11 @@ func Decode(data []byte, file string) (*Document, error) {
 		return nil, failure("PACKAGE_PARSE_INVALID", "Invalid or duplicate-key JSON")
 	}
 	if json.Valid(data) {
-		// JSON permits raw C1 characters in strings; YAML rejects some and
-		// normalizes NEL as a newline. Escape only these BMP characters before
-		// using the shared YAML AST, preserving numbers and duplicate checks.
-		var escaped strings.Builder
-		for _, r := range string(data) {
-			if r >= 0x7f && r <= 0x9f || r == 0x2028 || r == 0x2029 {
-				fmt.Fprintf(&escaped, "\\u%04x", r)
-			} else {
-				escaped.WriteRune(r)
-			}
+		var err error
+		data, err = jsoninput.YAMLCompatibleJSON(data)
+		if err != nil {
+			return nil, failure("PACKAGE_PARSE_INVALID", "Invalid JSON Unicode encoding")
 		}
-		data = []byte(escaped.String())
 	}
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	var root yaml.Node

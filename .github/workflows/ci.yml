@@ -48,6 +48,7 @@ jobs:
       - run: go test ./internal/schemacheck -run='^$' -fuzz=FuzzSchemaCheck -fuzztime=10s -parallel=2
       - run: go test ./internal/packagefmt -run='^$' -fuzz=FuzzDecodePackage -fuzztime=10s -parallel=2
       - run: go test ./internal/devworkspace -run='^$' -fuzz=FuzzEncodeRoundTrip -fuzztime=10s -parallel=2
+      - run: go test ./internal/jsoninput -run='^$' -fuzz=FuzzYAMLCompatibleJSON -fuzztime=10s -parallel=2
       - run: go test ./internal/packagebundle -run='^$' -fuzz=FuzzPortablePath -fuzztime=10s -parallel=2
       - run: go test ./internal/packagefmt -run='^$' -fuzz=FuzzReferenceClosure -fuzztime=5s -parallel=2
       - run: go test ./internal/packagefmt -run='^$' -fuzz=FuzzPackageLockDocument -fuzztime=5s -parallel=2

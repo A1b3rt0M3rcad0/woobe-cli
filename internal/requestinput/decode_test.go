@@ -60,6 +60,23 @@ func TestExplicitFormatsAndJSONCompatibility(t *testing.T) {
 	}
 }
 
+func TestJSONInYAMLFilesPreservesUnicodeAndExactNumbers(t *testing.T) {
+	input := []byte("{\"text\":\"First\u0085Second\",\"emoji\":\"\\ud83d\\ude00\",\"number\":1.0000000000000000001}")
+	data, err := Decode(input, "agent.yaml", "auto")
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoder := json.NewDecoder(strings.NewReader(string(data)))
+	decoder.UseNumber()
+	var actual map[string]any
+	if err := decoder.Decode(&actual); err != nil {
+		t.Fatal(err)
+	}
+	if actual["text"] != "First\u0085Second" || actual["emoji"] != "😀" || actual["number"] != json.Number("1.0000000000000000001") {
+		t.Fatal("changed JSON author input", actual)
+	}
+}
+
 func FuzzDecode(f *testing.F) {
 	f.Add("a: 1\n", "yaml")
 	f.Add(`{"a":1}`, "json")

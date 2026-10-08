@@ -46,6 +46,13 @@ func Decode(data []byte, source, format string) ([]byte, error) {
 	if format != "yaml" {
 		return nil, fmt.Errorf("input-format must be auto, json or yaml")
 	}
+	if json.Valid(data) {
+		var err error
+		data, err = jsoninput.YAMLCompatibleJSON(data)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON Unicode encoding")
+		}
+	}
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	var doc yaml.Node
 	if err := decoder.Decode(&doc); err != nil {
