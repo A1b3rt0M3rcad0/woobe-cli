@@ -190,6 +190,11 @@ fail rather than overwrite a version. Stable versions use `latest`, prereleases
 
 ## Repository validation
 
+Contributors should follow [AGENTS.md](https://github.com/A1b3rt0M3rcad0/woobe-cli/blob/master/AGENTS.md).
+CLI behavior changes require reviewing the corresponding help, guide and canonical
+skill reference in the same PR. The native and npm distributions share one skill
+payload; generated docs and compatibility checks must stay synchronized.
+
 Run `make check` for Go/Python and installer tests, then
 `bash scripts/package.sh 0.0.0-ci.1 --with-npm` and
 `python3 scripts/verify_artifacts.py --commit "$(git rev-parse HEAD)"`.

@@ -275,3 +275,9 @@ once and reused through typed local references. Surface authoring uses the same
 registry and native identities. See [Provider bindings and Surface workflows](docs/DEVELOPMENT.md)
 and [local development and recovery](docs/USAGE.md#explicit-local-identities-and-recovery).
 The development server additions were delivered in merged [Woobe PR #179](https://github.com/A1b3rt0M3rcad0/woobe/pull/179).
+
+## Contributing
+
+Read [AGENTS.md](AGENTS.md) for repository maintenance instructions, including
+which help, documentation and assistant skill files to update with CLI changes,
+how to regenerate derived docs and which validation applies.
