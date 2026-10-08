@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -110,6 +111,18 @@ func (a *App) developmentReconcile(ctx context.Context, client *packageapi.Clien
 	if err != nil {
 		return err
 	}
+	if result.State == "succeeded" {
+		updated, err := acceptedDevelopmentBindings(c, state, bases, receipt.Plan.ResourceBindings, registry, result.OperationID, capabilities.ASaC.AcceptedBindingGenerations)
+		if err != nil {
+			return err
+		}
+		state.Bindings = updated
+		delete(state.Pending, resource.UID)
+		if err := c.WriteState(state); err != nil {
+			return err
+		}
+		return a.emit(map[string]any{"resource": resource.Alias, "reconciled": true, "pending": false, "operation_id": result.OperationID, "state": result.State})
+	}
 	approved := map[string]packageapi.DevelopmentTarget{}
 	for _, target := range receipt.Plan.ResourceBindings {
 		approved[target.ResourceUID] = target
@@ -120,7 +133,7 @@ func (a *App) developmentReconcile(ctx context.Context, client *packageapi.Clien
 		if !exists || bases[remote.ResourceUID].Base == nil {
 			continue
 		}
-		if result.State != "succeeded" && (target.DefinitionDigest == "" || remote.DefinitionDigest != target.DefinitionDigest || remote.OperationID != result.OperationID) {
+		if target.DefinitionDigest == "" || remote.DefinitionDigest != target.DefinitionDigest || remote.OperationID != result.OperationID || (capabilities.ASaC.AcceptedBindingGenerations && (remote.GenerationScope != "accepted_native_phase" || remote.AcceptedRevision == nil || fmt.Sprint(remote.Revision) != fmt.Sprint(remote.AcceptedRevision))) {
 			// A committed prepare phase owns the native root even if a later
 			// phase failed. Retain identity without accepting the author base.
 			if remote.OperationID == result.OperationID && remote.ResourceID != "" && (remote.Kind == "Agent" || remote.Kind == "Network") {
@@ -138,13 +151,6 @@ func (a *App) developmentReconcile(ctx context.Context, client *packageapi.Clien
 		local.Revision, local.Base, local.Supports = remote.Revision, bases[remote.ResourceUID].Base, bases[remote.ResourceUID].Supports
 		state.Bindings[remote.ResourceUID] = local
 		completed[remote.ResourceUID] = true
-	}
-	if result.State == "succeeded" {
-		for uid, accepted := range bases {
-			local := state.Bindings[uid]
-			local.Base, local.Supports = accepted.Base, accepted.Supports
-			state.Bindings[uid] = local
-		}
 	}
 	delete(state.Pending, resource.UID)
 	if err = c.WriteState(state); err != nil {

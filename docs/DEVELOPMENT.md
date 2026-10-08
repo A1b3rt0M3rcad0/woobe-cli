@@ -174,3 +174,14 @@ Source objects without this field retain the earlier lowering recipe for exact
 checkout verification. Their immutable hashes and executable objects are not
 rewritten. New checkpoints/rebases use the current recipe; recompilation can
 therefore produce a different definition from the historical one.
+
+
+### Accepted native generations
+
+After a successful native `push` or `reconcile`, the CLI checks every approved
+resource against the original operation, definition and native identity before
+updating local bases. When the server advertises accepted binding generations,
+it uses the generation recorded in the native transaction, even if a later edit
+has changed the current generation. Incomplete, missing or superseded evidence
+leaves the checkpoint pending; preserve it and investigate with `reconcile`.
+Do not delete private state to bypass this check or resend the accepted write.

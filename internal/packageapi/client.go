@@ -66,11 +66,16 @@ func (c *Client) request(ctx context.Context, method, suffix string, body any, d
 	return nil
 }
 
+type ASaCCapabilities struct {
+	AcceptedBindingGenerations bool `json:"accepted_binding_generations"`
+}
+
 type Capabilities struct {
-	PackageSchemaVersion string   `json:"package_schema_version"`
-	SchemaCatalogSHA256  string   `json:"schema_catalog_sha256"`
-	SupportedOperations  []string `json:"supported_operations"`
-	PrincipalFingerprint string   `json:"principal_fingerprint"`
+	ASaC                 ASaCCapabilities `json:"asac"`
+	PackageSchemaVersion string           `json:"package_schema_version"`
+	SchemaCatalogSHA256  string           `json:"schema_catalog_sha256"`
+	SupportedOperations  []string         `json:"supported_operations"`
+	PrincipalFingerprint string           `json:"principal_fingerprint"`
 }
 
 func (c *Client) Capabilities(ctx context.Context) (Capabilities, error) {
@@ -177,6 +182,12 @@ func (c *Client) Resume(ctx context.Context, id string, revision int64) (Operati
 }
 
 type RegistryBinding struct {
+	AcceptedRevision any               `json:"accepted_revision"`
+	CurrentRevision  any               `json:"current_revision"`
+	GenerationScope  string            `json:"generation_scope"`
+	BindingStatus    string            `json:"binding_status"`
+	Frozen           bool              `json:"frozen"`
+	SnapshotID       string            `json:"snapshot_id"`
 	Identifiers      map[string]string `json:"identifiers,omitempty"`
 	ResourceUID      string            `json:"resource_uid"`
 	Kind             string            `json:"kind"`

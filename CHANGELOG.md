@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Validate the complete original-operation registry receipt before accepting local push/reconcile bases; retain checkpoints for incomplete or superseded evidence.
+
 - Require CLI 0.19.1+ for the assistant payload's current ASaC guides, with upgrade guidance and coordinated verifier metadata.
 - Record the compiler recipe in new author objects and verify pre-recipe source using its original lowering without rewriting hashes.
 - Preserve Model endpoint overrides and their absence when lowering Provider refs; unchanged frozen Network constituents no longer gain an unintended `base_url`.
