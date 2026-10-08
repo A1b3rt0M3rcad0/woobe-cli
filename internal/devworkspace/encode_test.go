@@ -3,6 +3,7 @@ package devworkspace
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -67,6 +68,23 @@ func TestEncodePreservesEveryStringLineEnding(t *testing.T) {
 				t.Fatal(err)
 			}
 			assertEncodedValues(t, document, data, "agent.yaml")
+		})
+	}
+}
+
+func TestEncodePreservesTabIndentedInstructions(t *testing.T) {
+	for _, value := range []string{"\t0\n", "\tfirst\n\tsecond", "first\n\tsecond\n", " \tfirst\nnext"} {
+		t.Run(fmt.Sprintf("%q", value), func(t *testing.T) {
+			document := map[string]any{"spec": map[string]any{"instructions": value}}
+			data, err := Encode(document)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assertEncodedValues(t, document, data, "agent.yaml")
+			parsed, err := packagefmt.Decode(data, "agent.yaml")
+			if err != nil || !reflect.DeepEqual(parsed.Value, document) {
+				t.Fatalf("portable package changed tab-indented instructions: %v", err)
+			}
 		})
 	}
 }
@@ -151,7 +169,7 @@ func TestReadableDescriptorsKeepCompleteDependencyGraphSemantics(t *testing.T) {
 }
 
 func FuzzEncodeRoundTrip(f *testing.F) {
-	for _, text := range []string{"Hello\nWorld", "\n", "a\u0085b\n", "null", "yes", "1.0", "2026-10-07", "\r\n"} {
+	for _, text := range []string{"Hello\nWorld", "\n", "a\u0085b\n", "null", "yes", "1.0", "2026-10-07", "\r\n", "\t0\n"} {
 		f.Add(text)
 	}
 	f.Fuzz(func(t *testing.T, text string) {

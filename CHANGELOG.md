@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Preserve tab-indented instructions when writing local YAML descriptors by
+  escaping tab-containing strings instead of emitting an unreadable literal block.
+
 - Embed the portable skill in native CLI binaries: `woobe skill install/status/uninstall/agents`, offline without npm/Node; share receipts with the optional standalone installer.
 
 - Add `woobe-cli-skill`, a separate npm package and explicit coding-agent skill installer.
