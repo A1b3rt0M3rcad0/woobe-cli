@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,11 +41,11 @@ func TestExportDownloadRequiresReceiptTransportAndCompleteInventory(t *testing.T
 	}
 	hash := sha256.Sum256(archive.Bytes())
 	digest := hex.EncodeToString(hash[:])
-	receipt := ExportReceipt{PackageSchemaVersion: "1.0", ExportID: "export-1", ProjectID: "project-1", ArtifactDigest: bundle.ArtifactDigest, TransportDigest: digest, SizeBytes: int64(archive.Len()), Inventory: bundle.Inventory, ClosureComplete: true, SelfContained: true, Knowledge: "portable", ExpiresAt: time.Now().Add(time.Hour).Format(time.RFC3339)}
-	for _, mode := range []string{"valid", "tamper", "inventory", "incomplete"} {
+	receipt := ExportReceipt{PackageSchemaVersion: "1.0", ExportID: "export-1", ProjectID: evidenceProjectUUID, ArtifactDigest: bundle.ArtifactDigest, TransportDigest: digest, SizeBytes: int64(archive.Len()), Inventory: bundle.Inventory, ClosureComplete: true, SelfContained: true, Knowledge: "portable", ExpiresAt: time.Now().Add(time.Hour).Format(time.RFC3339)}
+	for _, mode := range []string{"valid", "uppercase-project", "tamper", "inventory", "incomplete"} {
 		t.Run(mode, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Path != "/projects/project-1/packages/exports/export-1/artifact" || r.Header.Get("Authorization") != "Bearer private-test-control-key" {
+				if r.URL.Path != "/projects/"+receipt.ProjectID+"/packages/exports/export-1/artifact" || r.Header.Get("Authorization") != "Bearer private-test-control-key" {
 					t.Error("download scope or authentication differs")
 				}
 				w.Header().Set("Content-Length", fmt.Sprint(receipt.SizeBytes))
@@ -58,7 +59,11 @@ func TestExportDownloadRequiresReceiptTransportAndCompleteInventory(t *testing.T
 			}))
 			defer server.Close()
 			control, _ := controlplane.New(server.URL, "private-test-control-key", time.Second)
-			client, _ := New(control, "project-1")
+			projectInput := receipt.ProjectID
+			if mode == "uppercase-project" {
+				projectInput = strings.ToUpper(projectInput)
+			}
+			client, _ := New(control, projectInput)
 			candidate := receipt
 			if mode == "inventory" {
 				candidate.Inventory = nil
@@ -67,7 +72,7 @@ func TestExportDownloadRequiresReceiptTransportAndCompleteInventory(t *testing.T
 				candidate.ClosureComplete = false
 			}
 			result, err := client.Download(context.Background(), candidate)
-			if mode != "valid" {
+			if mode != "valid" && mode != "uppercase-project" {
 				if result != nil {
 					result.Close()
 					t.Fatal("unverified bytes accepted")

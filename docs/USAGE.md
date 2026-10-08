@@ -389,6 +389,11 @@ Use `woobe package validate`, `plan`, `import`, `status`, `resume`, `cancel`, an
 `export agent|network` for complete native author definitions. A Package requires
 the matching backend capability catalog; it does not fall back to Manifest.
 `--destination` optionally overrides the export directory (default: ./normalized-resource-name), while `--output` selects text/JSON/JSONL. Export accepts a name or UUID; `--env` defaults to draft, staging/production resolve current versions, and release requires `--version`. Import checkpoints are automatic unless explicitly specified. Use `package bindings SOURCE` for a destination YAML template.
+
+Project, operation and registry UUIDs accept either letter case. For example,
+`package status OPERATION_UUID --project PROJECT_UUID` also accepts uppercase
+UUIDs, including when recovering with `--checkpoint`. Opaque identifiers,
+aliases and idempotency keys retain their exact spelling.
 Knowledge can be rebuilt from portable documents or resolved through an external
 binding. See [PACKAGES.md](PACKAGES.md) for flags, lifecycle, protection, recovery
 and the supported CLI/server pair. Existing resource projections and Manifest

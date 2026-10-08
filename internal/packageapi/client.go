@@ -6,12 +6,23 @@ import (
 	"encoding/json"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/controlplane"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 )
 
 var identifier = regexp.MustCompile(`^[A-Za-z0-9_.:-]{1,128}$`)
+var uuidIdentifier = regexp.MustCompile(`^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$`)
+
+// UUID paths accept either letter case; the server serializes UUID evidence in
+// lowercase. Opaque IDs and idempotency keys keep their exact spelling.
+func canonicalIdentifier(value string) string {
+	if uuidIdentifier.MatchString(value) {
+		return strings.ToLower(value)
+	}
+	return value
+}
 
 type Client struct {
 	Control   *controlplane.Client
@@ -22,7 +33,7 @@ func New(control *controlplane.Client, project string) (*Client, error) {
 	if control == nil || !identifier.MatchString(project) {
 		return nil, output.New(2, "Package requires a destination project")
 	}
-	return &Client{Control: control, ProjectID: project}, nil
+	return &Client{Control: control, ProjectID: canonicalIdentifier(project)}, nil
 }
 
 func (c *Client) path(suffix string) string { return "/projects/" + c.ProjectID + "/packages" + suffix }
@@ -123,6 +134,7 @@ func (c *Client) operation(ctx context.Context, method, suffix string, body any)
 }
 
 func (c *Client) Status(ctx context.Context, id string) (Operation, error) {
+	id = canonicalIdentifier(id)
 	if !identifier.MatchString(id) {
 		return Operation{}, output.New(2, "Invalid Package operation ID")
 	}
@@ -141,6 +153,7 @@ func (c *Client) Lookup(ctx context.Context, key string) (Operation, error) {
 }
 
 func (c *Client) Cancel(ctx context.Context, id string) (Operation, error) {
+	id = canonicalIdentifier(id)
 	if !identifier.MatchString(id) {
 		return Operation{}, output.New(2, "Invalid Package operation ID")
 	}
@@ -152,6 +165,7 @@ func (c *Client) Cancel(ctx context.Context, id string) (Operation, error) {
 }
 
 func (c *Client) Resume(ctx context.Context, id string, revision int64) (Operation, error) {
+	id = canonicalIdentifier(id)
 	if !identifier.MatchString(id) || revision < 1 {
 		return Operation{}, output.New(2, "Resume requires an observed operation revision")
 	}
@@ -177,6 +191,7 @@ type Registry struct {
 }
 
 func (c *Client) Registry(ctx context.Context, id string) (Registry, error) {
+	id = canonicalIdentifier(id)
 	var result Registry
 	if !identifier.MatchString(id) {
 		return result, output.New(2, "Invalid registry identity")
