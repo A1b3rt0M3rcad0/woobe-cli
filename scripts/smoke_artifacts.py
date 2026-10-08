@@ -67,6 +67,17 @@ def smoke(root, commit):
             raise ValueError('packaged CLI changed author values when moving YAML to JSON')
         invoke(['resources', 'clone', 'agent', '@support', '--alias', 'copy', '--path', 'agents/copy.json'])
         invoke(['resources', 'used-by', 'agent', '@copy'])
+        (pathlib.Path(directory) / '.woobe/agents/copy.json').unlink()
+        invoke(['config', 'check'], code=2)
+        invoke(['resources', 'prune'], code=2)
+        preview = invoke(['resources', 'prune', '--dry-run'])['data']
+        if preview['executed'] is not False or len(preview['resources']) != 1 or preview['resources'][0]['alias'] != 'copy':
+            raise ValueError('packaged stale registry preview has incorrect scope')
+        invoke(['config', 'check'], code=2)
+        applied = invoke(['resources', 'prune', '--yes'])['data']
+        if applied['remote_deleted'] is not False or applied['bindings_retained'] is not True:
+            raise ValueError('packaged stale registry cleanup has incorrect safety semantics')
+        invoke(['config', 'check'])
         discovery = invoke(['help'])['data']
         commands = {row['command'] for row in discovery}
         if not {'manifest validate', 'manifest apply', 'manifest reconcile', 'runtime target run', 'version', 'workspace authority category diff'} <= commands:
@@ -220,6 +231,7 @@ def smoke(root, commit):
             thread.join(timeout=5)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
             'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'complete-package-offline', 'package-python-inventory-parity', 'package-lock-tamper', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff', 'protected-reference-compile', 'canonical-mcp-permissions'],
+            'local_registry_checks': ['readable-yaml', 'yaml-json-move', 'json-clone', 'stale-registry-preview', 'explicit-stale-registry-prune'],
             'backend_acceptance': 'not_evaluated', 'credential_provider_acceptance': 'not_evaluated'}
 
 

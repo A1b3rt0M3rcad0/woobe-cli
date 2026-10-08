@@ -559,12 +559,25 @@ woobe resources alias agent '@support-v2' --alias support-next
 
 woobe resources register tool lookup --path tools/lookup/tool.yaml
 woobe resources unregister agent '@support-next'
+woobe resources prune --dry-run
+woobe resources prune --yes
 woobe resources diff
 woobe resources validate
 woobe resources push --dry-run
 woobe resources push --yes
 woobe agent '@support' reconcile
 ```
+
+If you delete artifact folders manually, `.woobe-config` still registers their
+paths. `config check` names the missing descriptor. Restore the files when the
+deletion was accidental. To keep the deletion, `resources unregister KIND
+'@alias'` removes one entry, including an absent descriptor. For multiple deleted
+artifacts, preview with `resources prune --dry-run`, then use `--yes` to unregister
+only absent descriptors. The remaining graph must have valid references: a
+deleted Model still used by a present Agent cannot be pruned. Unreadable, corrupt,
+linked or oversized files are rejected rather than treated as missing. These
+commands retain present author files and private bindings and never delete
+remote resources. Do not delete `.state/` to repair a stale registry.
 
 `resources create` copies a supplied author descriptor with a new UID. For
 support files, register an existing folder or clone a registered artifact.
