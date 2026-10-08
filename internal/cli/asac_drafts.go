@@ -23,10 +23,11 @@ type asacDraftObservation struct {
 	Definition  string `json:"definition_digest"`
 }
 type asacPending struct {
-	OperationID string         `json:"operation_id"`
-	Method      string         `json:"method"`
-	Path        string         `json:"path"`
-	Body        map[string]any `json:"body"`
+	RecordDigest string         `json:"record_digest,omitempty"`
+	OperationID  string         `json:"operation_id"`
+	Method       string         `json:"method"`
+	Path         string         `json:"path"`
+	Body         map[string]any `json:"body"`
 }
 
 func asacPrivatePath(c *devworkspace.Config, state *devworkspace.State, uid, suffix string) string {
@@ -209,7 +210,16 @@ func (a *App) asacDraftCommands() {
 							return output.New(9, "Revision receipt differs from the recorded write")
 						}
 					}
-					if result["draft_id"] != nil && result["resource_id"] != nil {
+					if pending.Path == base+"/candidates" {
+						if err = validateCandidateAcceptance(result, pending.OperationID, id, resource.UID, packagefmt.Text(pending.Body["revision_id"]), packagefmt.Text(pending.Body["draft_id"]), pending.RecordDigest); err != nil {
+							return err
+						}
+						raw, _ := json.Marshal(result)
+						if err = c.WriteOperationalFile(asacPrivatePath(c, state, resource.UID, "candidate"), raw); err != nil {
+							return output.New(10, "Candidate accepted; its local receipt could not be saved")
+						}
+					}
+					if pending.Path != base+"/candidates" && result["draft_id"] != nil && result["resource_id"] != nil {
 						if err = saveObservation(result); err != nil {
 							return err
 						}

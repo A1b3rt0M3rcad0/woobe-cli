@@ -191,3 +191,13 @@ it uses the generation recorded in the native transaction, even if a later edit
 has changed the current generation. Incomplete, missing or superseded evidence
 leaves the checkpoint pending; preserve it and investigate with `reconcile`.
 Do not delete private state to bypass this check or resend the accepted write.
+
+### Isolated lifecycle preparation
+
+Stage an exact registered checkpoint using `stage --revision REVISION_ID --yes`.
+The selected remote Draft and retained executable object are the source; current
+YAML changes are excluded. Inspect with `candidate CANDIDATE_UUID`. This freezes
+Agent/Network snapshots independently of native environment selections and does
+not publish or activate. `stage` without `--revision` retains legacy promotion.
+See [ASaC Candidate preparation](ASAC.md#prepare-an-exact-immutable-candidate) for
+the complete checkpoint and uncertain-response flow.

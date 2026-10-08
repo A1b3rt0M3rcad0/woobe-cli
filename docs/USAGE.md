@@ -753,3 +753,20 @@ This does not download executable/source objects or change the working head.
 See [ASaC](ASAC.md) for the distinction from release/deployment history.
 
 Remote revision hydration also retains exact author objects when advertised by the backend. Checkpoint uploads source custody first; hydration recompiles the recovered source against the sealed definition. Working files only change through a separate guarded checkout. See [ASaC](ASAC.md).
+
+### Stage a sealed isolated Agent or Network revision
+
+```sh
+woobe agent '@support' stage --revision REVISION_ID --dry-run
+woobe agent '@support' stage --revision REVISION_ID --yes
+woobe agent '@support' candidate CANDIDATE_UUID
+woobe network '@helpdesk' stage --revision REVISION_ID --yes
+woobe network '@helpdesk' candidate CANDIDATE_UUID
+```
+
+Use actual checkpointed revision/Candidate IDs. This reads the verified retained
+object and checks the selected remote Draft generation; current YAML edits are
+not uploaded. Acceptance is asynchronous preparation, without publication or
+environment selection. Lost responses use `draft reconcile`, preserving the
+original operation. See [ASaC](ASAC.md#prepare-an-exact-immutable-candidate) for
+checkpoint prerequisites, status, bindings and recovery.

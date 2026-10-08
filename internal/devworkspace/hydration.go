@@ -23,6 +23,27 @@ func ValidateExecutableObject(resource Resource, record Revision, bundle *packag
 	return nil
 }
 
+// OpenExecutableObject verifies the retained archive without reading today's YAML.
+func (c *Config) OpenExecutableObject(resource Resource, record Revision) (*packagebundle.Bundle, error) {
+	file := filepath.Join(c.RootPath(), "objects", "sha256", strings.TrimPrefix(record.ArtifactDigest, "sha256:")+".tar.gz")
+	if err := confinedParents(c.RootPath(), file); err != nil {
+		return nil, err
+	}
+	data, err := c.ReadOperationalFile(file, packagebundle.MaxArchiveBytes)
+	if err != nil {
+		return nil, err
+	}
+	bundle, err := packagebundle.ReceiveArchive(bytes.NewReader(data), true)
+	if err != nil {
+		return nil, err
+	}
+	if err := ValidateExecutableObject(resource, record, bundle); err != nil {
+		bundle.Close()
+		return nil, err
+	}
+	return bundle, nil
+}
+
 // StoreExecutableObject does not restore author files, bindings or working heads.
 func (c *Config) StoreExecutableObject(resource Resource, record Revision, bundle *packagebundle.Bundle) error {
 	if err := ValidateExecutableObject(resource, record, bundle); err != nil {
