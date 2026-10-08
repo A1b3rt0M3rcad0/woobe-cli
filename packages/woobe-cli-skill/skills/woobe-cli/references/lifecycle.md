@@ -33,3 +33,29 @@ rollback selects an explicit immutable version with `--notes` and `--yes`.
 
 Native UUIDs work without `.woobe-config`; aliases/paths need connection-scoped
 bindings. Denied operations do not become allowed by supplying `--yes`.
+
+## Exact isolated revision preparation (CLI 0.24+)
+
+For an isolated historical Draft, use `stage --revision REVISION_ID --yes` after
+`draft push`, `revision create --message ...` and `draft checkpoint REVISION_ID`.
+Inspect first with `--dry-run`. This uses the verified retained executable object
+and exact remote Draft generation; later YAML edits are not included. Provider
+bindings must already exist. Network and Agent syntax is identical.
+
+Acceptance returns `preparing` and a Candidate UUID. Read
+`woobe agent '@support' candidate CANDIDATE_UUID` (or Network) to inspect progress;
+use the preparation operation ID with `woobe package status OPERATION_UUID` for
+errors/dependencies. Ready means the detached closure is frozen, not that tests
+passed or publication occurred. Do not feed it into legacy publish/activate.
+
+If acceptance is uncertain, use `draft reconcile` before another Stage; preserve
+its original ID. Stage does not save current YAML, select native Staging, publish
+or activate Production. Without `--revision`, Stage retains the legacy behavior
+documented above. Never silently fall back when Candidate support is absent.
+
+```sh
+woobe agent '@support' stage --revision rv_00000000-0000-0000-0000-000000000000 --dry-run
+woobe network '@customer-support' stage --revision rv_00000000-0000-0000-0000-000000000000 --dry-run
+```
+
+Replace the revision placeholders with actual registered checkpoints before use.

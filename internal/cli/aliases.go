@@ -62,6 +62,9 @@ func (a *App) aliasCommands() {
 					if name != "surface" {
 						actions[action] = action
 					}
+					if name != "surface" {
+						actions["candidate"] = "candidate"
+					}
 				}
 				if name == "agent" {
 					for _, action := range []string{"archive", "delete", "test"} {

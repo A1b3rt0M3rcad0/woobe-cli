@@ -14,8 +14,17 @@ import (
 func (a *App) developmentLifecycleCommands() {
 	parent := a.group("develop agent")
 	for _, action := range []string{"stage", "publish", "activate", "rollback", "archive", "delete"} {
-		var version, notes string
-		command := &cobra.Command{Use: action + " REFERENCE", Short: action + " an Agent through the native lifecycle", Args: cobra.ExactArgs(1), Long: "Select the current native environment automatically. stage copies current Draft to Staging; publish creates an immutable Release from current Staging; activate and rollback require an explicit Release version. Local YAML is never silently pushed by lifecycle commands. Run push first. Publication requires --yes and an audit reason in --notes.", RunE: func(cmd *cobra.Command, args []string) error {
+		var version, notes, revision string
+		command := &cobra.Command{Use: action + " REFERENCE", Short: action + " an Agent through the native lifecycle", Args: cobra.ExactArgs(1), Long: "Stage --revision REVISION_ID prepares the exact checkpointed isolated Draft as a detached Candidate; it reads the retained executable object, preserves native Draft/Staging/Production selections and does not publish. Inspect with candidate REFERENCE CANDIDATE_UUID. Reconcile lost acceptance using draft reconcile before another Stage. Without --revision, legacy native lifecycle behavior applies. Select the current native environment automatically. stage copies current Draft to Staging; publish creates an immutable Release from current Staging; activate and rollback require an explicit Release version. Local YAML is never silently pushed by lifecycle commands. Run push first. Publication requires --yes and an audit reason in --notes.", RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().Changed("revision") && strings.TrimSpace(revision) == "" {
+				return output.New(2, "--revision requires the exact sealed revision ID; refusing legacy Stage fallback")
+			}
+			if revision != "" {
+				if action != "stage" || version != "" || notes != "" {
+					return output.New(2, "--revision applies only to Stage; it cannot select a published version or activation reason")
+				}
+				return a.stageASaCRevision(cmd, "agent", args[0], revision)
+			}
 			if a.File != "" {
 				return output.New(2, "Lifecycle commands use native saved snapshots; use push to synchronize author YAML")
 			}
@@ -91,6 +100,7 @@ func (a *App) developmentLifecycleCommands() {
 			}
 			return a.call(cmd, method, path, data, false)
 		}}
+		command.Flags().StringVar(&revision, "revision", "", "Prepare the exact sealed revision from the selected isolated Draft; does not publish or select native Staging")
 		command.Flags().StringVar(&version, "version", "", "Immutable Release version for activation or rollback")
 		command.Flags().StringVar(&notes, "notes", "", "Release description or activation/rollback reason")
 		parent.AddCommand(command)

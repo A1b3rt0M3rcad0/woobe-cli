@@ -232,3 +232,40 @@ artifact digest and executable definition before storing an immutable object.
 working head and Production are preserved. If source custody is available, hydration verifies its canonical author hash, exact YAML/support inventory and recorded compiler recipe against the executable definition and every component identity before storing source. It reports `author_object: verified_source_and_compilation`; a separate guarded checkout restores working files. An old record without retained source still permits executable hydration and reports source unavailable. Credentials and native bindings remain separate; hydration does not qualify runtime execution.
 
 Guarded checkout verifies both the current clean source anchor and the target revision. If author objects were removed or absent in a clone, hydrate both revision IDs first. This recovery never bypasses protection of local edits.
+
+## Prepare an exact immutable Candidate
+
+```sh
+woobe agent '@support' draft select hotfix
+woobe agent '@support' draft push
+woobe agent '@support' revision create --message 'Reviewed hotfix'
+woobe agent '@support' draft checkpoint REVISION_ID
+woobe agent '@support' stage --revision REVISION_ID --dry-run
+woobe agent '@support' stage --revision REVISION_ID --yes
+woobe agent '@support' candidate CANDIDATE_UUID
+```
+
+Replace the revision and Candidate placeholders with returned IDs. Networks use
+the same commands. Stage requires the selected remote Draft generation and exact
+registered working revision. It verifies the local retained executable archive,
+reads the server checkpoint and prepares that sealed closure, independent of
+current YAML edits. Hydrate a missing executable object before Stage. It does not
+compile changed local descriptors, push Source, change native Draft/Staging
+selections, publish or activate Production. Existing Provider bindings are
+required; credentials are never copied from historical source.
+
+Acceptance reports `state: preparing`, an original operation ID and a Candidate
+UUID. Inspect `candidate CANDIDATE_UUID` until preparation is ready; preparation
+can wait for Knowledge/MCP dependencies or fail. Use the returned
+`preparation_operation_id` with `woobe package status OPERATION_UUID` for phase
+diagnostics. A ready Candidate has an exact native snapshot and runtime digest;
+it is not a successful Evaluation or a published Release. Candidate publication
+and fenced deployment require their separately negotiated contracts.
+
+A lost acceptance response leaves its original operation in private state. Run
+`woobe agent '@support' draft reconcile` (or Network) to recover the exact
+acceptance without another POST. Reconciliation preserves Draft selection/CAS and
+records the Candidate ID; it does not imply preparation succeeded.
+
+`stage` without `--revision` keeps the legacy native current-Draft promotion.
+Do not use that legacy command to stage an isolated historical Draft.

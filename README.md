@@ -1,5 +1,10 @@
 # Woobe CLI
 
+Prepare a checkpointed isolated Draft with `stage --revision REVISION_ID --yes`
+and inspect `candidate CANDIDATE_UUID`. This freezes the exact retained closure
+without changing native environments or publishing; see the
+[ASaC workflow](docs/ASAC.md#prepare-an-exact-immutable-candidate).
+
 Command-line client for the [Woobe](https://github.com/A1b3rt0M3rcad0/woobe)
 control plane and runtime. Manage Workspace and Project resources, validate
 manifests, publish Agent and Network releases and execute released targets.

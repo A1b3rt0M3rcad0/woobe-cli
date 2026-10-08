@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from current discovery: 328 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
+Generated from current discovery: 330 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
 
 Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. Assistant installation uses local `skills` commands, not HTTP operations. The optional npm `woobe-skill` executable uses the same payload and receipts.
 
@@ -41,6 +41,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `develop agent activate` | `development` | — | `local` | — | — |
 | `develop agent archive` | `development` | — | `local` | — | — |
 | `develop agent bindings` | `development` | — | `local` | — | — |
+| `develop agent candidate` | `development` | — | `local` | — | — |
 | `develop agent checkout` | `development` | — | `local` | — | — |
 | `develop agent create` | `development` | — | `local` | — | — |
 | `develop agent current` | `development-http` | — | `server-dependent` | — | — |
@@ -62,6 +63,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `develop agent validate` | `development` | — | `local` | — | — |
 | `develop network activate` | `development` | — | `local` | — | — |
 | `develop network bindings` | `development` | — | `local` | — | — |
+| `develop network candidate` | `development` | — | `local` | — | — |
 | `develop network checkout` | `development` | — | `local` | — | — |
 | `develop network create` | `development` | — | `local` | — | — |
 | `develop network current` | `development-http` | — | `server-dependent` | — | — |

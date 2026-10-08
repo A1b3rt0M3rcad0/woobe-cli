@@ -23,8 +23,17 @@ func developmentResponseData(response any) (map[string]any, error) {
 
 func (a *App) developmentNetworkLifecycleCommands() {
 	for _, action := range []string{"stage", "publish", "activate", "rollback"} {
-		var version, notes string
-		command := &cobra.Command{Use: action + " REFERENCE", Short: action + " a saved Network composition", Args: cobra.ExactArgs(1), Long: "stage previews the current Draft and freezes its constituent snapshots. publish previews current Staging, creates/reuses the immutable Network Release and activates it in Production, following Woobe's native publication behavior. activate/rollback select an explicit immutable Release with --version and record --notes. --yes approves only the preview's action IDs; concurrent changes fail. Local author YAML is never uploaded implicitly.", RunE: func(cmd *cobra.Command, args []string) error {
+		var version, notes, revision string
+		command := &cobra.Command{Use: action + " REFERENCE", Short: action + " a saved Network composition", Args: cobra.ExactArgs(1), Long: "Stage --revision REVISION_ID prepares the exact checkpointed isolated Draft as a detached Candidate; it reads the retained executable object, preserves native Draft/Staging/Production selections and does not publish. Inspect with candidate REFERENCE CANDIDATE_UUID. Reconcile lost acceptance using draft reconcile before another Stage. Without --revision, legacy native lifecycle behavior applies. stage previews the current Draft and freezes its constituent snapshots. publish previews current Staging, creates/reuses the immutable Network Release and activates it in Production, following Woobe's native publication behavior. activate/rollback select an explicit immutable Release with --version and record --notes. --yes approves only the preview's action IDs; concurrent changes fail. Local author YAML is never uploaded implicitly.", RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().Changed("revision") && strings.TrimSpace(revision) == "" {
+				return output.New(2, "--revision requires the exact sealed revision ID; refusing legacy Stage fallback")
+			}
+			if revision != "" {
+				if action != "stage" || version != "" || notes != "" {
+					return output.New(2, "--revision applies only to Stage; it cannot select a published version or activation reason")
+				}
+				return a.stageASaCRevision(cmd, "network", args[0], revision)
+			}
 			if a.File != "" {
 				return output.New(2, "Push author YAML before changing the saved Network lifecycle")
 			}
@@ -147,6 +156,7 @@ func (a *App) developmentNetworkLifecycleCommands() {
 			}
 			return a.call(cmd, "POST", path, encoded, false)
 		}}
+		command.Flags().StringVar(&revision, "revision", "", "Prepare the exact sealed revision from the selected isolated Draft; does not publish or select native Staging")
 		command.Flags().StringVar(&version, "version", "", "Immutable Network Release version")
 		command.Flags().StringVar(&notes, "notes", "", "Activation or rollback audit reason")
 		a.group("develop network").AddCommand(command)
