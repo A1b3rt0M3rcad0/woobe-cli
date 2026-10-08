@@ -9,7 +9,7 @@ Windows binaries contain the same reviewed skill files as the optional npm packa
 `woobe-cli-skill` remains a separate npm package with the `woobe-skill` installer
 for assistants that want instructions independently of a native CLI installation.
 That optional installer requires Node.js 22+. Documented Woobe workflows require
-CLI 0.19.0+ for the current ASaC command references; the new built-in installer is available in CLI releases containing
+CLI 0.19.1+ for the current ASaC command references; the new built-in installer is available in CLI releases containing
 this PR. Neither installer logs in, asks for keys or calls Woobe.
 
 ## Install directly from Woobe CLI
@@ -220,8 +220,10 @@ installer/npx. `scripts/validate_skill_commands.py` checks every fenced CLI
 example against the packaged binary's help, without server requests.
 See the [repository documentation index](https://github.com/A1b3rt0M3rcad0/woobe-cli/blob/master/docs/INDEX.md) for broader CLI workflows and limitations.
 
-The assistant payload now requires CLI 0.19.0 or newer because its ASaC guides
-use isolated Draft selection and retained-source checkout/rebase. Upgrade the
+The assistant payload now requires CLI 0.19.1 or newer because its ASaC guides
+use isolated Draft selection and versioned retained-source checkout/rebase.
+The previous CLI refuses the new compiler-recipe field, so upgrade before
+exchanging new retained author objects. Upgrade the
 CLI before installing/updating this payload (`npm install -g woobe-cli@latest`
 or the latest verified native release). This compatibility floor is independent
 of the calculated package/release version; older payloads are not rewritten.
