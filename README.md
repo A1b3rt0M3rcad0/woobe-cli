@@ -278,6 +278,9 @@ The development server additions were delivered in merged [Woobe PR #179](https:
 
 ## Contributing
 
+See [ASaC tracking and history](docs/ASAC.md) for immutable local revisions,
+origin locks and explicit remote observations of Agent/Network selections.
+
 Read [AGENTS.md](AGENTS.md) for repository maintenance instructions, including
 which help, documentation and assistant skill files to update with CLI changes,
 how to regenerate derived docs and which validation applies.

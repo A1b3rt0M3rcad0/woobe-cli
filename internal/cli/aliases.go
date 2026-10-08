@@ -57,7 +57,7 @@ func (a *App) aliasCommands() {
 				}
 			}
 			if name == "agent" || name == "network" || name == "surface" {
-				actions := map[string]string{"pull": "pull", "sync": "pull", "push": "push", "update": "push", "diff": "diff", "validate": "validate", "status": "status", "create": "create", "reconcile": "reconcile"}
+				actions := map[string]string{"pull": "pull", "sync": "pull", "push": "push", "update": "push", "diff": "diff", "validate": "validate", "status": "status", "create": "create", "reconcile": "reconcile", "history": "history", "heads": "heads", "current": "current", "revision": "revision"}
 				for _, action := range []string{"stage", "publish", "activate", "rollback"} {
 					if name != "surface" {
 						actions[action] = action

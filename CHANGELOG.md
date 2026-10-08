@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add Agent/Network origin tracking, immutable local checkpoints and portable
+  objects, explicit remote status/current reads and append-only history fetch.
+
 - Preserve tab-indented instructions when writing local YAML descriptors by
   escaping tab-containing strings instead of emitting an unreadable literal block.
 

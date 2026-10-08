@@ -195,6 +195,9 @@ var relevantFields = []string{
 }
 
 func summarize(command string, value any) any {
+	if strings.HasPrefix(command, "develop ") && (strings.HasSuffix(command, " status") || strings.HasSuffix(command, " current") || strings.HasSuffix(command, " history") || strings.HasSuffix(command, " heads") || strings.HasSuffix(command, " revision")) {
+		return value
+	}
 	if strings.HasPrefix(command, "skills ") {
 		return value // Keep installation destinations and drift evidence visible.
 	}

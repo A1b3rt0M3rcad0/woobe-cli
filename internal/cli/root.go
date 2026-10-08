@@ -129,6 +129,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.assistantSkillCommands()
 	a.developmentConfigCommands()
 	a.developmentCommands()
+	a.asacCommands()
 	a.developmentLifecycleCommands()
 	a.developmentNetworkLifecycleCommands()
 	a.developmentTestCommands()

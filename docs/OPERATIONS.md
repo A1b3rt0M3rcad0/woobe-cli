@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from current discovery: 312 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
+Generated from current discovery: 320 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
 
 Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. Assistant installation uses local `skills` commands, not HTTP operations. The optional npm `woobe-skill` executable uses the same payload and receipts.
 
@@ -41,33 +41,41 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `develop agent activate` | `development` | — | `local` | — | — |
 | `develop agent archive` | `development` | — | `local` | — | — |
 | `develop agent create` | `development` | — | `local` | — | — |
+| `develop agent current` | `development-http` | — | `server-dependent` | — | — |
 | `develop agent delete` | `development` | — | `local` | — | — |
 | `develop agent diff` | `development` | — | `local` | — | — |
+| `develop agent heads` | `development` | — | `local` | — | — |
+| `develop agent history` | `development` | — | `local_or_server-dependent` | — | — |
 | `develop agent publish` | `development` | — | `local` | — | — |
 | `develop agent pull` | `development-http` | — | `server-dependent` | — | — |
 | `develop agent push` | `development-http` | — | `server-dependent` | — | — |
 | `develop agent reconcile` | `development` | — | `local` | — | — |
+| `develop agent revision` | `development` | — | `local` | — | — |
 | `develop agent rollback` | `development` | — | `local` | — | — |
 | `develop agent stage` | `development` | — | `local` | — | — |
-| `develop agent status` | `development` | — | `local` | — | — |
+| `develop agent status` | `development` | — | `local_or_server-dependent` | — | — |
 | `develop agent test` | `development` | — | `local` | — | — |
 | `develop agent validate` | `development` | — | `local` | — | — |
 | `develop network activate` | `development` | — | `local` | — | — |
 | `develop network create` | `development` | — | `local` | — | — |
+| `develop network current` | `development-http` | — | `server-dependent` | — | — |
 | `develop network diff` | `development` | — | `local` | — | — |
+| `develop network heads` | `development` | — | `local` | — | — |
+| `develop network history` | `development` | — | `local_or_server-dependent` | — | — |
 | `develop network publish` | `development` | — | `local` | — | — |
 | `develop network pull` | `development-http` | — | `server-dependent` | — | — |
 | `develop network push` | `development-http` | — | `server-dependent` | — | — |
 | `develop network reconcile` | `development` | — | `local` | — | — |
+| `develop network revision` | `development` | — | `local` | — | — |
 | `develop network rollback` | `development` | — | `local` | — | — |
 | `develop network stage` | `development` | — | `local` | — | — |
-| `develop network status` | `development` | — | `local` | — | — |
+| `develop network status` | `development` | — | `local_or_server-dependent` | — | — |
 | `develop network validate` | `development` | — | `local` | — | — |
 | `develop surface create` | `development` | — | `local` | — | — |
 | `develop surface diff` | `development` | — | `local` | — | — |
 | `develop surface pull` | `development-http` | — | `server-dependent` | — | — |
 | `develop surface push` | `development-http` | — | `server-dependent` | — | — |
-| `develop surface status` | `development` | — | `local` | — | — |
+| `develop surface status` | `development` | — | `local_or_server-dependent` | — | — |
 | `develop surface validate` | `development` | — | `local` | — | — |
 | `doctor` | `diagnostic-http` | — | `server-dependent` | — | — |
 | `export` | `http-projection` | — | `observed` | — | — |
