@@ -71,7 +71,7 @@ func (a *App) completeDiscovery() {
 					kind = "generic-http"
 					effect = "specified_by_request"
 					availability = "server-dependent"
-				case path == "doctor" || path == "server-schema" || path == "validate-input":
+				case path == "doctor" || path == "package doctor" || path == "server-schema" || path == "validate-input":
 					kind = "diagnostic-http"
 					effect = "read"
 					availability = "server-dependent"

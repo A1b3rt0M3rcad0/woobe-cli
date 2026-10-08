@@ -8,7 +8,6 @@ import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packageapi"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagecheckpoint"
-	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/spf13/cobra"
 )
 
@@ -32,8 +31,8 @@ func (a *App) packageClient(ctx context.Context, operation string) (*packageapi.
 	if err != nil {
 		return nil, err
 	}
-	if capabilities.SchemaCatalogSHA256 != packagefmt.CatalogDigest() {
-		return nil, output.New(9, "Server Package schema catalog is incompatible with this CLI")
+	if err := packageCatalogCompatibility(client, capabilities); err != nil {
+		return nil, err
 	}
 	for _, supported := range capabilities.SupportedOperations {
 		if supported == operation {
