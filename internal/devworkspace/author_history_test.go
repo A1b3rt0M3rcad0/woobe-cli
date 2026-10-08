@@ -1,6 +1,7 @@
 package devworkspace
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -169,5 +170,60 @@ func TestCheckoutProtectsNewlyReferencedUnregisteredSupport(t *testing.T) {
 	got, _ := os.ReadFile(target)
 	if string(got) != "unregistered local notes\n" {
 		t.Fatal("local notes changed")
+	}
+}
+
+func TestRetainedAuthorCompilationRejectsSourceDisagreementBeforePublication(t *testing.T) {
+	c, g := completeGraph(t)
+	resource := g.Nodes["support"].Resource
+	state := authorState()
+	record, err := g.CreateRevision(resource, state, "Retained author", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	object, err := c.ReadAuthorObject(resource, record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bundle, _, err := g.Compile(resource.Key, state.Requirements, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bundle.Close()
+	raw, err := json.Marshal(object)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = c.ValidateRetainedAuthor(resource, record, raw, state.Requirements, bundle); err != nil {
+		t.Fatal(err)
+	}
+	item := object.Components[resource.UID]
+	// Keep source YAML and decoded descriptor consistent, but contradict the
+	// executable definition. A matching source hash alone cannot authorize it.
+	item.Document["metadata"].(map[string]any)["name"] = "Different source behavior"
+	encoded, err := Encode(item.Document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	item.Raw = string(encoded)
+	object.Components[resource.UID] = item
+	changed := *record
+	changed.AuthorDigest, err = authorDigest(object)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err = json.Marshal(object)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = ValidateAuthorObject(resource, &changed, raw); err != nil {
+		t.Fatal("source shape should be valid", err)
+	}
+	if err = c.ValidateRetainedAuthor(resource, &changed, raw, state.Requirements, bundle); err == nil {
+		t.Fatal("source hash accepted without sealed definition agreement")
+	}
+	path := filepath.Join(c.RootPath(), "objects", "author", strings.TrimPrefix(changed.AuthorDigest, "sha256:")+".json")
+	if _, err = os.Stat(path); !os.IsNotExist(err) {
+		t.Fatal("failed compilation published source", err)
 	}
 }

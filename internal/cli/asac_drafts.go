@@ -350,6 +350,21 @@ func (a *App) asacDraftCommands() {
 						providerUIDs[key] = node.Resource.UID
 					}
 				}
+				if record.AuthorDigest != "" && supported["author_source_retention"] == true {
+					source, err := c.ReadAuthorObject(*resource, record)
+					if err != nil {
+						return output.New(9, err.Error())
+					}
+					raw, err := json.Marshal(source)
+					if err != nil {
+						return err
+					}
+					authorUpload, err := client.UploadAuthor(cmd.Context(), raw, record.AuthorDigest, resource.UID)
+					if err != nil {
+						return err
+					}
+					payload["author_upload_id"] = authorUpload
+				}
 				path = base + "/revisions"
 				payload["draft_id"], payload["expected_generation"], payload["record"], payload["component_uids"], payload["provider_uids"] = observed.DraftID, observed.Generation, record, uids, providerUIDs
 			}

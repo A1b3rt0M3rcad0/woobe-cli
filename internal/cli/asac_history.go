@@ -235,7 +235,7 @@ func (a *App) asacCommands() {
 				}
 			}}
 			if action == "revision" {
-				command.Long += " Revision hydrate REVISION_ID downloads only the verified retained executable object after history fetch --revisions. It preserves author files, native bindings and the working head; it does not obtain an unavailable author object or qualify runtime execution."
+				command.Long += " Revision hydrate REVISION_ID downloads verified executable objects after history fetch --revisions. When the backend retained author source, it also verifies exact YAML, support files and the recorded compiler recipe against the sealed definition before retaining source locally. It preserves author files, native bindings and the working head; checkout is a separate guarded operation. Missing source remains explicit, and hydration does not qualify runtime execution."
 			}
 			command.Flags().StringVar(&message, "message", "", "Checkpoint message (required for revision create or merge)")
 			command.Flags().StringSliceVar(&parents, "parent", nil, "Explicit sealed parent revision IDs (repeatable); default current working revision")
