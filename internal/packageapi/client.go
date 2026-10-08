@@ -39,6 +39,10 @@ func New(control *controlplane.Client, project string) (*Client, error) {
 func (c *Client) path(suffix string) string { return "/projects/" + c.ProjectID + "/packages" + suffix }
 
 func (c *Client) request(ctx context.Context, method, suffix string, body any, destination any) error {
+	return c.requestPath(ctx, method, c.path(suffix), body, destination)
+}
+
+func (c *Client) requestPath(ctx context.Context, method, path string, body any, destination any) error {
 	var encoded []byte
 	if body != nil {
 		var err error
@@ -47,7 +51,7 @@ func (c *Client) request(ctx context.Context, method, suffix string, body any, d
 			return output.New(2, "Package request is invalid or exceeds 2 MiB")
 		}
 	}
-	value, _, err := c.Control.Request(ctx, method, c.path(suffix), nil, encoded)
+	value, _, err := c.Control.Request(ctx, method, path, nil, encoded)
 	if err != nil {
 		return err
 	}
@@ -67,6 +71,7 @@ func (c *Client) request(ctx context.Context, method, suffix string, body any, d
 }
 
 type ASaCCapabilities struct {
+	RetainedObjectHydration    bool `json:"retained_object_hydration"`
 	RevisionCatalog            bool `json:"revision_catalog"`
 	AcceptedBindingGenerations bool `json:"accepted_binding_generations"`
 }

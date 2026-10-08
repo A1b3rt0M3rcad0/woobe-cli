@@ -188,3 +188,20 @@ not a retained author object or a server attestation. Local checkout still
 requires verified executable and exact author objects. `--dry-run` validates
 the catalog without storing metadata. A failed traversal can retain earlier
 immutable pages, but never reports that traversal as complete.
+
+
+### Hydrate a retained executable object
+
+```sh
+woobe agent @support history fetch --revisions
+woobe agent @support revision hydrate rv_00000000-0000-0000-0000-000000000000
+```
+
+Replace the revision placeholder with a verified retained ID. Agent and Network
+use the same operation. It negotiates backend hydration support, reauthorizes
+the retained resource and verifies the receipt, transport SHA-256, inventory,
+artifact digest and executable definition before storing an immutable object.
+`--dry-run` downloads and verifies without storing. Source YAML, native bindings,
+working head and Production are preserved. Author objects are reported separately:
+missing author source prevents exact checkout; executable hydration does not
+reconstruct source or provider credentials and does not qualify runtime execution.

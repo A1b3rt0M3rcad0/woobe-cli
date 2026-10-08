@@ -175,7 +175,7 @@ func (a *App) asacCommands() {
 					return a.emit(map[string]any{"resource_uid": resource.UID, "revisions": records, "scope": "local", "remote_status": "unverified"})
 				}
 				if len(args) < 2 {
-					return output.New(2, "Use revision create, merge, show or diff")
+					return output.New(2, "Use revision create, merge, show, diff or hydrate")
 				}
 				switch args[1] {
 				case "create", "merge":
@@ -199,6 +199,15 @@ func (a *App) asacCommands() {
 						return output.New(2, err.Error())
 					}
 					return a.emit(record)
+				case "hydrate":
+					if len(args) != 3 {
+						return output.New(2, "revision hydrate requires one retained revision ID; use history fetch --revisions first")
+					}
+					record, err := c.ReadRevision(*resource, args[2])
+					if err != nil {
+						return output.New(9, "Retain and verify revision metadata with history fetch --revisions before hydration")
+					}
+					return a.asacHydrate(cmd, c, state, resource, record)
 				case "show":
 					if len(args) != 3 {
 						return output.New(2, "revision show requires one revision ID")
@@ -222,9 +231,12 @@ func (a *App) asacCommands() {
 					}
 					return a.emit(map[string]any{"from": left.ID, "to": right.ID, "definition_changed": left.DefinitionDigest != right.DefinitionDigest, "components_before": left.Components, "components_after": right.Components, "scope": "sealed_composition"})
 				default:
-					return output.New(2, "Use revision create, merge, show or diff")
+					return output.New(2, "Use revision create, merge, show, diff or hydrate")
 				}
 			}}
+			if action == "revision" {
+				command.Long += " Revision hydrate REVISION_ID downloads only the verified retained executable object after history fetch --revisions. It preserves author files, native bindings and the working head; it does not obtain an unavailable author object or qualify runtime execution."
+			}
 			command.Flags().StringVar(&message, "message", "", "Checkpoint message (required for revision create or merge)")
 			command.Flags().StringSliceVar(&parents, "parent", nil, "Explicit sealed parent revision IDs (repeatable); default current working revision")
 			if action == "history" {
