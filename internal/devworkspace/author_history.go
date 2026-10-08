@@ -29,10 +29,11 @@ type AuthorComponent struct {
 	Supports map[string]string `json:"supports"`
 }
 type AuthorObject struct {
-	Format     string                     `json:"format"`
-	Version    string                     `json:"schema_version"`
-	UID        string                     `json:"resource_uid"`
-	Components map[string]AuthorComponent `json:"components"`
+	CompilerRecipe string                     `json:"compiler_recipe,omitempty"`
+	Format         string                     `json:"format"`
+	Version        string                     `json:"schema_version"`
+	UID            string                     `json:"resource_uid"`
+	Components     map[string]AuthorComponent `json:"components"`
 }
 
 func authorDigest(value *AuthorObject) (string, error) {
@@ -67,7 +68,7 @@ func (g *Graph) captureAuthors(resource Resource, bundle *packagebundle.Bundle) 
 		return nil, err
 	}
 	defer captured.Close()
-	result := &AuthorObject{Format: "woobe-author-object", Version: "1.0", UID: resource.UID, Components: map[string]AuthorComponent{}}
+	result := &AuthorObject{CompilerRecipe: CurrentCompilerRecipe, Format: "woobe-author-object", Version: "1.0", UID: resource.UID, Components: map[string]AuthorComponent{}}
 	total := 0
 	for _, node := range nodes {
 		raw, err := packagebundle.ReadConfined(root, node.Descriptor, requestinput.MaxBytes)
@@ -135,7 +136,7 @@ func (c *Config) ReadAuthorObject(resource Resource, record *Revision) (*AuthorO
 		return nil, fmt.Errorf("trailing author source content")
 	}
 	digest, err := authorDigest(&object)
-	if err != nil || digest != record.AuthorDigest || object.Format != "woobe-author-object" || object.Version != "1.0" || object.UID != resource.UID || len(object.Components) == 0 || len(object.Components) > 1024 {
+	if err != nil || digest != record.AuthorDigest || object.Format != "woobe-author-object" || (object.CompilerRecipe != "" && object.CompilerRecipe != CurrentCompilerRecipe) || object.Version != "1.0" || object.UID != resource.UID || len(object.Components) == 0 || len(object.Components) > 1024 {
 		return nil, fmt.Errorf("author object integrity or identity mismatch")
 	}
 	entry, ok := object.Components[resource.UID]
@@ -432,7 +433,7 @@ func (g *Graph) validateAuthorExecution(resource Resource, record *Revision, obj
 	if err != nil {
 		return err
 	}
-	bundle, _, err := graph.Compile(resource.Key, tracking.Requirements, nil)
+	bundle, _, err := graph.compileRecipe(resource.Key, tracking.Requirements, nil, object.CompilerRecipe)
 	if err != nil {
 		return err
 	}

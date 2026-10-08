@@ -36,3 +36,16 @@ Draft or clone explicitly. Surface authoring references a registered Agent or
 Network through `spec.target_ref`; pull/create its target first. Surface pushes
 preserve its selected Release but may affect active surface configuration. Use
 explicit lifecycle commands for activation/refresh and the user's intended scope.
+
+Provider connection defaults and Model overrides remain distinct during compilation.
+A Provider's `base_url` stays in its public credential requirement metadata; it
+is not injected into, or allowed to replace, the Model's explicit `base_url`.
+An absent Model override remains absent. This preserves frozen Network component
+definitions during an unchanged pull/push round trip while the native credential
+retains its authorized connection settings.
+
+New author objects record `compiler_recipe: woobe-development-compiler@2.0`.
+Source objects without this field retain the earlier lowering recipe for exact
+checkout verification. Their immutable hashes and executable objects are not
+rewritten. New checkpoints/rebases use the current recipe; recompilation can
+therefore produce a different definition from the historical one.

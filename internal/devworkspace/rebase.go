@@ -134,7 +134,7 @@ func authorComments(raw string) (string, error) {
 }
 
 func mergeAuthorObjects(base, local, remote *AuthorObject) (*AuthorObject, []Conflict, error) {
-	result := &AuthorObject{Format: "woobe-author-object", Version: "1.0", UID: local.UID, Components: map[string]AuthorComponent{}}
+	result := &AuthorObject{CompilerRecipe: CurrentCompilerRecipe, Format: "woobe-author-object", Version: "1.0", UID: local.UID, Components: map[string]AuthorComponent{}}
 	conflicts := []Conflict{}
 	uids := map[string]bool{}
 	for _, object := range []*AuthorObject{base, local, remote} {

@@ -1,7 +1,7 @@
 ---
 name: woobe-cli
 description: 'Use Woobe CLI to inspect, create and edit Agents and Networks through local YAML, manage shared Providers, Models, Tools, Skills and Knowledge, import/export packages, run tests and operate staging, releases and production. Use when the user mentions Woobe, woobe-cli, .woobe-config, or Woobe Agent/Network development.'
-compatibility: 'Requires woobe CLI 0.13.7 or newer. Remote operations require a compatible Woobe backend and a CLI Key saved in the selected connection.'
+compatibility: 'Requires woobe CLI 0.19.1 or newer. Remote operations require a compatible Woobe backend and a CLI Key saved in the selected connection.'
 ---
 
 # Woobe CLI

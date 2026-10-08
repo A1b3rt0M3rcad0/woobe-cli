@@ -285,3 +285,7 @@ The full [assistant guide](AGENT_SKILL.md) documents `.agents/skills`, explicit
 Trusted Publisher. Existing `woobe-cli` publication remains independent.
 Local `make check` now also requires Node.js 22+ for installer regression tests;
 release builds pin Node 24 and npm 11.5.1.
+
+The current assistant skill's ASaC examples require CLI 0.19.1 or newer.
+Use the latest verified CLI release before updating the skill; historical
+installation examples above remain available for pinned older versions.

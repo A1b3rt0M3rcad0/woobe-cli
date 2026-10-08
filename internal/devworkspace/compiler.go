@@ -101,7 +101,19 @@ func clone(document map[string]any) map[string]any {
 
 // Compile creates a closed, disposable bundle. It follows registered graph
 // edges, copies declared support files and never broadens package path rules.
+const CurrentCompilerRecipe = "woobe-development-compiler@2.0"
+
 func (g *Graph) Compile(key string, requirements map[string]any, credentialIDs map[string]string) (*packagebundle.Bundle, map[string]any, error) {
+	return g.compileRecipe(key, requirements, credentialIDs, CurrentCompilerRecipe)
+}
+
+// Historical source verification preserves the exact previous compiler recipe.
+// New writes/checkpoints always use the current recipe.
+func (g *Graph) compileRecipe(key string, requirements map[string]any, credentialIDs map[string]string, recipe string) (*packagebundle.Bundle, map[string]any, error) {
+	if recipe != "" && recipe != CurrentCompilerRecipe {
+		return nil, nil, fmt.Errorf("unsupported retained compiler recipe")
+	}
+
 	nodes, err := g.Closure(key)
 	if err != nil {
 		return nil, nil, err
@@ -154,9 +166,17 @@ func (g *Graph) Compile(key string, requirements map[string]any, credentialIDs m
 				delete(spec, "provider_ref")
 				spec["provider"] = provider["provider"]
 				spec["credential"] = map[string]any{"ref": providerKey}
-				if base := packagefmt.Text(provider["base_url"]); base != "" {
-					spec["base_url"] = base
+				if recipe == "" {
+					// Source objects issued before recipes were explicit used this
+					// lowering, including its override. Verify those immutable
+					// objects as issued instead of relabeling their definition.
+					if base := packagefmt.Text(provider["base_url"]); base != "" {
+						spec["base_url"] = base
+					}
 				}
+				// Provider connection defaults belong to credential requirements.
+				// Preserve the Model's explicit override (including its absence),
+				// otherwise an untouched frozen export changes definition on push.
 				if !declared[providerKey] {
 					requirement := map[string]any{"ref": providerKey, "provider": provider["provider"]}
 					metadata := map[string]any{}
