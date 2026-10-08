@@ -65,6 +65,48 @@ func (a *App) asacCommands() {
 		checkout.Flags().StringVar(&checkoutRevision, "revision", "", "Retained local revision ID (required)")
 		_ = checkout.MarkFlagRequired("revision")
 		parent.AddCommand(checkout)
+		var onto, rebaseBase, rebaseMessage string
+		rebase := &cobra.Command{Use: "rebase REFERENCE --onto REVISION_ID", Short: "Reconcile sealed branches into a new local revision", Args: cobra.ExactArgs(1), Long: "Three-way merge of sealed author definitions and support bytes against a known common ancestor. Requires clean checkpointed files. Arrays and support files are atomic; concurrent changes report paths without rewriting files or history. Old revisions remain immutable. The new revision has the selected onto revision as parent. No remote Draft, Release or environment changes.", RunE: func(cmd *cobra.Command, args []string) error {
+			if a.DryRun {
+				return output.New(2, "rebase creates a local checkpoint; use revision diff to inspect before writing")
+			}
+			c, err := a.developmentConfig(true)
+			if err != nil {
+				return err
+			}
+			unlock, err := c.Lock()
+			if err != nil {
+				return output.New(2, err.Error())
+			}
+			defer unlock()
+			resource, err := c.Resolve(strings.ToUpper(kind[:1])+kind[1:], args[0])
+			if err != nil {
+				return output.New(2, err.Error())
+			}
+			graph, err := devworkspace.LoadGraph(c)
+			if err != nil {
+				return output.New(2, err.Error())
+			}
+			data, err := graph.RebaseRevision(*resource, onto, rebaseBase, rebaseMessage)
+			if err != nil {
+				if strings.HasPrefix(err.Error(), "ASAC_REBASE_CONFLICT:") {
+					failure := output.New(6, err.Error())
+					failure.DomainCode = "ASAC_REBASE_CONFLICT"
+					failure.Outcome = "not_attempted"
+					for _, issue := range data["conflicts"].([]devworkspace.Conflict) {
+						failure.Diagnostics = append(failure.Diagnostics, output.DomainDiagnostic{Code: failure.DomainCode, Path: issue.Path})
+					}
+					return failure
+				}
+				return output.New(2, err.Error())
+			}
+			return a.emit(data)
+		}}
+		rebase.Flags().StringVar(&onto, "onto", "", "Sealed target revision ID (required)")
+		rebase.Flags().StringVar(&rebaseBase, "base", "", "Explicit common ancestor when the DAG has multiple possible bases")
+		rebase.Flags().StringVar(&rebaseMessage, "message", "", "New revision message; default identifies original and onto revisions")
+		_ = rebase.MarkFlagRequired("onto")
+		parent.AddCommand(rebase)
 
 		for _, action := range []string{"history", "heads", "revision"} {
 			var message string
@@ -74,10 +116,10 @@ func (a *App) asacCommands() {
 					return output.New(2, "heads expects only one resource reference")
 				}
 				if action != "revision" && (cmd.Flags().Changed("message") || cmd.Flags().Changed("parent")) {
-					return output.New(2, "--message and --parent apply only to revision create")
+					return output.New(2, "--message applies to create/merge; --parent applies only to create")
 				}
-				if action == "revision" && len(args) > 1 && args[1] != "create" && (cmd.Flags().Changed("message") || cmd.Flags().Changed("parent")) {
-					return output.New(2, "--message and --parent apply only to revision create")
+				if action == "revision" && len(args) > 1 && args[1] != "create" && args[1] != "merge" && (cmd.Flags().Changed("message") || cmd.Flags().Changed("parent")) {
+					return output.New(2, "--message applies to create/merge; --parent applies only to create")
 				}
 				c, err := a.developmentConfig(true)
 				if err != nil {
@@ -126,11 +168,16 @@ func (a *App) asacCommands() {
 					return a.emit(map[string]any{"resource_uid": resource.UID, "revisions": records, "scope": "local", "remote_status": "unverified"})
 				}
 				if len(args) < 2 {
-					return output.New(2, "Use revision create, show or diff")
+					return output.New(2, "Use revision create, merge, show or diff")
 				}
 				switch args[1] {
-				case "create":
-					if len(args) != 2 {
+				case "create", "merge":
+					if args[1] == "merge" {
+						if len(args) != 4 || cmd.Flags().Changed("parent") {
+							return output.New(2, "revision merge requires two sealed revision IDs and --message; --parent applies to revision create")
+						}
+						parents = []string{args[2], args[3]}
+					} else if len(args) != 2 {
 						return output.New(2, "unexpected revision create arguments")
 					}
 					if a.DryRun {
@@ -168,10 +215,10 @@ func (a *App) asacCommands() {
 					}
 					return a.emit(map[string]any{"from": left.ID, "to": right.ID, "definition_changed": left.DefinitionDigest != right.DefinitionDigest, "components_before": left.Components, "components_after": right.Components, "scope": "sealed_composition"})
 				default:
-					return output.New(2, "Use revision create, show or diff")
+					return output.New(2, "Use revision create, merge, show or diff")
 				}
 			}}
-			command.Flags().StringVar(&message, "message", "", "Checkpoint message (required for revision create)")
+			command.Flags().StringVar(&message, "message", "", "Checkpoint message (required for revision create or merge)")
 			command.Flags().StringSliceVar(&parents, "parent", nil, "Explicit sealed parent revision IDs (repeatable); default current working revision")
 			parent.AddCommand(command)
 		}

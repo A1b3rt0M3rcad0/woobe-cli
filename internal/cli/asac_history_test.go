@@ -207,3 +207,64 @@ func TestASaCRejectsAmbiguousArgumentsWithoutHTTP(t *testing.T) {
 		}
 	}
 }
+
+func TestASaCRebaseAndResolvedMergeAreOffline(t *testing.T) {
+	root, _ := filepath.Abs("../..")
+	t.Setenv("WOOBE_TEST_REPOSITORY", root)
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		t.Error("local reconciliation contacted backend")
+	}))
+	defer server.Close()
+	c, _, resource := asacWorkspace(t, server.URL)
+	flags := []string{"--api-url", server.URL, "--workspace", "workspace", "--project", "project", "--output", "json"}
+	run := func(args ...string) map[string]any {
+		t.Helper()
+		code, value := invoke(t, append(args, flags...), "")
+		if code != 0 {
+			t.Fatal(args, value)
+		}
+		return value["data"].(map[string]any)
+	}
+	create := func(message string) string {
+		return run("agent", "@support", "revision", "create", "--message", message)["revision_id"].(string)
+	}
+	edit := func(field, value string) {
+		t.Helper()
+		graph, err := devworkspace.LoadGraph(c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		node := graph.Nodes[resource.Key]
+		node.Document["metadata"].(map[string]any)[field] = value
+		raw, err := devworkspace.EncodeFile(node.Document, node.Descriptor)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = os.WriteFile(filepath.Join(c.RootPath(), node.Descriptor), raw, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	base := create("base")
+	edit("description", "local branch")
+	local := create("local")
+	run("agent", "@support", "checkout", "--revision", base)
+	edit("name", "remote branch")
+	onto := create("onto")
+	run("agent", "@support", "checkout", "--revision", local)
+	if err := os.RemoveAll(filepath.Join(c.RootPath(), ".state")); err != nil {
+		t.Fatal(err)
+	}
+	rebased := run("agent", "@support", "rebase", "--onto", onto)
+	revision := rebased["revision"].(map[string]any)
+	newID := revision["revision_id"].(string)
+	if rebased["rebased_from"] != local || rebased["remote_changed"] != false || revision["parents"].([]any)[0] != onto {
+		t.Fatal(rebased)
+	}
+	merged := run("agent", "@support", "revision", "merge", local, newID, "--message", "Resolved content")
+	parents := merged["parents"].([]any)
+	if len(parents) != 2 || parents[0] != local || parents[1] != newID || requests != 0 {
+		t.Fatal(merged, requests)
+	}
+}

@@ -147,3 +147,9 @@ Local sealed revisions can restore author files with
 command). This requires a clean source checkpoint, preserves origin/bindings and
 protects shared dependencies. See [ASaC source restoration](ASAC.md#restore-local-author-source)
 for the source retention and server verification boundaries.
+
+For diverged sealed branches, `woobe agent '@support' rebase --onto REVISION_ID`
+performs a guarded local three-way merge. Concurrent field or support-file changes
+are reported for explicit resolution. `revision merge REV_A REV_B --message 'Resolved content'`
+then records already resolved files with both parents. Networks use the same flow;
+see [reconciliation details](ASAC.md#reconcile-sealed-local-branches).

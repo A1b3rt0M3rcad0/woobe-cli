@@ -54,7 +54,7 @@ type Tracking struct {
 	Requirements       map[string]any `json:"requires,omitempty"`
 }
 
-var revisionID = regexp.MustCompile(`^rv_[a-f0-9-]{36}$`)
+var revisionID = regexp.MustCompile(`^rv_[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$`)
 var historyDigest = regexp.MustCompile(`^sha256:[a-f0-9]{64}$`)
 
 func (c *Config) historyDirectory(resource Resource) (string, error) {
@@ -234,6 +234,14 @@ func (c *Config) ReadRevision(resource Resource, id string) (*Revision, error) {
 	if record.Format != "woobe-revision" || record.SchemaVersion != asac.Version || record.ID != id || record.UID != resource.UID || record.Kind != resource.Kind || !historyDigest.MatchString(record.ArtifactDigest) || !historyDigest.MatchString(record.DefinitionDigest) || record.AuthorDigest != "" && !historyDigest.MatchString(record.AuthorDigest) {
 		return nil, fmt.Errorf("ASAC_REVISION_INVALID: record identity mismatch")
 	}
+	if len(record.Parents) > 64 || len(record.Components) > 1024 || len(record.Message) > 4096 || strings.TrimSpace(record.Message) == "" {
+		return nil, fmt.Errorf("ASAC_REVISION_INVALID: record exceeds canonical bounds")
+	}
+	for uid, digest := range record.Components {
+		if !uuidPattern.MatchString(uid) || !historyDigest.MatchString(digest) {
+			return nil, fmt.Errorf("ASAC_REVISION_INVALID: invalid component identity or digest")
+		}
+	}
 	digest, err := revisionRecordDigest(record)
 	if err != nil || record.RecordDigest != digest {
 		return nil, fmt.Errorf("ASAC_REVISION_INVALID: record digest mismatch")
@@ -319,6 +327,9 @@ func (g *Graph) CreateRevision(resource Resource, state *State, message string, 
 		if tracking.Working != "" {
 			parents = append(parents, tracking.Working)
 		}
+	}
+	if len(parents) > 64 {
+		return nil, fmt.Errorf("revision supports at most 64 parents")
 	}
 	seen := map[string]bool{}
 	for _, parent := range parents {

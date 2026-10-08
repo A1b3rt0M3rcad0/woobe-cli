@@ -59,3 +59,11 @@ or shared-file changes; do not delete files or private state to bypass that chec
 Keep `objects/author` with local revision history for offline clones. The optional
 remote author digest is declared metadata, not a server-verified source attestation;
 closed executable package verification remains separate.
+
+`woobe agent '@support' rebase --onto REVISION_ID` reconciles sealed local branches
+against their common ancestor. Checkpoint local edits first. Arrays and support
+bytes are atomic; conflict diagnostics give paths without changing author files.
+Use an explicit known `--base` only when ancestry has multiple possible bases.
+After resolving content yourself, `woobe agent '@support' revision merge REV_A REV_B --message 'Resolved content'`
+seals the current files with both parents; it does not automatically merge them.
+Networks have the same commands. Neither operation is a push or deployment.

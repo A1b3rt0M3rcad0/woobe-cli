@@ -226,25 +226,25 @@ func (c *Config) sourceWrites(object *AuthorObject) (map[string][]byte, error) {
 
 // CheckoutRevision restores exact retained author bytes only when the working
 // tree still matches its source checkpoint. --yes cannot bypass this protection.
-func (g *Graph) CheckoutRevision(resource Resource, record *Revision) (map[string]any, error) {
+func (g *Graph) prepareAuthorRestore(resource Resource, selected *AuthorObject) (map[string][]byte, *Tracking, error) {
 	tracking, err := g.Config.ReadTracking(resource)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if tracking.Working == "" {
-		return nil, fmt.Errorf("checkpoint current author files before checkout")
+		return nil, nil, fmt.Errorf("checkpoint current author files before checkout")
 	}
 	current, err := g.Config.ReadRevision(resource, tracking.Working)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	baseline, err := g.Config.ReadAuthorObject(resource, current)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	root, err := os.OpenRoot(g.Config.RootPath())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer root.Close()
 	for uid, item := range baseline.Components {
@@ -256,30 +256,23 @@ func (g *Graph) CheckoutRevision(resource Resource, record *Revision) (map[strin
 			}
 		}
 		if node == nil {
-			return nil, fmt.Errorf("working dependency is missing; restore it before checkout")
+			return nil, nil, fmt.Errorf("working dependency is missing; restore it before checkout")
 		}
 		raw, err := packagebundle.ReadConfined(root, node.Descriptor, requestinput.MaxBytes)
 		if err != nil || string(raw) != item.Raw {
-			return nil, fmt.Errorf("local author edits would be replaced; checkpoint or stash explicitly before checkout")
+			return nil, nil, fmt.Errorf("local author edits would be replaced; checkpoint or stash explicitly before checkout")
 		}
 		for name, encoded := range item.Supports {
 			relative := path.Join(path.Dir(node.Descriptor), name)
 			data, err := packagebundle.ReadConfined(root, relative, packagebundle.MaxFileBytes)
 			if err != nil || base64.StdEncoding.EncodeToString(data) != encoded {
-				return nil, fmt.Errorf("local support edits would be replaced; checkpoint or stash explicitly before checkout")
+				return nil, nil, fmt.Errorf("local support edits would be replaced; checkpoint or stash explicitly before checkout")
 			}
 		}
 	}
-	selected, err := g.Config.ReadAuthorObject(resource, record)
-	if err != nil {
-		return nil, err
-	}
-	if err = g.validateAuthorExecution(resource, record, selected, tracking); err != nil {
-		return nil, err
-	}
 	writes, err := g.Config.sourceWrites(selected)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// Check that unrelated files are not displaced when restoring a component
 	// absent from the current closure, even if a target path now belongs to it.
@@ -289,6 +282,23 @@ func (g *Graph) CheckoutRevision(resource Resource, record *Revision) (map[strin
 	}
 	for uid, item := range selected.Components {
 		if baselineUIDs[uid] {
+			// A restored revision may introduce a support path absent from the
+			// current checkpoint. Its existing bytes are unregistered local work.
+			for _, existing := range g.Config.Resources {
+				if existing.UID == uid {
+					for name, encoded := range item.Supports {
+						if _, tracked := baseline.Components[uid].Supports[name]; !tracked {
+							target := filepath.Join(g.Config.RootPath(), filepath.Dir(descriptor(existing)), filepath.FromSlash(name))
+							data, err := g.Config.ReadOperationalFile(target, packagebundle.MaxFileBytes)
+							if err == nil && base64.StdEncoding.EncodeToString(data) == encoded {
+								delete(writes, target)
+							} else if !os.IsNotExist(err) {
+								return nil, nil, fmt.Errorf("restore would replace an unregistered support file")
+							}
+						}
+					}
+				}
+			}
 			continue
 		}
 		managed := false
@@ -298,12 +308,12 @@ func (g *Graph) CheckoutRevision(resource Resource, record *Revision) (map[strin
 				file := filepath.Join(g.Config.RootPath(), descriptor(existing))
 				raw, err := g.Config.ReadOperationalFile(file, requestinput.MaxBytes)
 				if err != nil || string(raw) != item.Raw {
-					return nil, fmt.Errorf("checkout would replace an independently edited shared dependency")
+					return nil, nil, fmt.Errorf("checkout would replace an independently edited shared dependency")
 				}
 				for name, encoded := range item.Supports {
 					data, err := g.Config.ReadOperationalFile(filepath.Join(filepath.Dir(file), filepath.FromSlash(name)), packagebundle.MaxFileBytes)
 					if err != nil || base64.StdEncoding.EncodeToString(data) != encoded {
-						return nil, fmt.Errorf("checkout would replace an independently edited shared support file")
+						return nil, nil, fmt.Errorf("checkout would replace an independently edited shared support file")
 					}
 				}
 			}
@@ -315,12 +325,27 @@ func (g *Graph) CheckoutRevision(resource Resource, record *Revision) (map[strin
 			}
 			for _, file := range targets {
 				if _, err := os.Lstat(file); !os.IsNotExist(err) {
-					return nil, fmt.Errorf("checkout would replace an unregistered file")
+					return nil, nil, fmt.Errorf("checkout would replace an unregistered file")
 				}
 			}
 		}
 	}
 
+	return writes, tracking, nil
+}
+
+func (g *Graph) CheckoutRevision(resource Resource, record *Revision) (map[string]any, error) {
+	selected, err := g.Config.ReadAuthorObject(resource, record)
+	if err != nil {
+		return nil, err
+	}
+	writes, tracking, err := g.prepareAuthorRestore(resource, selected)
+	if err != nil {
+		return nil, err
+	}
+	if err = g.validateAuthorExecution(resource, record, selected, tracking); err != nil {
+		return nil, err
+	}
 	tracking.Working = record.ID
 	raw, err := json.Marshal(tracking)
 	if err != nil {
