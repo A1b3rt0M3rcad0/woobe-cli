@@ -100,3 +100,5 @@ artifact digest and executable definition before storing an immutable object.
 `--dry-run` downloads and verifies without storing. Source YAML, native bindings,
 working head and Production are preserved. Author objects are reported separately:
 when retained by the backend, exact author source is also downloaded and recompiled against the sealed definition before local storage. A separate guarded checkout restores YAML/comments/support files. Legacy records without retained source report it unavailable. Credentials and native bindings are not restored, and hydration does not qualify execution.
+
+Guarded checkout verifies both the current clean source anchor and the target revision. If author objects were removed or absent in a clone, hydrate both revision IDs first. This recovery never bypasses protection of local edits.

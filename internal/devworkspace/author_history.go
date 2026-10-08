@@ -123,6 +123,9 @@ func (c *Config) ReadAuthorObject(resource Resource, record *Revision) (*AuthorO
 	file := filepath.Join(c.RootPath(), "objects", "author", strings.TrimPrefix(record.AuthorDigest, "sha256:")+".json")
 	raw, err := c.ReadOperationalFile(file, maxAuthorObjectBytes)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("retained author object unavailable for revision %s; hydrate this revision before guarded checkout: %w", record.ID, os.ErrNotExist)
+		}
 		return nil, fmt.Errorf("retained author object unavailable: %w", err)
 	}
 	return ValidateAuthorObject(resource, record, raw)

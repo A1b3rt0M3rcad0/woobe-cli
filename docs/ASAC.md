@@ -200,3 +200,5 @@ the retained resource and verifies the receipt, transport SHA-256, inventory,
 artifact digest and executable definition before storing an immutable object.
 `--dry-run` downloads and verifies without storing. Source YAML, native bindings,
 working head and Production are preserved. If source custody is available, hydration verifies its canonical author hash, exact YAML/support inventory and recorded compiler recipe against the executable definition and every component identity before storing source. It reports `author_object: verified_source_and_compilation`; a separate guarded checkout restores working files. An old record without retained source still permits executable hydration and reports source unavailable. Credentials and native bindings remain separate; hydration does not qualify runtime execution.
+
+Guarded checkout verifies both the current clean source anchor and the target revision. If author objects were removed or absent in a clone, hydrate both revision IDs first. This recovery never bypasses protection of local edits.
