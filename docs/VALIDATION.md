@@ -22,9 +22,9 @@ revision evidence; this does not claim an assistant UI loaded the skill or certi
 live remote operations beyond the separately recorded backend evidence.
 
 Reproduce with [CI.md](CI.md). The regenerated command catalog currently lists
-312 executable entries including 193 HTTP operations; the optional skill installer
-is a separate executable. Published CLI baseline remains 0.13.7; the new npm name
-requires the documented owner bootstrap after approved merge.
+the executable entries in the generated [command catalog](OPERATIONS.md), including 193 HTTP operations; the optional skill installer
+is a separate executable. Published CLI baseline and delivery evidence are available in GitHub Releases;
+PR builds remain separate from published versions.
 
 ## Historical baseline — 2026-10-04
 

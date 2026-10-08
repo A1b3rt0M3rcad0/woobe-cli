@@ -7,7 +7,7 @@ requests and as the reusable validation gate for `Release CLI`.
 | --- | --- |
 | `test` | Version floor for both npm packages, Python publication/recovery tests, Node installer tests, roadmap audit, Go formatting/modules/vet/race/coverage and bounded fuzzing; native build/discovery |
 | `package` | Six OS/architecture archives plus `woobe-cli` and `woobe-cli-skill` npm tarballs, schemas/notices, exact source identity and SHA256SUMS/artifacts.json |
-| `native-smoke` × six | Linux amd64/arm64, macOS Intel/arm64, Windows amd64/arm64: filesystem/checkpoint/credential tests, native/standalone installer regressions and receipt interoperability, downloaded archive validation, real binary and both npm tarballs installed offline; every fenced skill CLI example checked against packaged help |
+| `native-smoke` × six | Linux amd64/arm64, macOS Intel/arm64, Windows amd64/arm64: filesystem/checkpoint/credential tests, real-binary Agent/Network author checkpoints/exact checkout/comment-preserving rebase/resolved merge, native/standalone installer regressions and receipt interoperability, downloaded archive validation, real binary and both npm tarballs installed offline; every fenced skill CLI example checked against packaged help |
 | `ci` | All three validation groups must succeed; failed/cancelled/skipped groups reject the stable aggregate gate |
 
 Nine concrete jobs execute. The stable `ci` check can be required by repository

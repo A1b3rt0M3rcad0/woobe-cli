@@ -279,7 +279,7 @@ The development server additions were delivered in merged [Woobe PR #179](https:
 ## Contributing
 
 See [ASaC tracking and history](docs/ASAC.md) for immutable local revisions,
-origin locks, guarded local author-source checkout/rebase, isolated Drafts and explicit
+origin locks, guarded local author-source checkout/rebase, isolated Draft selection/recovery and explicit
 remote observations of Agent/Network selections.
 
 Read [AGENTS.md](AGENTS.md) for repository maintenance instructions, including

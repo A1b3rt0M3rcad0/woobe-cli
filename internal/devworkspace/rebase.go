@@ -3,6 +3,7 @@ package devworkspace
 import (
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -100,6 +101,38 @@ func (c *Config) commonBase(resource Resource, left, right, explicit string) (st
 	return bases[0], nil
 }
 
+// Comments are separate author edits. Compare their positions by mapping keys,
+// not textual field order, so formatting-only changes do not invent conflicts.
+func authorComments(raw string) (string, error) {
+	var root yaml.Node
+	if err := yaml.Unmarshal([]byte(raw), &root); err != nil {
+		return "", err
+	}
+	notes := map[string]string{}
+	var visit func(*yaml.Node, []string)
+	visit = func(node *yaml.Node, path []string) {
+		for kind, text := range map[string]string{"head": node.HeadComment, "line": node.LineComment, "foot": node.FootComment} {
+			if text != "" {
+				key, _ := json.Marshal(append(append([]string{}, path...), kind))
+				notes[string(key)] = text
+			}
+		}
+		if node.Kind == yaml.MappingNode {
+			for i := 0; i+1 < len(node.Content); i += 2 {
+				visit(node.Content[i], append(append([]string{}, path...), node.Content[i].Value, "key"))
+				visit(node.Content[i+1], append(append([]string{}, path...), node.Content[i].Value, "value"))
+			}
+		} else {
+			for i, child := range node.Content {
+				visit(child, append(append([]string{}, path...), fmt.Sprint(i)))
+			}
+		}
+	}
+	visit(&root, nil)
+	encoded, err := json.Marshal(notes)
+	return string(encoded), err
+}
+
 func mergeAuthorObjects(base, local, remote *AuthorObject) (*AuthorObject, []Conflict, error) {
 	result := &AuthorObject{Format: "woobe-author-object", Version: "1.0", UID: local.UID, Components: map[string]AuthorComponent{}}
 	conflicts := []Conflict{}
@@ -121,13 +154,54 @@ func mergeAuthorObjects(base, local, remote *AuthorObject) (*AuthorObject, []Con
 		b, bok := base.Components[uid]
 		l, lok := local.Components[uid]
 		r, rok := remote.Components[uid]
+		carrier := l
+		if !lok {
+			carrier = r
+		}
+		if lok && rok {
+			bs, err := authorComments(b.Raw)
+			if err != nil {
+				return nil, nil, err
+			}
+			ls, err := authorComments(l.Raw)
+			if err != nil {
+				return nil, nil, err
+			}
+			rs, err := authorComments(r.Raw)
+			if err != nil {
+				return nil, nil, err
+			}
+			if ls != bs && rs != bs && ls != rs {
+				conflicts = append(conflicts, Conflict{Path: "/components/" + uid + "/author_comments"})
+				continue
+			}
+			if ls == bs && rs != bs {
+				carrier = r
+			}
+		} else if bok && ((lok && l.Raw != b.Raw) || (rok && r.Raw != b.Raw)) {
+			conflicts = append(conflicts, Conflict{Path: "/components/" + uid + "/author_source"})
+			continue
+		}
+		withComments := func(item AuthorComponent) (AuthorComponent, error) {
+			if reflect.DeepEqual(item.Document, carrier.Document) {
+				item.Raw = carrier.Raw
+				return item, nil
+			}
+			encoded, err := EncodeWithComments(item.Document, descriptor(item.Resource), carrier.Raw)
+			item.Raw = string(encoded)
+			return item, err
+		}
 		// Compare payload, not paths/aliases: identity follows UID and current registry.
 		equal := func(a AuthorComponent, aok bool, b AuthorComponent, bok bool) bool {
 			return aok == bok && (!aok || reflect.DeepEqual(a.Document, b.Document) && reflect.DeepEqual(a.Supports, b.Supports))
 		}
 		if equal(l, lok, r, rok) || equal(r, rok, b, bok) {
 			if lok {
-				result.Components[uid] = l
+				item, err := withComments(l)
+				if err != nil {
+					return nil, nil, err
+				}
+				result.Components[uid] = item
 			}
 			continue
 		}
@@ -135,18 +209,16 @@ func mergeAuthorObjects(base, local, remote *AuthorObject) (*AuthorObject, []Con
 			if rok {
 				if lok {
 					r.Resource = l.Resource
-					if l.Raw != b.Raw {
-						encoded, err := EncodeWithComments(r.Document, descriptor(l.Resource), l.Raw)
-						if err != nil {
-							return nil, nil, err
-						}
-						r.Raw = string(encoded)
-					}
 				}
-				result.Components[uid] = r
+				item, err := withComments(r)
+				if err != nil {
+					return nil, nil, err
+				}
+				result.Components[uid] = item
 			}
 			continue
 		}
+
 		if !lok || !rok || !bok || l.Resource.Kind != r.Resource.Kind || l.Resource.Key != r.Resource.Key {
 			conflicts = append(conflicts, Conflict{Path: "/components/" + uid})
 			continue
@@ -167,18 +239,15 @@ func mergeAuthorObjects(base, local, remote *AuthorObject) (*AuthorObject, []Con
 		for _, issue := range fileIssues {
 			conflicts = append(conflicts, Conflict{Path: "/components/" + uid + "/files" + issue.Path})
 		}
-		raw := l.Raw
-		if !reflect.DeepEqual(merged, l.Document) {
-			if reflect.DeepEqual(merged, r.Document) && l.Raw == b.Raw {
-				raw = r.Raw
-			} else {
-				encoded, err := EncodeWithComments(merged, descriptor(l.Resource), l.Raw)
-				if err != nil {
-					return nil, nil, err
-				}
-				raw = string(encoded)
+		raw := carrier.Raw
+		if !reflect.DeepEqual(merged, carrier.Document) {
+			encoded, err := EncodeWithComments(merged, descriptor(l.Resource), carrier.Raw)
+			if err != nil {
+				return nil, nil, err
 			}
+			raw = string(encoded)
 		}
+
 		item := AuthorComponent{Resource: l.Resource, Document: merged, Raw: raw, Supports: map[string]string{}}
 		for name, data := range files {
 			item.Supports[name] = data.(string)

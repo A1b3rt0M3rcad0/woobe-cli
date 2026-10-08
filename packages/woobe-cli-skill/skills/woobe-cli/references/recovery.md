@@ -2,6 +2,8 @@
 
 | Failure | Next step |
 | --- | --- |
+| Missing isolated Draft selection after clone | `woobe agent '@support' draft select NAME_OR_UUID` (or Network); matching origin required; no remote mutation or file checkout |
+| Rebase comment conflict | Resolve the reported author comments explicitly; checkpoint the resolved content rather than dropping either edit |
 | Missing registered descriptor | `woobe config check`, then inspect the named path; restore accidental deletions or preview `woobe resources prune --dry-run` |
 | Several intentionally deleted folders | Review the preview, then `woobe resources prune --yes`; only absent descriptors are unregistered |
 | Missing Model still used by an Agent | Restore the Model or edit/remove that consumer's reference; pruning must not create a broken graph |
@@ -23,3 +25,8 @@ missing. Do not delete `.woobe-config` or `.state/` as a generic repair.
 Use only read-only diagnosis before choosing a repair. Do not copy full private
 config/state, CLI Keys, provider secrets or sensitive runtime output into reports.
 Confirm operation identity/revision/evidence instead of guessing from names.
+
+Selecting a Draft recovers only private Draft observation. It does not recover
+ordinary native push bindings or Provider credentials. Reconcile an unresolved
+original write before switching selection. Do not use `create` as a binding repair
+for a known same-origin root: clone with a new UID only for intentional duplication.

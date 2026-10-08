@@ -49,3 +49,18 @@ use clone/create for an update. `resources move` and `resources alias` preserve 
 
 Use `--path` only for a path within the configured registry root. Inspect
 `resources list` rather than guessing file names or adding duplicate entries.
+
+For isolated remote authoring, select an existing line without duplication:
+
+```sh
+woobe agent '@support' draft list
+woobe agent '@support' draft select hotfix
+woobe agent '@support' draft show
+```
+
+Networks support the same commands. Matching durable origin allows selection
+without private state. This does not change YAML, create a line, restore native
+push bindings or copy credentials. Reconcile uncertain writes before selection.
+Local `rebase --onto REVISION_ID` preserves incoming comment-only edits and stops
+on competing comments, semantic fields or support files. Seal manual resolutions
+with `revision merge REV_A REV_B --message 'Resolved content'`.

@@ -12,6 +12,7 @@ import subprocess
 import tarfile
 import tempfile
 import zipfile
+import uuid
 
 
 def smoke(root, commit):
@@ -42,9 +43,9 @@ def smoke(root, commit):
         validate(path.resolve())
         env = {k: v for k, v in os.environ.items() if not k.startswith('WOOBE_')}
 
-        def invoke(args, body=None, code=0):
+        def invoke(args, body=None, code=0, cwd=None):
             command = [str(path), *args, '--output', 'json', '--config', str(pathlib.Path(directory) / 'config.json')]
-            result = subprocess.run(command, input=body, capture_output=True, text=True, env=env, cwd=directory, timeout=30)
+            result = subprocess.run(command, input=body, capture_output=True, text=True, env=env, cwd=cwd or directory, timeout=30)
             if result.returncode != code:
                 raise ValueError(f'{args}: exit {result.returncode}, expected {code}: {result.stderr}')
             envelope = json.loads(result.stdout)
@@ -141,6 +142,47 @@ def smoke(root, commit):
             destination = bundle / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(content.encode('utf-8'))
+        # Execute ASaC author history on every real packaged native binary,
+        # including Windows DACL initialization and scratch compilation.
+        author_project = pathlib.Path(directory) / 'asac-project'
+        author_project.mkdir()
+        invoke(['init'], cwd=author_project)
+        author_root = author_project / '.woobe'
+        resources = []
+        for relative, content in fixture.items():
+            destination = author_root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(content.encode('utf-8'))
+            if relative.endswith('.yaml') and relative != 'woobe.yaml':
+                document = json.loads(content)
+                resources.append({'uid': str(uuid.uuid4()), 'kind': document['kind'], 'key': document['metadata']['key'], 'alias': document['metadata']['key'], 'path': relative})
+        public_config = {'schema_version': 1, 'registry_id': str(uuid.uuid4()), 'context': '', 'root': '.woobe', 'defaults': {'pull_environment': 'draft'}, 'resources': resources}
+        (author_project / '.woobe-config').write_text(json.dumps(public_config), encoding='utf-8')
+        requirements = json.loads(fixture['woobe.yaml'])['spec']['requires']
+        for kind, key, filename in [('Agent', 'support', 'agent.yaml'), ('Network', 'support-network', 'network.yaml')]:
+            resource = next(item for item in resources if item['key'] == key)
+            tracking = {'format': 'woobe-tracking', 'schema_version': '1.0', 'resource_uid': resource['uid'], 'origin': {'target': '', 'workspace_id': '', 'project_id': '', 'resource_id': '', 'environment': 'unknown', 'origin_status': 'unknown_origin'}, 'tracking_environment': 'unknown', 'write_environment': 'draft', 'requires': requirements}
+            lock = author_root / (pathlib.Path(filename).stem + '.asac') / (kind.lower() + '.lock.yaml')
+            lock.parent.mkdir(parents=True, exist_ok=True)
+            lock.write_text(json.dumps(tracking), encoding='utf-8')
+            prefix = [kind.lower(), '@' + key]
+            first = invoke([*prefix, 'revision', 'create', '--message', 'Native source baseline'], cwd=author_project)['data']
+            descriptor = author_root / filename
+            original = descriptor.read_bytes()
+            descriptor.write_bytes(b'# native source comment\n' + original)
+            second = invoke([*prefix, 'revision', 'create', '--message', 'Native source comment'], cwd=author_project)['data']
+            if first['definition_digest'] != second['definition_digest'] or first['author_artifact_digest'] == second['author_artifact_digest']:
+                raise ValueError('native checkpoint conflated author comments with executable identity')
+            invoke([*prefix, 'checkout', '--revision', first['revision_id']], cwd=author_project)
+            if descriptor.read_bytes() != original:
+                raise ValueError('native checkout did not preserve exact source bytes')
+            rebased = invoke([*prefix, 'rebase', '--onto', second['revision_id']], cwd=author_project)['data']
+            if descriptor.read_bytes() != b'# native source comment\n' + original:
+                raise ValueError('native rebase lost a comment-only remote author edit')
+            if rebased['remote_changed'] or rebased['rebased_from'] != first['revision_id']:
+                raise ValueError('native rebase changed remote scope or original identity')
+            invoke([*prefix, 'revision', 'merge', first['revision_id'], rebased['revision']['revision_id'], '--message', 'Resolved native content'], cwd=author_project)
+            invoke([*prefix, 'history', 'verify'], cwd=author_project)
         validated = invoke(['package', 'validate', str(bundle)])['data']
         if not validated['valid'] or validated['entrypoint']['kind'] != 'Network':
             raise ValueError('complete Package fixture was not validated offline')
@@ -279,7 +321,7 @@ def smoke(root, commit):
             thread.join(timeout=5)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
             'archive': artifact['name'], 'success': True, 'checks': ['project-codex-preset-lifecycle', 'project-codex-legacy-preset-lifecycle', 'embedded-assistant-skill', 'native-npm-receipt-compatibility', 'linked-skill-destination-refusal', 'identity', 'discovery', 'schemas', 'complete-package-offline', 'package-python-inventory-parity', 'package-lock-tamper', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff', 'protected-reference-compile', 'canonical-mcp-permissions'],
-            'local_registry_checks': ['readable-yaml', 'yaml-json-move', 'json-clone', 'stale-registry-preview', 'explicit-stale-registry-prune'],
+            'local_registry_checks': ['readable-yaml', 'yaml-json-move', 'json-clone', 'stale-registry-preview', 'explicit-stale-registry-prune', 'agent-network-source-checkout-rebase-merge'],
             'backend_acceptance': 'not_evaluated', 'credential_provider_acceptance': 'not_evaluated'}
 
 

@@ -139,3 +139,57 @@ func TestRebaseFormattingPreservesSurvivingCommentsAndJSON(t *testing.T) {
 		t.Fatal(string(raw), err)
 	}
 }
+
+func TestRebaseCarriesCommentOnlyRemoteEditAndRejectsCompetingNotes(t *testing.T) {
+	c, g := completeGraph(t)
+	r := g.Nodes["support"].Resource
+	state := authorState()
+	base, err := g.CreateRevision(r, state, "base", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(c.RootPath(), g.Nodes[r.Key].Descriptor)
+	original, _ := os.ReadFile(file)
+	if err = os.WriteFile(file, append([]byte("# remote note\n"), original...), 0600); err != nil {
+		t.Fatal(err)
+	}
+	g, err = LoadGraph(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	remote, err := g.CreateRevision(r, state, "remote note", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = g.CheckoutRevision(r, base); err != nil {
+		t.Fatal(err)
+	}
+	g, err = LoadGraph(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = g.RebaseRevision(r, remote.ID, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := os.ReadFile(file)
+	if !strings.Contains(string(got), "# remote note") {
+		t.Fatal("comment-only remote edit lost")
+	}
+	if _, err = g.CheckoutRevision(r, base); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(file, append([]byte("# local note\n"), original...), 0600); err != nil {
+		t.Fatal(err)
+	}
+	g, err = LoadGraph(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = g.CreateRevision(r, state, "local note", nil); err != nil {
+		t.Fatal(err)
+	}
+	result, err := g.RebaseRevision(r, remote.ID, "", "")
+	if err == nil || len(result["conflicts"].([]Conflict)) != 1 || !strings.Contains(result["conflicts"].([]Conflict)[0].Path, "author_comments") {
+		t.Fatal("competing notes silently replaced", result, err)
+	}
+}
