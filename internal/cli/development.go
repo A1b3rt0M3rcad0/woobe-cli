@@ -496,20 +496,18 @@ func (a *App) developmentPush(ctx context.Context, client *packageapi.Client, c 
 	if err != nil {
 		return err
 	}
-	for _, binding := range recovered.Resources {
-		if acceptedBases[binding.ResourceUID].Base == nil {
-			continue
-		}
-		local := state.Bindings[binding.ResourceUID]
-		if binding.ResourceID != "" {
-			local.ResourceID = binding.ResourceID
-		}
-		local.Identifiers = binding.Identifiers
-		local.Revision = binding.Revision
-		local.Base = acceptedBases[binding.ResourceUID].Base
-		local.Supports = acceptedBases[binding.ResourceUID].Supports
-		state.Bindings[binding.ResourceUID] = local
+	receipt, err := packageapi.LoadPlanReceipt(checkpoint + ".plan.json")
+	if err != nil {
+		return err
 	}
+	if receipt.Plan.PlanID != cp.PlanID || receipt.Plan.PlanDigest != cp.PlanDigest || receipt.Plan.RegistryID != c.RegistryID {
+		return output.New(9, "Retained plan differs from accepted operation")
+	}
+	updated, err := acceptedDevelopmentBindings(c, state, acceptedBases, receipt.Plan.ResourceBindings, recovered, result.OperationID, capabilities.ASaC.AcceptedBindingGenerations)
+	if err != nil {
+		return err
+	}
+	state.Bindings = updated
 	delete(state.Pending, resource.UID)
 	if err = c.WriteState(state); err != nil {
 		return err

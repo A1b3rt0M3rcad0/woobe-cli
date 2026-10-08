@@ -30,3 +30,14 @@ Selecting a Draft recovers only private Draft observation. It does not recover
 ordinary native push bindings or Provider credentials. Reconcile an unresolved
 original write before switching selection. Do not use `create` as a binding repair
 for a known same-origin root: clone with a new UID only for intentional duplication.
+
+
+### Accepted native generations
+
+After a successful native `push` or `reconcile`, the CLI checks every approved
+resource against the original operation, definition and native identity before
+updating local bases. When the server advertises accepted binding generations,
+it uses the generation recorded in the native transaction, even if a later edit
+has changed the current generation. Incomplete, missing or superseded evidence
+leaves the checkpoint pending; preserve it and investigate with `reconcile`.
+Do not delete private state to bypass this check or resend the accepted write.
