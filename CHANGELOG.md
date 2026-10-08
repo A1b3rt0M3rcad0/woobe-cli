@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Hydrate retained Agent/Network executable revision objects with verified receipts and bounded transfer integrity, preserving author files, bindings and working heads.
+
 - Fetch the bounded isolated revision catalog with `history fetch --revisions`, preserving author files and the working head; validate scoped metadata without claiming object hydration.
 
 - Validate the complete original-operation registry receipt before accepting local push/reconcile bases; retain checkpoints for incomplete or superseded evidence.

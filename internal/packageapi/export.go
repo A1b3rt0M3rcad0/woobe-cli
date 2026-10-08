@@ -64,7 +64,11 @@ func (c *Client) Download(ctx context.Context, receipt ExportReceipt) (*packageb
 	if receipt.ProjectID != c.ProjectID || !identifier.MatchString(receipt.ExportID) || !receipt.ClosureComplete || receipt.SizeBytes <= 0 || receipt.SizeBytes > 128<<20 || !digestPattern.MatchString(receipt.TransportDigest) || !digestPattern.MatchString(receipt.ArtifactDigest) || !validExpiry(receipt.ExpiresAt) {
 		return nil, output.New(9, "Invalid Package export identity")
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.Control.Base+c.path("/exports/"+receipt.ExportID+"/artifact"), nil)
+	return c.downloadArchive(ctx, c.path("/exports/"+receipt.ExportID+"/artifact"), receipt, "")
+}
+
+func (c *Client) downloadArchive(ctx context.Context, path string, receipt ExportReceipt, recordDigest string) (*packagebundle.Bundle, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.Control.Base+path, nil)
 	if err != nil {
 		return nil, output.New(2, "Invalid Package export request")
 	}
@@ -90,6 +94,9 @@ func (c *Client) Download(ctx context.Context, receipt ExportReceipt) (*packageb
 	}
 	if response.Header.Get("X-Woobe-Transport-Sha256") != receipt.TransportDigest || response.Header.Get("X-Woobe-Artifact-Digest") != receipt.ArtifactDigest || response.Header.Get("Content-Length") != fmt.Sprint(receipt.SizeBytes) {
 		return nil, output.New(9, "Package download headers differ from its receipt")
+	}
+	if recordDigest != "" && response.Header.Get("X-Woobe-Record-Digest") != recordDigest {
+		return nil, output.New(9, "Retained artifact differs from its revision receipt")
 	}
 	archive, err := os.CreateTemp("", "woobe-package-download-")
 	if err != nil {

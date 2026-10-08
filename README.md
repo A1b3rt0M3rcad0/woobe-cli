@@ -290,3 +290,7 @@ Isolated revision catalogs can be mirrored with
 `woobe agent @support history fetch --revisions` (and Network equivalents).
 This fetch preserves author files and the working head; it reports metadata
 coverage separately from object availability. See [ASaC workflows](docs/ASAC.md).
+
+`woobe agent @support revision hydrate REVISION_ID` retrieves a verified
+retained executable object after catalog fetch. Author source and credentials
+remain separate; hydration preserves local working files.
