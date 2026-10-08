@@ -718,3 +718,7 @@ For isolated remote authoring, use `woobe agent '@support' draft open hotfix --f
 production`, then `draft push`. Networks support the same flow. These operations
 save closed objects without publication/activation; see [ASaC](ASAC.md) for exact
 checkpoint registration and recovery. They are separate from native Draft push.
+
+Restore a local source checkpoint with `woobe agent '@support' checkout --revision REVISION_ID`
+(or `woobe network`); see [ASaC](ASAC.md#restore-local-author-source). This protects
+uncheckpointed edits and changes only local files, not a remote environment.

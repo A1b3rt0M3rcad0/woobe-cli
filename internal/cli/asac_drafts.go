@@ -254,6 +254,9 @@ func (a *App) asacDraftCommands() {
 				if err != nil {
 					return output.New(9, err.Error())
 				}
+				if record.AuthorDigest != "" && supported["author_digest_declarations"] != true {
+					return output.New(9, "Server does not support declared author digests; update the backend before registering this revision")
+				}
 				if record.DefinitionScope != devworkspace.PortableDefinitionScope || record.DefinitionDigest != observed.Definition {
 					return output.New(9, "Revision differs from the saved isolated Draft; push its exact content first")
 				}

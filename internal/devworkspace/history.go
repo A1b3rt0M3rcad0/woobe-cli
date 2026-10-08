@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -26,6 +27,7 @@ type Revision struct {
 	Kind             string            `json:"kind"`
 	Parents          []string          `json:"parents"`
 	Message          string            `json:"message"`
+	AuthorDigest     string            `json:"author_artifact_digest,omitempty"`
 	ArtifactDigest   string            `json:"artifact_digest"`
 	DefinitionDigest string            `json:"definition_digest"`
 	DefinitionScope  string            `json:"definition_digest_scope,omitempty"`
@@ -229,7 +231,7 @@ func (c *Config) ReadRevision(resource Resource, id string) (*Revision, error) {
 	if err = readHistoryJSON(c, filepath.Join(dir, "revisions", id+".yaml"), &record); err != nil {
 		return nil, err
 	}
-	if record.Format != "woobe-revision" || record.SchemaVersion != asac.Version || record.ID != id || record.UID != resource.UID || record.Kind != resource.Kind || !historyDigest.MatchString(record.ArtifactDigest) || !historyDigest.MatchString(record.DefinitionDigest) {
+	if record.Format != "woobe-revision" || record.SchemaVersion != asac.Version || record.ID != id || record.UID != resource.UID || record.Kind != resource.Kind || !historyDigest.MatchString(record.ArtifactDigest) || !historyDigest.MatchString(record.DefinitionDigest) || record.AuthorDigest != "" && !historyDigest.MatchString(record.AuthorDigest) {
 		return nil, fmt.Errorf("ASAC_REVISION_INVALID: record identity mismatch")
 	}
 	digest, err := revisionRecordDigest(record)
@@ -348,6 +350,21 @@ func (g *Graph) CreateRevision(resource Resource, state *State, message string, 
 	if err = c.immutableWrite(object, archive.Bytes()); err != nil {
 		return nil, err
 	}
+	authors, err := g.captureAuthors(resource, bundle)
+	if err != nil {
+		return nil, err
+	}
+	authorHash, err := authorDigest(authors)
+	if err != nil {
+		return nil, err
+	}
+	source, err := json.Marshal(authors)
+	if err != nil {
+		return nil, err
+	}
+	if err = c.immutableWrite(filepath.Join(c.RootPath(), "objects", "author", strings.TrimPrefix(authorHash, "sha256:")+".json"), source); err != nil {
+		return nil, err
+	}
 	id, err := NewID()
 	if err != nil {
 		return nil, err
@@ -371,7 +388,7 @@ func (g *Graph) CreateRevision(resource Resource, state *State, message string, 
 			}
 		}
 	}
-	record := Revision{Format: "woobe-revision", SchemaVersion: asac.Version, ID: "rv_" + id, UID: resource.UID, Kind: resource.Kind, Parents: parents, Message: message, ArtifactDigest: "sha256:" + bundle.ArtifactDigest, DefinitionDigest: definition, DefinitionScope: PortableDefinitionScope, Components: components}
+	record := Revision{Format: "woobe-revision", SchemaVersion: asac.Version, ID: "rv_" + id, UID: resource.UID, Kind: resource.Kind, Parents: parents, Message: message, AuthorDigest: authorHash, ArtifactDigest: "sha256:" + bundle.ArtifactDigest, DefinitionDigest: definition, DefinitionScope: PortableDefinitionScope, Components: components}
 	record.RecordDigest, err = revisionRecordDigest(record)
 	if err != nil {
 		return nil, err
@@ -454,6 +471,9 @@ func (c *Config) VerifyHistory(resource Resource) (map[string]any, error) {
 	missing := []string{}
 	verifiedObjects := map[string]bool{}
 	missingObjects := []string{}
+	missingAuthors := []string{}
+	legacyAuthors := []string{}
+	verifiedAuthors := map[string]bool{}
 	visiting, done := map[string]bool{}, map[string]bool{}
 	var visit func(string) error
 	visit = func(id string) error {
@@ -487,6 +507,17 @@ func (c *Config) VerifyHistory(resource Resource) (map[string]any, error) {
 		if !parents[record.ID] {
 			heads = append(heads, record.ID)
 		}
+		if record.AuthorDigest == "" {
+			legacyAuthors = append(legacyAuthors, record.ID)
+		} else if !verifiedAuthors[record.AuthorDigest] {
+			_, err := c.ReadAuthorObject(resource, &record)
+			if errors.Is(err, os.ErrNotExist) {
+				missingAuthors = append(missingAuthors, record.AuthorDigest)
+			} else if err != nil {
+				return nil, err
+			}
+			verifiedAuthors[record.AuthorDigest] = true
+		}
 		if verifiedObjects[record.ArtifactDigest] {
 			continue
 		}
@@ -518,7 +549,7 @@ func (c *Config) VerifyHistory(resource Resource) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"receipts": receipts, "records": len(records), "heads": heads, "missing_history": missing, "missing_objects": missingObjects, "metadata_complete": len(missing) == 0, "objects_available": len(missingObjects) == 0, "runtime_executable": "not_evaluated", "scope": "local", "remote_status": "unverified"}, nil
+	return map[string]any{"receipts": receipts, "records": len(records), "heads": heads, "missing_history": missing, "missing_objects": missingObjects, "missing_author_objects": missingAuthors, "revisions_without_author_source": legacyAuthors, "author_sources_available": len(missingAuthors) == 0 && len(legacyAuthors) == 0, "metadata_complete": len(missing) == 0, "objects_available": len(missingObjects) == 0, "runtime_executable": "not_evaluated", "scope": "local", "remote_status": "unverified"}, nil
 }
 
 // StoreHistoryReceipt verifies the server record and stores it under a destination
