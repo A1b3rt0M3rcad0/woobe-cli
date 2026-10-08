@@ -12,6 +12,7 @@ import (
 )
 
 func (a *App) asacCommands() {
+	a.asacDraftCommands()
 	for _, kind := range []string{"agent", "network"} {
 		parent := a.group("develop " + kind)
 		var environment string
