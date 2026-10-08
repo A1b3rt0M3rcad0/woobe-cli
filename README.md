@@ -5,6 +5,10 @@ control plane and runtime. Manage Workspace and Project resources, validate
 manifests, publish Agent and Network releases and execute released targets.
 The backend authorizes every operation.
 
+Development clones can recover accepted native identities with
+`woobe agent '@support' bindings recover`; see [ASaC](docs/ASAC.md) for
+closure validation, explicit Provider binding and stale-generation protection.
+
 ## Coding assistant skill
 
 The CLI bundles a small portable skill, offline references and YAML templates

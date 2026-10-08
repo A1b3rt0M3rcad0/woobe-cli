@@ -1,5 +1,10 @@
 # Local YAML development
 
+After cloning without private bindings, run `woobe agent '@support' bindings recover`
+(or Network), optionally previewing with `--dry-run`. This verifies the entire
+accepted native closure without editing YAML or recovering an accepted author
+base. Bind Providers explicitly afterward; stale generations stay stale.
+
 Use `.woobe-config` only for managed development. If it exists, check it; do not
 reinitialize it or delete `.state/`. Initialize a new project explicitly:
 

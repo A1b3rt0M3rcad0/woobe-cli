@@ -189,19 +189,21 @@ func (c *Client) Resume(ctx context.Context, id string, revision int64) (Operati
 }
 
 type RegistryBinding struct {
-	AcceptedRevision any               `json:"accepted_revision"`
-	CurrentRevision  any               `json:"current_revision"`
-	GenerationScope  string            `json:"generation_scope"`
-	BindingStatus    string            `json:"binding_status"`
-	Frozen           bool              `json:"frozen"`
-	SnapshotID       string            `json:"snapshot_id"`
-	Identifiers      map[string]string `json:"identifiers,omitempty"`
-	ResourceUID      string            `json:"resource_uid"`
-	Kind             string            `json:"kind"`
-	ResourceID       string            `json:"resource_id"`
-	Revision         any               `json:"revision"`
-	DefinitionDigest string            `json:"definition_digest"`
-	OperationID      string            `json:"operation_id"`
+	FrozenEvidenceRetained bool              `json:"frozen_evidence_retained"`
+	SourceKind             string            `json:"source_kind"`
+	AcceptedRevision       any               `json:"accepted_revision"`
+	CurrentRevision        any               `json:"current_revision"`
+	GenerationScope        string            `json:"generation_scope"`
+	BindingStatus          string            `json:"binding_status"`
+	Frozen                 bool              `json:"frozen"`
+	SnapshotID             string            `json:"snapshot_id"`
+	Identifiers            map[string]string `json:"identifiers,omitempty"`
+	ResourceUID            string            `json:"resource_uid"`
+	Kind                   string            `json:"kind"`
+	ResourceID             string            `json:"resource_id"`
+	Revision               any               `json:"revision"`
+	DefinitionDigest       string            `json:"definition_digest"`
+	OperationID            string            `json:"operation_id"`
 }
 type Registry struct {
 	RegistryID string            `json:"registry_id"`

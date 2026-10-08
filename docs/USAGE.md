@@ -1,5 +1,10 @@
 # CLI workflows
 
+For a development clone missing private native bindings, run
+`woobe agent '@support' bindings recover --dry-run`, then recover and explicitly
+bind Providers. Networks use the same command. See [ASaC](ASAC.md) for exact
+snapshot checks and the distinction between recovered identity and author base.
+
 ## Coding assistants
 
 Install offline with `woobe skill install --agent codex` or `--agent claude`.

@@ -5,6 +5,8 @@
 
 ## Unreleased
 
+- Recover accepted Agent/Network native bindings after cloning without private state, preserving stale generations and exact frozen constituent identities without inventing a synchronized author base or restoring credentials.
+
 - Hydrate retained Agent/Network executable revision objects with verified receipts and bounded transfer integrity, preserving author files, bindings and working heads.
 
 - Fetch the bounded isolated revision catalog with `history fetch --revisions`, preserving author files and the working head; validate scoped metadata without claiming object hydration.
