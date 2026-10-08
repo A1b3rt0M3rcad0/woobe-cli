@@ -79,6 +79,17 @@ after a move. Paths must work on all supported platforms: Windows device names,
 trailing dots/spaces, alternate data streams and private metadata directories
 are rejected on every OS. Automatically generated aliases avoid device names.
 
+### Reconcile pending writes
+
+If a managed write times out or loses its response, keep its private checkpoint
+and run `woobe agent '@support' reconcile` (or the corresponding Network command).
+Reconciliation observes the original operation; it does not upload or apply a
+second write and still works if local YAML was edited or became invalid.
+For a running operation, the returned `next_command` is
+`woobe package status OPERATION_ID`; add `--wait` to observe until terminal.
+Run the managed `reconcile` again afterward to accept completed local bases and
+clear the pending state before another push.
+
 ### Diagnose a development connection
 
 `context use` selects the global default. A project's `.woobe-config` can pin a
