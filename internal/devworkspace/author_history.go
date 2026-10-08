@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/asac"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagebundle"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/requestinput"
@@ -123,6 +124,17 @@ func (c *Config) ReadAuthorObject(resource Resource, record *Revision) (*AuthorO
 	raw, err := c.ReadOperationalFile(file, maxAuthorObjectBytes)
 	if err != nil {
 		return nil, fmt.Errorf("retained author object unavailable: %w", err)
+	}
+	return ValidateAuthorObject(resource, record, raw)
+}
+
+// ValidateAuthorObject verifies identity, exact YAML and support closure without writes.
+func ValidateAuthorObject(resource Resource, record *Revision, raw []byte) (*AuthorObject, error) {
+	if err := jsoninput.Validate(raw); err != nil {
+		return nil, fmt.Errorf("ambiguous retained author object: %w", err)
+	}
+	if len(raw) > maxAuthorObjectBytes {
+		return nil, fmt.Errorf("author object exceeds source limit")
 	}
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.UseNumber()
@@ -462,4 +474,44 @@ func (g *Graph) validateAuthorExecution(resource Resource, record *Revision, obj
 		return fmt.Errorf("retained author components disagree with sealed identities")
 	}
 	return nil
+}
+
+// ValidateRetainedAuthor verifies source with its recorded compiler recipe against
+// the retained executable closure in private scratch storage, without moving a head.
+func (c *Config) ValidateRetainedAuthor(resource Resource, record *Revision, raw []byte, requirements map[string]any, bundle *packagebundle.Bundle) error {
+	object, err := ValidateAuthorObject(resource, record, raw)
+	if err != nil {
+		return err
+	}
+	if len(object.Components) != len(record.Components) {
+		return fmt.Errorf("author closure differs from sealed component identities")
+	}
+	for uid := range object.Components {
+		if _, ok := record.Components[uid]; !ok {
+			return fmt.Errorf("author closure contains unsealed identity")
+		}
+	}
+	dir, err := os.MkdirTemp("", "woobe-author-hydrate-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+	scratch := *c
+	scratch.File = filepath.Join(dir, Filename)
+	scratch.Root = ".woobe"
+	scratch.Resources = nil
+	if err = os.MkdirAll(scratch.RootPath(), 0700); err != nil {
+		return err
+	}
+	if err = scratch.StoreExecutableObject(resource, *record, bundle); err != nil {
+		return err
+	}
+	return (&Graph{Config: &scratch}).validateAuthorExecution(resource, record, object, &Tracking{Requirements: requirements})
+}
+
+func (c *Config) StoreAuthorObject(resource Resource, record *Revision, raw []byte) error {
+	if _, err := ValidateAuthorObject(resource, record, raw); err != nil {
+		return err
+	}
+	return c.immutableWrite(filepath.Join(c.RootPath(), "objects", "author", strings.TrimPrefix(record.AuthorDigest, "sha256:")+".json"), raw)
 }

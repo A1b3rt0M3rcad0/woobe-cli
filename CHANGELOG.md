@@ -1,5 +1,8 @@
 # Changelog
 
+- Retain and hydrate exact author YAML, comments and support files through Agent/Network revision custody, with canonical source integrity and compiler verification before local storage. Legacy executable-only hydration remains supported.
+
+
 ## Unreleased
 
 - Hydrate retained Agent/Network executable revision objects with verified receipts and bounded transfer integrity, preserving author files, bindings and working heads.

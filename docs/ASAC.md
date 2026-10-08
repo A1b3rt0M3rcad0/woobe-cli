@@ -131,10 +131,7 @@ unregistered target files. `--yes` cannot bypass those protections. Checkpoint
 edits explicitly before restoring another revision. Older revisions without
 retained author source remain readable but cannot use this local restore.
 
-Remote checkpointing negotiates `author_digest_declarations`. The server reports
-`declared_not_retained` for this source hash: it verifies the closed executable
-package, not the local author object's bytes. Keep author objects in the repository
-for offline clone/checkout; a remote record alone does not hydrate author source.
+Remote checkpointing negotiates `author_source_retention` and uploads the exact author object before registering its immutable revision. Upload tickets are actor scoped and expire; retained source remains readable through the authorized Agent/Network revision with another permitted CLI Key. Older backends retain declarations only (`declared_not_retained`). The server labels verified canonical custody separately from compiler attestation.
 
 ## Reconcile sealed local branches
 
@@ -190,7 +187,7 @@ the catalog without storing metadata. A failed traversal can retain earlier
 immutable pages, but never reports that traversal as complete.
 
 
-### Hydrate a retained executable object
+### Hydrate executable and exact author objects
 
 ```sh
 woobe agent @support history fetch --revisions
@@ -202,6 +199,4 @@ use the same operation. It negotiates backend hydration support, reauthorizes
 the retained resource and verifies the receipt, transport SHA-256, inventory,
 artifact digest and executable definition before storing an immutable object.
 `--dry-run` downloads and verifies without storing. Source YAML, native bindings,
-working head and Production are preserved. Author objects are reported separately:
-missing author source prevents exact checkout; executable hydration does not
-reconstruct source or provider credentials and does not qualify runtime execution.
+working head and Production are preserved. If source custody is available, hydration verifies its canonical author hash, exact YAML/support inventory and recorded compiler recipe against the executable definition and every component identity before storing source. It reports `author_object: verified_source_and_compilation`; a separate guarded checkout restores working files. An old record without retained source still permits executable hydration and reports source unavailable. Credentials and native bindings remain separate; hydration does not qualify runtime execution.

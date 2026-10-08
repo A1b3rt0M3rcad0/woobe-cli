@@ -35,11 +35,27 @@ func (a *App) asacHydrate(cmd *cobra.Command, c *devworkspace.Config, state *dev
 	if err := resourceID(id); err != nil {
 		return err
 	}
-	bundle, err := client.HydrateRevision(cmd.Context(), packageapi.RetainedArtifactReceipt{ProjectID: a.Project, Kind: resource.Kind, ResourceID: id, ResourceUID: resource.UID, RevisionID: record.ID, RecordDigest: record.RecordDigest, ArtifactDigest: record.ArtifactDigest, DefinitionDigest: record.DefinitionDigest})
+	bundle, authorStatus, err := client.HydrateRevision(cmd.Context(), packageapi.RetainedArtifactReceipt{ProjectID: a.Project, Kind: resource.Kind, ResourceID: id, ResourceUID: resource.UID, RevisionID: record.ID, RecordDigest: record.RecordDigest, ArtifactDigest: record.ArtifactDigest, DefinitionDigest: record.DefinitionDigest})
 	if err != nil {
 		return err
 	}
 	defer bundle.Close()
+	source := "unavailable"
+	var authorRaw []byte
+	if record.AuthorDigest != "" && capabilities.ASaC.AuthorSourceRetention && authorStatus == "retained_custody" {
+		authorRaw, err = client.HydrateAuthor(cmd.Context(), packageapi.AuthorReceipt{ProjectID: a.Project, Kind: resource.Kind, ResourceID: id, ResourceUID: resource.UID, RevisionID: record.ID, RecordDigest: record.RecordDigest, AuthorDigest: record.AuthorDigest})
+		if err != nil {
+			return err
+		}
+		tracking, readErr := c.ReadTracking(*resource)
+		if readErr != nil {
+			return output.New(9, "Author hydration needs retained tracking requirements for compiler verification")
+		}
+		if err = c.ValidateRetainedAuthor(*resource, record, authorRaw, tracking.Requirements, bundle); err != nil {
+			return output.New(9, err.Error())
+		}
+		source = "verified_source_and_compilation"
+	}
 	if a.DryRun {
 		err = devworkspace.ValidateExecutableObject(*resource, *record, bundle)
 	} else {
@@ -48,8 +64,12 @@ func (a *App) asacHydrate(cmd *cobra.Command, c *devworkspace.Config, state *dev
 	if err != nil {
 		return output.New(9, err.Error())
 	}
-	source := "unavailable"
-	if _, err := c.ReadAuthorObject(*resource, record); err == nil {
+	if !a.DryRun && authorRaw != nil {
+		if err = c.StoreAuthorObject(*resource, record, authorRaw); err != nil {
+			return output.New(9, err.Error())
+		}
+	}
+	if _, err := c.ReadAuthorObject(*resource, record); err == nil && authorRaw == nil {
 		source = "available_locally"
 	}
 	return a.emit(map[string]any{"resource_uid": resource.UID, "revision_id": record.ID, "artifact_digest": record.ArtifactDigest, "executable_object": "verified", "hydrated": !a.DryRun, "author_object": source, "bindings_restored": false, "author_files_changed": false, "working_head_changed": false, "production_changed": false, "executed": !a.DryRun})

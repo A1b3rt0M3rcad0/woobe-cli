@@ -746,3 +746,5 @@ woobe network @support history fetch --revisions --dry-run
 Requires CLI 0.20.0+ and a backend advertising `asac.revision_catalog`.
 This does not download executable/source objects or change the working head.
 See [ASaC](ASAC.md) for the distinction from release/deployment history.
+
+Remote revision hydration also retains exact author objects when advertised by the backend. Checkpoint uploads source custody first; hydration recompiles the recovered source against the sealed definition. Working files only change through a separate guarded checkout. See [ASaC](ASAC.md).

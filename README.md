@@ -293,4 +293,4 @@ coverage separately from object availability. See [ASaC workflows](docs/ASAC.md)
 
 `woobe agent @support revision hydrate REVISION_ID` retrieves a verified
 retained executable object after catalog fetch. Author source and credentials
-remain separate; hydration preserves local working files.
+remain separate; hydration preserves local working files. When source custody is retained on the server, hydration also verifies the original YAML, comments and support files through the recorded compiler recipe. Use guarded checkout to restore them.

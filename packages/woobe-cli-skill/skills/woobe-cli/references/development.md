@@ -99,5 +99,4 @@ the retained resource and verifies the receipt, transport SHA-256, inventory,
 artifact digest and executable definition before storing an immutable object.
 `--dry-run` downloads and verifies without storing. Source YAML, native bindings,
 working head and Production are preserved. Author objects are reported separately:
-missing author source prevents exact checkout; executable hydration does not
-reconstruct source or provider credentials and does not qualify runtime execution.
+when retained by the backend, exact author source is also downloaded and recompiled against the sealed definition before local storage. A separate guarded checkout restores YAML/comments/support files. Legacy records without retained source report it unavailable. Credentials and native bindings are not restored, and hydration does not qualify execution.
