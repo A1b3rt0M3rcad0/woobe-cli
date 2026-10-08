@@ -156,6 +156,13 @@ without replacing any existing path. `--knowledge portable` is the default;
 package is not self-contained. Authentication values, OAuth state, discovered
 MCP schemas and destination IDs are never portable author configuration.
 
+Per-capability MCP permissions preserve native `risk` labels, including `unknown`
+and custom classifications. A risk is nullable or a string of 1–256 characters;
+its label does not change the `review`, `deny` or `allow` permission. The CLI and
+backend must use the same generated schema catalog. Updating only one side of a
+catalog change will fail compatibility checks; `woobe package doctor` reports
+both digests without bypassing validation.
+
 An existing operation can be observed or controlled using only its checkpoint:
 
 ```sh
