@@ -123,3 +123,48 @@ func TestCandidateBindingAndAcceptanceRejectIncompleteEvidence(t *testing.T) {
 		t.Fatal("Incomplete acceptance cleared unknown write")
 	}
 }
+
+func TestCandidateInspectionUnwrapsAndValidatesOwnerScope(t *testing.T) {
+	t.Setenv("WOOBE_CONTROL_KEY", "test-control")
+	const root = "12345678-1234-4321-8321-123456789013"
+	const candidate = "12345678-1234-4321-8321-123456789014"
+	wrong := false
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if r.Method != "GET" || !strings.HasSuffix(r.URL.Path, "/"+root+"/asac/candidates/"+candidate) {
+			t.Error("unexpected candidate request", r.Method, r.URL.Path)
+		}
+		resource := root
+		if wrong {
+			resource = candidate
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": map[string]any{"schema_version": "1.0", "resource_id": resource, "candidate_id": candidate, "state": "ready", "published": false}})
+	}))
+	defer server.Close()
+	for _, kind := range []string{"agent", "network"} {
+		args := []string{kind, root, "candidate", candidate, "--api-url", server.URL, "--project", root, "--output", "json"}
+		code, response := invoke(t, args, "")
+		if code != 0 || packagefmt.Object(response["data"])["state"] != "ready" {
+			t.Fatal("nested inspection output", code, response)
+		}
+		wrong = true
+		if code, response := invoke(t, args, ""); code != 9 {
+			t.Fatal("candidate owner mismatch accepted", code, response)
+		}
+		wrong = false
+		before := requests
+		if code, response := invoke(t, append(args, "--dry-run"), ""); code != 0 || requests != before {
+			t.Fatal("inspection dry run performed HTTP", code, response)
+		}
+	}
+}
+
+func TestEmptyCandidateRevisionNeverFallsBackToLegacyStage(t *testing.T) {
+	for _, kind := range []string{"agent", "network"} {
+		code, response := invoke(t, []string{kind, "12345678-1234-4321-8321-123456789013", "stage", "--revision=", "--yes", "--output", "json"}, "")
+		if code != 2 || !strings.Contains(packagefmt.Text(packagefmt.Object(response["error"])["message"]), "refusing legacy") {
+			t.Fatal(code, response)
+		}
+	}
+}

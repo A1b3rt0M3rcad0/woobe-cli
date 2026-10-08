@@ -64,7 +64,25 @@ func (a *App) asacCandidateCommands() {
 					return err
 				}
 				path := fmt.Sprintf("/projects/%s/%ss/%s/asac/candidates/%s", url.PathEscape(a.Project), kind, url.PathEscape(id), url.PathEscape(args[1]))
-				return a.call(cmd, "GET", path, nil, false)
+				if a.DryRun {
+					return a.emit(map[string]any{"method": "GET", "path": path, "executed": false})
+				}
+				control, err := a.client()
+				if err != nil {
+					return err
+				}
+				response, _, err := control.Request(cmd.Context(), "GET", path, nil, nil)
+				if err != nil {
+					return err
+				}
+				data, err := developmentResponseData(response)
+				if err != nil {
+					return err
+				}
+				if data["candidate_id"] != args[1] || data["resource_id"] != id || data["schema_version"] != "1.0" {
+					return output.New(9, "Candidate response belongs to another resource or protocol")
+				}
+				return a.emit(data)
 			}}
 		a.group("develop " + kind).AddCommand(command)
 	}
