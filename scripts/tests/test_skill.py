@@ -22,7 +22,7 @@ class SkillArtifactTests(unittest.TestCase):
         data['version'] = '0.0.0-ci.1'
         data['woobeSkill']['sourceCommit'] = 'a' * 40
         files = {file.relative_to(source).as_posix(): file.read_bytes() for file in source.rglob('*')
-                 if file.is_file() and file.name != 'README.md'}
+                 if file.is_file() and file.name != 'README.md' and file.suffix != '.go'}
         files['package.json'] = json.dumps(data).encode()
         files['README.md'] = pathlib.Path('docs/AGENT_SKILL.md').read_bytes()
         if mutate:

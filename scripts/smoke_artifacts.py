@@ -34,6 +34,7 @@ def smoke(root, commit):
             binary = archive.extractfile(executable).read()
     # Extract only the known executable; never trust archive paths for extraction.
     with tempfile.TemporaryDirectory() as directory:
+        directory = str(pathlib.Path(directory).resolve())
         path = pathlib.Path(directory) / executable
         path.write_bytes(binary)
         path.chmod(0o700)
@@ -53,6 +54,31 @@ def smoke(root, commit):
                 raise ValueError(f'{args}: structured error code differs from exit code')
             return envelope
 
+        skill_root = pathlib.Path(directory) / 'assistant-skills'
+        installed_skill = invoke(['skill', 'install', '--path', str(skill_root)])['data']
+        skill_target = skill_root / 'woobe-cli'
+        if not installed_skill['executed'] or not (skill_target / 'SKILL.md').is_file():
+            raise ValueError('packaged binary did not install its embedded skill offline')
+        if (skill_target / 'SKILL.md').read_bytes() != pathlib.Path('packages/woobe-cli-skill/skills/woobe-cli/SKILL.md').read_bytes():
+            raise ValueError('embedded skill differs from canonical npm source')
+        invoke(['skills', 'status', '--path', str(skill_root)])
+        # Native and standalone installers share one ownership/integrity receipt.
+        launcher = pathlib.Path('packages/woobe-cli-skill/bin/woobe-skill.cjs').resolve()
+        subprocess.run(['node', str(launcher), 'install', '--path', str(skill_root)], check=True, capture_output=True)
+        native_status = invoke(['skills', 'status', '--path', str(skill_root)])['data']
+        if native_status['installations'][0]['status'] != 'managed':
+            raise ValueError('native installer did not recognize the npm receipt')
+        invoke(['skill', 'install', '--path', str(skill_root)])
+        invoke(['skill', 'uninstall', '--path', str(skill_root)])
+        outside = pathlib.Path(directory) / 'outside-skills'
+        outside.mkdir()
+        linked = pathlib.Path(directory) / 'linked-skills'
+        subprocess.run(['node', '-e', "require('fs').symlinkSync(process.argv[1], process.argv[2], process.platform === 'win32' ? 'junction' : 'dir')", str(outside), str(linked)], check=True, capture_output=True)
+        invoke(['skill', 'install', '--path', str(linked)], code=2)
+        if list(outside.iterdir()):
+            raise ValueError('embedded installer followed linked destination')
+        if skill_target.exists():
+            raise ValueError('native installer did not remove its managed skill')
         version = invoke(['version'])['data']
         if any(version[k] != v for k, v in {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch}.items()):
             raise ValueError('packaged binary identity differs from archive metadata')

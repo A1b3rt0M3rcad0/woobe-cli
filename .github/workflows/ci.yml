@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: '24'
       - run: node --test scripts/tests/skill-installer.test.cjs
-      - run: test -z "$(gofmt -l cmd internal)"
+      - run: test -z "$(gofmt -l cmd internal packages)"
       - run: python3 scripts/version.py
       - run: python3 -m unittest discover -s scripts/tests
       - run: python3 scripts/completeness.py
@@ -137,6 +137,7 @@ jobs:
         shell: bash
         run: |
           go test ./internal/packagefmt ./internal/packagebundle ./internal/packagecheckpoint ./internal/packageapi
+          go test ./packages/woobe-cli-skill
           go test ./internal/devworkspace
           go test ./internal/output
           go test ./internal/cli -run 'Package|Control|Output'

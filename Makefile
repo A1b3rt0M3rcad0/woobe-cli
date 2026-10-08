@@ -9,7 +9,7 @@ check:
 	python3 scripts/version.py
 	python3 -m unittest discover -s scripts/tests
 	python3 scripts/completeness.py
-	test -z "$$(gofmt -l cmd internal)"
+	test -z "$$(gofmt -l cmd internal packages)"
 	go mod verify
 	go vet ./...
 	go test -race ./...

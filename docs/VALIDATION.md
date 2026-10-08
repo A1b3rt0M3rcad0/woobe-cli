@@ -7,7 +7,9 @@ Installer tests cover exact multi-host payloads, update/removal, user/custom roo
 read-only modes, unmanaged/edited/extra files, malformed/traversal receipts,
 links/hardlinks, size bounds, locks, ordinary rollback and concurrent-edit preservation.
 All 59 Python tests passed, including both npm identities, candidate verification
-and release recovery; all nine installer regression groups passed. The full local
+and release recovery; all nine npm installer regression groups passed. Native Go tests additionally
+cover embedding, offline command aliases, runtime separation, receipts, drift,
+user/custom roots, locks, links, rollback and concurrent-edit preservation. The full local
 Go race/module/vet checks and offline native/npm/skill smokes passed.
 
 `make check` runs Node/Python regression tests plus formatting/modules/vet/Go race.
@@ -20,7 +22,7 @@ revision evidence; this does not claim an assistant UI loaded the skill or certi
 live remote operations beyond the separately recorded backend evidence.
 
 Reproduce with [CI.md](CI.md). The regenerated command catalog currently lists
-308 executable entries including 193 HTTP operations; the optional skill installer
+312 executable entries including 193 HTTP operations; the optional skill installer
 is a separate executable. Published CLI baseline remains 0.13.7; the new npm name
 requires the documented owner bootstrap after approved merge.
 

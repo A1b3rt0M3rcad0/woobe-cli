@@ -7,12 +7,13 @@ requests and as the reusable validation gate for `Release CLI`.
 | --- | --- |
 | `test` | Version floor for both npm packages, Python publication/recovery tests, Node installer tests, roadmap audit, Go formatting/modules/vet/race/coverage and bounded fuzzing; native build/discovery |
 | `package` | Six OS/architecture archives plus `woobe-cli` and `woobe-cli-skill` npm tarballs, schemas/notices, exact source identity and SHA256SUMS/artifacts.json |
-| `native-smoke` × six | Linux amd64/arm64, macOS Intel/arm64, Windows amd64/arm64: filesystem/checkpoint/credential tests, installer regressions, downloaded archive validation, real binary and both npm tarballs installed offline; every fenced skill CLI example checked against packaged help |
+| `native-smoke` × six | Linux amd64/arm64, macOS Intel/arm64, Windows amd64/arm64: filesystem/checkpoint/credential tests, native/standalone installer regressions and receipt interoperability, downloaded archive validation, real binary and both npm tarballs installed offline; every fenced skill CLI example checked against packaged help |
 | `ci` | All three validation groups must succeed; failed/cancelled/skipped groups reject the stable aggregate gate |
 
 Nine concrete jobs execute. The stable `ci` check can be required by repository
 branch rules; the workflow does not change those rules. Permissions are read-only.
-The new installer never calls Woobe, edits credentials or modifies agent settings.
+The native installer embeds the same reviewed files as npm and needs no Node/npm.
+Both installers share managed receipts and never call Woobe, edit credentials or modify agent settings.
 Its tests cover managed update/removal, local edit protection, multi-target preflight,
 links/hardlinks, receipts, locks, rollback and preservation of concurrent edits.
 

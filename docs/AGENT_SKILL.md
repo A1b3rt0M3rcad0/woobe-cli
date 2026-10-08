@@ -1,13 +1,48 @@
 # Woobe CLI skill for coding agents
 
-`woobe-cli-skill` is a separate npm package containing the portable `woobe-cli`
-Agent Skill and the `woobe-skill` installer. It teaches a coding assistant to use
-Woobe efficiently; it is different from runtime Skills uploaded to Woobe Agents.
-It requires Node.js 22+ to install and Woobe CLI 0.13.7+ for the documented flows.
-Install the CLI independently with `npm install --global woobe-cli`, or use a native
-binary. The skill never installs the CLI, logs in, asks for keys or calls Woobe.
+The CLI embeds the portable `woobe-cli` Agent Skill and installs it directly:
+`woobe skill install`. It teaches a coding assistant to use Woobe efficiently;
+it is different from runtime Skills uploaded to Woobe Agents. Built-in installation
+needs no npm, Node.js, network, key, context or `.woobe-config`. Linux, macOS and
+Windows binaries contain the same reviewed skill files as the optional npm package.
 
-## Install for a project
+`woobe-cli-skill` remains a separate npm package with the `woobe-skill` installer
+for assistants that want instructions independently of a native CLI installation.
+That optional installer requires Node.js 22+. Documented Woobe workflows require
+CLI 0.13.7+; the new built-in installer is available in CLI releases containing
+this PR. Neither installer logs in, asks for keys or calls Woobe.
+
+## Install directly from Woobe CLI
+
+After installing a CLI release containing this feature, run from your project:
+
+```sh
+woobe skill install --agent codex
+woobe skill install --agent claude
+woobe skill install --agent codex,claude,copilot,cursor
+woobe skill status --agent codex,claude --output compact
+woobe skill uninstall --agent codex,claude --dry-run
+woobe skill uninstall --agent codex,claude
+```
+
+`woobe skills` is the canonical group; singular `woobe skill` routes these four
+local actions without changing runtime `woobe skill list/create/get/update/delete`.
+Supported destinations can be listed with `woobe skill agents`.
+
+```sh
+woobe skill install --agent codex-legacy --scope user
+woobe skill install --project-dir ./my-project --agent claude
+woobe skill install --path ./custom-assistant/skills
+woobe skill install --agent codex --dry-run
+```
+
+Use `--project-dir` for an existing local project; global `--project` is a Woobe
+Project ID and is not a filesystem path. No backend setup is needed to install
+instructions. Re-run install after upgrading the CLI to update unchanged managed
+skills. The CLI and npm installer recognize each other's receipts; edited files
+remain protected across both. Outputs use the normal CLI text/compact/JSON modes.
+
+## Optional npm installation
 
 After the package's initial publication:
 
@@ -24,7 +59,8 @@ woobe-skill install --agent codex,claude,copilot,cursor
 woobe-skill status --agent codex,claude,copilot,cursor --json
 ```
 
-Run from the intended project, or select an existing project with `--project DIR`.
+For the standalone npm installer, run from the intended project or select an
+existing project with `--project DIR` (native CLI uses `--project-dir`).
 Installation is explicit: `npm install` alone does not change project files,
 agent settings, `AGENTS.md` or `CLAUDE.md`. No dependencies or lifecycle scripts
 are used. Windows PowerShell, Linux and macOS use the same commands.
@@ -53,7 +89,7 @@ woobe-skill --help
 ```
 
 `--path` names the skills root: the installer appends `woobe-cli`. It cannot be
-combined with agent/scope/project options. `--scope` defaults to `project`;
+combined with agent/scope/project-directory options. `--scope` defaults to `project`;
 project installation does not search parent directories or silently become user-wide.
 Duplicate destinations are installed once.
 
@@ -136,7 +172,8 @@ own first publication before npm allows configuring Trusted Publishing:
 5. At GitHub repository Settings → Secrets and variables → Actions → Variables,
    create repository variable **WOOBE_SKILL_NPM_PUBLISH** with value **true**.
 6. The next automatic release publishes both packages through OIDC/provenance.
-   No `NPM_TOKEN` is read. Before step 5, only `npm-skill` is skipped; native,
+   No `NPM_TOKEN` is read. Before step 5, only `npm-skill` is skipped; built-in skill installation needs none
+   of these npm publisher steps. Native,
    GHCR and existing CLI npm publication continue normally. The GitHub skill
    tarball remains installable with `npx --package=./woobe-cli-skill-VERSION.tgz
    woobe-skill install --agent codex`.

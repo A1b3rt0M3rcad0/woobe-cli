@@ -68,7 +68,8 @@ O onboarding recomendado é `context create`, `context use`, `auth login --cli-k
 
 ## Optional coding assistant skill
 
-Install `woobe-cli-skill` separately; it does not migrate credentials or replace
+Use the built-in `woobe skill install` after upgrading to a CLI containing this
+feature, or the optional `woobe-cli-skill` npm installer. Neither migrates credentials nor replaces
 the executable. Current Codex uses `.agents/skills`; choose `codex-legacy` for
 `.codex/skills`. Move any existing unmanaged/custom skill before installation,
 which refuses to overwrite it. Existing CLI contexts, protected credentials,

@@ -3,7 +3,8 @@
 The assistant skill package is implemented for review. Public npm distribution
 needs approved merge, first publication of the new name, its own Trusted Publisher
 and `WOOBE_SKILL_NPM_PUBLISH=true`; these owner steps are documented in
-[AGENT_SKILL.md](AGENT_SKILL.md). No backend change is required.
+[AGENT_SKILL.md](AGENT_SKILL.md). Built-in `woobe skill install` is independent of npm publication and requires
+no Node/npm, authentication or backend change.
 
 The original roadmap audit below is historical. Later package/development work
 and current credentials must be assessed from [STATUS.md](STATUS.md), current

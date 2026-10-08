@@ -7,31 +7,31 @@ The backend authorizes every operation.
 
 ## Coding assistant skill
 
-The separate **`woobe-cli-skill`** npm package teaches Codex, Claude Code,
-Copilot, Cursor and other Agent Skills-compatible assistants to use this CLI.
-It includes a small task router, offline references and YAML templates. It does
-not replace the CLI or authenticate to Woobe.
-
-After the new package's initial npm publication:
+The CLI bundles a small portable skill, offline references and YAML templates
+for Codex, Claude Code, Copilot, Cursor and other Agent Skills-compatible hosts.
+Install it directly with the CLI after this feature's release:
 
 ```sh
-npx --yes --package=woobe-cli-skill woobe-skill install --agent codex
-npx --yes --package=woobe-cli-skill woobe-skill install --agent claude
+woobe skill install --agent codex
+woobe skill install --agent claude
+woobe skill status --agent codex,claude
 ```
 
-Codex defaults to `.agents/skills/woobe-cli`; `--agent codex-legacy` selects
-`.codex/skills/woobe-cli`. Use `--scope user`, multiple `--agent` values or
-`--path` for other skill roots. Installation/update/removal preserves local edits
-and agent settings. See [skill installation and publisher setup](docs/AGENT_SKILL.md).
+No npm, Node.js, backend connection or key is required. Codex defaults to
+`.agents/skills/woobe-cli`; `--agent codex-legacy` selects `.codex/skills/woobe-cli`.
+Use `--scope user`, `--project-dir`, multiple agents or `--path` for other roots.
+Updates/removal preserve edited files and settings. Runtime Skills still use
+`woobe skill list/create/get/update/delete`.
 
-| npm package | Executable | Purpose |
-| --- | --- | --- |
-| `woobe-cli` | `woobe` | Native client, six bundled targets |
-| `woobe-cli-skill` | `woobe-skill` | Explicit assistant skill installation |
+| Distribution | Purpose |
+| --- | --- |
+| `woobe-cli` / native binary | CLI with offline `woobe skill install/status/uninstall/agents` |
+| `woobe-cli-skill` (optional npm) | Same skill plus independent `woobe-skill` installer, Node.js 22+ |
 
-See the [complete documentation index](docs/INDEX.md) for current guides and
-historical validation records. The new package is prepared in this PR; public
-npm availability starts after approved merge and its one-time owner bootstrap.
+See [skill installation and publisher setup](docs/AGENT_SKILL.md) and the
+[complete documentation index](docs/INDEX.md). The optional npm package is
+prepared in this PR; its first publication still needs owner bootstrap after
+approved merge. Built-in installation is independent of that publication.
 
 ## Develop locally with YAML
 

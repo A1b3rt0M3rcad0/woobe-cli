@@ -7,7 +7,9 @@ Managed YAML development, environment-aware package transfer, compact output and
 safe stale-registry pruning are delivered. The new assistant skill package is
 implemented in a separate review PR; it is not yet a public npm publication.
 
-`woobe-cli-skill` adds an explicit cross-platform installer, portable task-focused
+The CLI now embeds the skill and installs it offline with `woobe skill install`,
+without Node/npm, login or development config. `woobe-cli-skill` remains the
+optional compatible standalone installer. Both ship portable task-focused
 references/templates, provenance-bound tarballs and independent OIDC publication.
 See [AGENT_SKILL.md](AGENT_SKILL.md), [CI.md](CI.md) and [VALIDATION.md](VALIDATION.md).
 Current user guides are listed in [INDEX.md](INDEX.md). No statement here grants

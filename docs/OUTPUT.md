@@ -2,7 +2,10 @@
 
 ## Assistant guidance
 
-The optional [assistant skill](AGENT_SKILL.md) selects compact output and exact
+`woobe skill install/status/uninstall` uses normal text/compact/JSON output;
+installation destinations, version and drift evidence remain visible.
+
+The embedded [assistant skill](AGENT_SKILL.md) selects compact output and exact
 fields for inspection, and reads only the reference needed for the task. Full
 JSON remains available for structured processing. It never hides incomplete
 collection/write evidence or substitutes presentation for server authorization.

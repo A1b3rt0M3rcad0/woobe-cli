@@ -249,7 +249,24 @@ npx --yes --package=woobe-cli woobe version
 ```
 
 
-## Assistant skill package
+## Assistant skill installation
+
+The CLI binary embeds the reviewed skill. No extra package, Node.js, npm,
+network access or backend login is needed:
+
+```sh
+woobe skill install --agent codex
+woobe skill install --agent claude
+woobe skill status --agent codex,claude
+woobe skill install --agent codex-legacy --scope user
+```
+
+Use `--project-dir` for an existing local directory, `--path` for a custom skills
+root and `--dry-run` to preview. Updating the CLI and re-running install updates
+unchanged managed skills. Native and npm installers recognize the same receipts.
+Runtime Skills inside Woobe still use `project skill` operations.
+
+### Optional independent npm package
 
 `woobe-cli-skill` is packaged beside the native client at the same release
 version/source SHA. It has no binary dependencies or npm lifecycle scripts.
@@ -260,7 +277,7 @@ supports Windows, macOS and Linux.
 
 ```sh
 npx --yes --package=woobe-cli-skill woobe-skill install --agent codex,claude
-woobe-skill status --agent codex --json
+npx --yes --package=woobe-cli-skill woobe-skill status --agent codex --json
 ```
 
 The full [assistant guide](AGENT_SKILL.md) documents `.agents/skills`, explicit

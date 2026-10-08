@@ -8,7 +8,9 @@
 
 ## Assistant skill delivery addendum — 2026-10-08
 
-A separate `woobe-cli-skill` npm distribution complements the native client.
+The native client embeds the portable skill and provides offline
+`woobe skill install/status/uninstall/agents`. The separate `woobe-cli-skill`
+npm distribution is optional and shares the same payload/receipts.
 It bundles portable Agent Skills instructions and offline references, not runtime
 Woobe Skill resources. The explicit installer supports project/user scope for
 Codex, legacy .codex, Claude Code, Copilot, Cursor and custom skills directories.

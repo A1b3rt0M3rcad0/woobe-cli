@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Embed the portable skill in native CLI binaries: `woobe skill install/status/uninstall/agents`, offline without npm/Node; share receipts with the optional standalone installer.
+
 - Add `woobe-cli-skill`, a separate npm package and explicit coding-agent skill installer.
 - Support Codex, legacy `.codex`, Claude Code, Copilot, Cursor, user/project scopes and custom roots.
 - Preserve local edits/settings with receipts, preflight, locks and rollback.

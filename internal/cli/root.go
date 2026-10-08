@@ -126,6 +126,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	r.AddCommand(&cobra.Command{Use: "version", Args: cobra.NoArgs, RunE: func(*cobra.Command, []string) error {
 		return a.emit(map[string]any{"version": Version, "commit": Commit, "go_version": runtime.Version(), "os": runtime.GOOS, "arch": runtime.GOARCH, "schema_version": "1"})
 	}})
+	a.assistantSkillCommands()
 	a.developmentConfigCommands()
 	a.developmentCommands()
 	a.developmentLifecycleCommands()

@@ -2,10 +2,16 @@
 
 ## Coding assistants
 
-The optional [assistant skill](AGENT_SKILL.md) routes to task-specific offline
+Install offline with `woobe skill install --agent codex` or `--agent claude`.
+Use `woobe skill status`, `uninstall` and `agents`; `--project-dir` selects a local
+folder and `--scope user` installs for the current user. No key, context, Node.js,
+npm or `.woobe-config` is required. Runtime `woobe skill list/create/...` is separate.
+
+The embedded [assistant skill](AGENT_SKILL.md) routes to task-specific offline
 references and YAML examples. It teaches pull/edit/validate/diff/push to Draft,
 shared dependencies and explicit lifecycle operations using these same commands.
-Install it separately from the CLI; no authentication or writes happen on install.
+The optional npm installer shares the same receipts and payload; no remote writes
+or authentication happen on skill install.
 
 ## Build and discovery
 

@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from current discovery: 308 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for the separate local skill installer.
+Generated from current discovery: 312 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for the separate local skill installer.
 
 Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. The coding-assistant installer is a separate executable and is not an HTTP operation.
 
@@ -285,6 +285,10 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `schema` | `local` | — | `local` | — | — |
 | `server-schema` | `diagnostic-http` | — | `server-dependent` | — | — |
 | `skill` | `local` | — | `local` | — | — |
+| `skills agents` | `local` | — | `local` | — | — |
+| `skills install` | `local` | — | `local` | — | — |
+| `skills status` | `local` | — | `local` | — | — |
+| `skills uninstall` | `local` | — | `local` | — | — |
 | `surface` | `local` | — | `local` | — | — |
 | `tool` | `local` | — | `local` | — | — |
 | `validate-input` | `diagnostic-http` | — | `server-dependent` | — | — |
