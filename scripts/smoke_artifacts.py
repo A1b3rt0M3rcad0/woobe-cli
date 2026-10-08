@@ -258,7 +258,7 @@ def smoke(root, commit):
             server.server_close()
             thread.join(timeout=5)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
-            'archive': artifact['name'], 'success': True, 'checks': ['identity', 'discovery', 'schemas', 'complete-package-offline', 'package-python-inventory-parity', 'package-lock-tamper', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff', 'protected-reference-compile', 'canonical-mcp-permissions'],
+            'archive': artifact['name'], 'success': True, 'checks': ['embedded-assistant-skill', 'native-npm-receipt-compatibility', 'linked-skill-destination-refusal', 'identity', 'discovery', 'schemas', 'complete-package-offline', 'package-python-inventory-parity', 'package-lock-tamper', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff', 'protected-reference-compile', 'canonical-mcp-permissions'],
             'local_registry_checks': ['readable-yaml', 'yaml-json-move', 'json-clone', 'stale-registry-preview', 'explicit-stale-registry-prune'],
             'backend_acceptance': 'not_evaluated', 'credential_provider_acceptance': 'not_evaluated'}
 

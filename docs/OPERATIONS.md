@@ -1,8 +1,8 @@
 # Executable command catalog
 
-Generated from current discovery: 312 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for the separate local skill installer.
+Generated from current discovery: 312 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
 
-Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. The coding-assistant installer is a separate executable and is not an HTTP operation.
+Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. Assistant installation uses local `skills` commands, not HTTP operations. The optional npm `woobe-skill` executable uses the same payload and receipts.
 
 | Command | Kind | HTTP | Availability | Permission hint | Pagination |
 | --- | --- | --- | --- | --- | --- |

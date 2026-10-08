@@ -11,8 +11,8 @@ def render(binary):
     entries = json.loads(result.stdout)['data']
     http_count = sum(entry['kind'] == 'http' for entry in entries)
     lines = ['# Executable command catalog', '',
-             f'Generated from current discovery: {len(entries)} executable entries, including {http_count} HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for the separate local skill installer.', '',
-             'Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. The coding-assistant installer is a separate executable and is not an HTTP operation.', '',
+             f'Generated from current discovery: {len(entries)} executable entries, including {http_count} HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.', '',
+             'Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. Assistant installation uses local `skills` commands, not HTTP operations. The optional npm `woobe-skill` executable uses the same payload and receipts.', '',
              '| Command | Kind | HTTP | Availability | Permission hint | Pagination |',
              '| --- | --- | --- | --- | --- | --- |']
     for entry in entries:
