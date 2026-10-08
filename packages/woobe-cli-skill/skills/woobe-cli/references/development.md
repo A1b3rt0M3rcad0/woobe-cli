@@ -64,3 +64,23 @@ push bindings or copy credentials. Reconcile uncertain writes before selection.
 Local `rebase --onto REVISION_ID` preserves incoming comment-only edits and stops
 on competing comments, semantic fields or support files. Seal manual resolutions
 with `revision merge REV_A REV_B --message 'Resolved content'`.
+
+
+### Fetch isolated revision metadata
+
+Use `woobe agent @support history fetch --revisions` (or the same Network
+command) to append the authorized server revision catalog. It checks immutable
+record digests, logical identity, page completeness and a stable watermark.
+The default `history fetch` continues to retrieve native release/deployment
+receipts. Neither mode changes author YAML, the working head or Production.
+
+Revision metadata and source materialization are separate: this fetch reports
+`objects_available: not_downloaded`. A remote source digest is a declaration,
+not a retained author object or a server attestation. Local checkout still
+requires verified executable and exact author objects. `--dry-run` validates
+the catalog without storing metadata. A failed traversal can retain earlier
+immutable pages, but never reports that traversal as complete.
+
+```sh
+woobe agent @support history fetch --revisions
+```

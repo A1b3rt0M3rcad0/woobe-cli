@@ -172,3 +172,19 @@ new objects use `woobe-development-compiler@2.0`, keeping Model endpoint overrid
 separate from Provider defaults. Checkout validates the historical object using
 its own recipe; a new checkpoint uses the current one. Unknown recipes are
 rejected rather than silently reinterpreted.
+
+
+### Fetch isolated revision metadata
+
+Use `woobe agent @support history fetch --revisions` (or the same Network
+command) to append the authorized server revision catalog. It checks immutable
+record digests, logical identity, page completeness and a stable watermark.
+The default `history fetch` continues to retrieve native release/deployment
+receipts. Neither mode changes author YAML, the working head or Production.
+
+Revision metadata and source materialization are separate: this fetch reports
+`objects_available: not_downloaded`. A remote source digest is a declaration,
+not a retained author object or a server attestation. Local checkout still
+requires verified executable and exact author objects. `--dry-run` validates
+the catalog without storing metadata. A failed traversal can retain earlier
+immutable pages, but never reports that traversal as complete.

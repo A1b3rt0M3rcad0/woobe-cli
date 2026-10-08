@@ -285,3 +285,8 @@ remote observations of Agent/Network selections.
 Read [AGENTS.md](AGENTS.md) for repository maintenance instructions, including
 which help, documentation and assistant skill files to update with CLI changes,
 how to regenerate derived docs and which validation applies.
+
+Isolated revision catalogs can be mirrored with
+`woobe agent @support history fetch --revisions` (and Network equivalents).
+This fetch preserves author files and the working head; it reports metadata
+coverage separately from object availability. See [ASaC workflows](docs/ASAC.md).

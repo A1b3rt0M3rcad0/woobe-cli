@@ -67,6 +67,7 @@ func (c *Client) request(ctx context.Context, method, suffix string, body any, d
 }
 
 type ASaCCapabilities struct {
+	RevisionCatalog            bool `json:"revision_catalog"`
 	AcceptedBindingGenerations bool `json:"accepted_binding_generations"`
 }
 
