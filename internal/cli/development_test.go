@@ -11,6 +11,30 @@ import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/devworkspace"
 )
 
+func TestPackageUUIDReferencesAreCaseInsensitive(t *testing.T) {
+	for _, kind := range []string{"Agent", "Network"} {
+		t.Run(kind, func(t *testing.T) {
+			c, err := devworkspace.Create(t.TempDir(), ".woobe", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			uid := "01a0a033-5820-770c-854b-902864857273"
+			native := "01a00d4a-fa75-7629-a2c6-773c25c6e2ef"
+			c.Resources = []devworkspace.Resource{{UID: uid, Kind: kind, Key: "support", Alias: "support", Path: "artifacts/support"}}
+			state := &devworkspace.State{Bindings: map[string]devworkspace.Binding{uid: {ResourceID: native}}}
+			for _, reference := range []string{uid, native, strings.ToUpper(uid), strings.ToUpper(native)} {
+				resource, err := developmentReference(c, state, strings.ToLower(kind), reference, "")
+				if err != nil || resource.UID != uid {
+					t.Fatal("registered UUID was not resolved", reference, err)
+				}
+			}
+			if _, err := developmentReference(c, state, strings.ToLower(kind), "@SUPPORT", ""); err == nil {
+				t.Fatal("UUID normalization changed alias matching")
+			}
+		})
+	}
+}
+
 func TestManagedDiffIncludesDependencyChangesWithoutNetwork(t *testing.T) {
 	t.Chdir(t.TempDir())
 	c, err := devworkspace.Create(".", ".woobe", "")

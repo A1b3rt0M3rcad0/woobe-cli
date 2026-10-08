@@ -67,6 +67,9 @@ func localAlias(name string) string {
 	if len(value) > 80 {
 		value = value[:80]
 	}
+	if err := validateAuthorPath(value); err != nil {
+		value = "resource-" + value
+	}
 	return value
 }
 
@@ -218,7 +221,7 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 			if err != nil {
 				return nil, nil, err
 			}
-			target := filepath.Join(c.RootPath(), filepath.FromSlash(r.Path), filepath.FromSlash(name))
+			target := filepath.Join(c.RootPath(), filepath.Dir(filepath.FromSlash(descriptor(r))), filepath.FromSlash(name))
 			remoteHash := fmt.Sprintf("%x", sha256.Sum256(data))
 			supportBases[name] = remoteHash
 			if previous, err := os.ReadFile(target); err == nil {

@@ -69,6 +69,7 @@ func (a *App) contextCommands() {
 					if a.APIURL != "" {
 						if strings.TrimRight(v.APIURL, "/") != strings.TrimRight(a.APIURL, "/") {
 							v.Credential = ""
+							v.RuntimeCredential = ""
 							v.AuthAPIURL = ""
 							v.Workspace = ""
 							v.Project = ""

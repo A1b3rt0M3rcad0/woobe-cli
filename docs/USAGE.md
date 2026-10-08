@@ -223,6 +223,12 @@ Falhas de apply agora incluem checkpoint, contagens por estado, etapa interrompi
 
 `context show NAME` resolves the selected profile. Explicit empty `--project`, `--workspace`, `--credential` and `--runtime-credential` override inherited values for that invocation. Changing Workspace clears an inherited Project unless a Project is supplied explicitly. Persist clearing with `context unset NAME workspace`, `context unset NAME project`, or `context unset NAME credential runtime-credential`; stored secrets are preserved. Attach a separate runtime reference with `context runtime-credential attach NAME --runtime-credential REF` and detach it with `context runtime-credential detach NAME`.
 
+Changing a saved context's API URL detaches its administrative and runtime
+credentials and clears inherited Workspace/Project selection. Authenticate and
+attach the appropriate Runtime Key for the new API before executing a target.
+Stored reusable runtime credentials are preserved; they are never transferred
+automatically to the new API. Updating only a trailing slash retains attachments.
+
 Config v1 is bounded to 1 MiB, rejects unknown/duplicate fields, dangling active context names and invalid context URLs/names, and validates before atomic replacement. See [MIGRATION.md](MIGRATION.md) for Python prototype command/credential/output migration.
 
 The explicit `validate-input` subset additionally supports min/maxProperties, dependentRequired, dependentSchemas, propertyNames, RE2 patternProperties, if/then/else, prefixItems and contains with min/maxContains. Numeric enum/const and uniqueness use exact mathematical equality; nullable alters type acceptance without bypassing enum/composition constraints. Local JSON pointers support escaped property names, URI fragment decoding and array indices. Schema inspection includes inactive properties/branches; an unsupported rule there returns exit 9 rather than valid=true.

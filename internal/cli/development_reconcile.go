@@ -93,7 +93,7 @@ func (a *App) developmentReconcile(ctx context.Context, client *packageapi.Clien
 		return err
 	}
 	if !result.Terminal {
-		return a.emit(map[string]any{"operation": result, "pending": true, "next_command": "woobe package operation status " + result.OperationID})
+		return a.emit(map[string]any{"operation": result, "pending": true, "next_command": "woobe package status " + result.OperationID})
 	}
 	bases, err := readDevelopmentBases(c, path)
 	if err != nil {

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -79,6 +80,15 @@ func TestReconcileUnknownAcceptanceWorksWithBrokenYAMLAndNeverApplies(t *testing
 	code, response := invoke(t, []string{"--api-url", server.URL, "--workspace", "workspace", "--project", "project", "agent", "@support", "reconcile", "--output", "json"}, "")
 	if code != 0 || response["data"].(map[string]any)["pending"] != true || lookups != 1 {
 		t.Fatal(code, response, lookups)
+	}
+	hint := response["data"].(map[string]any)["next_command"].(string)
+	if hint != "woobe package status operation" {
+		t.Fatal("reconciliation suggested an unavailable command", hint)
+	}
+	app := New(strings.NewReader(""), io.Discard, io.Discard)
+	command, _, err := app.Root.Find(strings.Fields(hint)[1:])
+	if err != nil || command.CommandPath() != "woobe package status" {
+		t.Fatal("suggested observation command is not available", err)
 	}
 	data, _ := os.ReadFile(broken)
 	if string(data) != "broken: [" {

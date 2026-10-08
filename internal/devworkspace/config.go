@@ -158,13 +158,11 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) ResourcePath(resource Resource) (string, error) {
-	for _, part := range strings.Split(resource.Path, "/") {
-		if part == ".state" || part == Filename || part == ".git" {
-			return "", fmt.Errorf("resource path uses private operational metadata")
-		}
-	}
 	if filepath.IsAbs(resource.Path) || strings.Contains(resource.Path, "\\") {
 		return "", fmt.Errorf("resource path must be relative to the configured root using forward slashes")
+	}
+	if err := validateAuthorPath(resource.Path); err != nil {
+		return "", err
 	}
 	path := filepath.Join(c.RootPath(), filepath.FromSlash(resource.Path))
 	relative, err := filepath.Rel(c.RootPath(), path)
@@ -181,7 +179,7 @@ func (c *Config) Resolve(kind, reference string) (*Resource, error) {
 		if kind != "" && !strings.EqualFold(r.Kind, kind) {
 			continue
 		}
-		if r.UID == reference || r.Key == reference || "@"+r.Alias == reference || r.Path == reference {
+		if strings.EqualFold(r.UID, reference) || r.Key == reference || "@"+r.Alias == reference || r.Path == reference {
 			if result != nil {
 				return nil, fmt.Errorf("resource reference is ambiguous")
 			}

@@ -54,10 +54,42 @@ Inspect `surface list`, then reconcile explicitly with
 Surface author files.
 
 Author `target_ref` and other dependency references use stable registry **keys**,
-shown by `resources list`; terminal references use `@alias`, UUID or path. Changing
-an alias does not rewrite dependency identity. Provider bind also records its
+shown by `resources list`; terminal references use `@alias`, UUID or path.
+UUID letter case does not change identity; alias matching remains case-sensitive.
+Changing an alias does not rewrite dependency identity. Provider bind also records its
 native identity so a later target pull reuses that same Provider rather than
 creating another definition.
+
+### Create local artifacts with support files
+
+`resources create` copies the descriptor and its declared Skill/Knowledge files
+from the descriptor's folder. Missing files, links, paths outside that folder and
+paths through `.state`, `.woobe-config` or `.git` fail before author files or the
+registry change. Register existing artifacts when their files are already under
+the configured root.
+
+```sh
+woobe resources create skill procedure --file ./author/skill.yaml
+woobe resources clone skill '@procedure' --alias procedure-copy
+woobe resources move skill '@procedure' --path procedures/skill.yaml
+```
+
+Registered descriptors can be folders or individual YAML/JSON files. Pull keeps
+their paths and places declared support files beside the descriptor, including
+after a move. Paths must work on all supported platforms: Windows device names,
+trailing dots/spaces, alternate data streams and private metadata directories
+are rejected on every OS. Automatically generated aliases avoid device names.
+
+### Reconcile pending writes
+
+If a managed write times out or loses its response, keep its private checkpoint
+and run `woobe agent '@support' reconcile` (or the corresponding Network command).
+Reconciliation observes the original operation; it does not upload or apply a
+second write and still works if local YAML was edited or became invalid.
+For a running operation, the returned `next_command` is
+`woobe package status OPERATION_ID`; add `--wait` to observe until terminal.
+Run the managed `reconcile` again afterward to accept completed local bases and
+clear the pending state before another push.
 
 ### Diagnose a development connection
 

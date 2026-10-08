@@ -17,7 +17,7 @@ func (a *App) developmentManageCommands() {
 	group := a.group("resources")
 	for _, action := range []string{"create", "register", "clone", "move", "alias", "unregister"} {
 		var file, destination, alias string
-		command := &cobra.Command{Use: action + " KIND REFERENCE", Args: cobra.ExactArgs(2), Short: action + " an explicitly registered local artifact", Long: "Local registry operation; never deletes remote resources. create copies an author YAML with a new UID; register links an existing descriptor under the configured root; clone gives an existing artifact a new identity and shares its referenced dependencies. unregister retains author files and private native bindings. All writes are journaled and references validated.", Example: "woobe resources clone agent '@support' --alias support-v2\nwoobe resources create provider openai --file provider.yaml\nwoobe agent '@support-v2' create", RunE: func(cmd *cobra.Command, args []string) error {
+		command := &cobra.Command{Use: action + " KIND REFERENCE", Args: cobra.ExactArgs(2), Short: action + " an explicitly registered local artifact", Long: "Local registry operation; never deletes remote resources. create copies an author YAML and its declared support files with a new UID; register links an existing descriptor under the configured root; clone gives an existing artifact a new identity and shares its referenced dependencies. unregister retains author files and private native bindings. All writes are journaled and references validated.", Example: "woobe resources clone agent '@support' --alias support-v2\nwoobe resources create provider openai --file provider.yaml\nwoobe agent '@support-v2' create", RunE: func(cmd *cobra.Command, args []string) error {
 			kind := devworkspace.CanonicalKind(args[0])
 			if kind == "" {
 				return output.New(2, "Unknown resource kind")
@@ -58,7 +58,11 @@ func (a *App) developmentManageCommands() {
 				decoder.UseNumber()
 				var document map[string]any
 				if err = decoder.Decode(&document); err == nil {
-					resource, err = c.Add(kind, args[1], destination, document, nil, a.DryRun)
+					var supports map[string][]byte
+					supports, err = devworkspace.ReadAuthorSupports(document, file)
+					if err == nil {
+						resource, err = c.Add(kind, args[1], destination, document, supports, a.DryRun)
+					}
 				}
 			case "register":
 				if destination == "" || file != "" || alias != "" {
