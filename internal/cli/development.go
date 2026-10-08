@@ -25,6 +25,7 @@ func (a *App) developmentCommands() {
 		group.AddCommand(parent)
 		for _, action := range []string{"pull", "push", "create", "reconcile", "diff", "validate", "status"} {
 			var localPath, alias, env, version string
+			var remote bool
 			var deadline time.Duration
 			command := &cobra.Command{Use: action + " [REFERENCE]", Short: action + " a registered " + kind, Args: cobra.MaximumNArgs(1), Example: "woobe " + kind + " \"@support\" " + action, Long: "Resolve UUID, exact remote name, registered @alias or local path. pull downloads an environment, push always writes Draft. Within a linked artifact folder the reference is optional. JSON/YAML raw API commands remain available.", RunE: func(cmd *cobra.Command, args []string) error {
 				if err := packageFlags(cmd, "yes"); err != nil {
@@ -139,6 +140,9 @@ func (a *App) developmentCommands() {
 						_ = a.emit(map[string]any{"conflicts": conflicts, "updated": false})
 						return output.New(4, "Pull conflicts with local edits; resolve the listed paths")
 					}
+					if err = c.BootstrapTracking(*imported, state, env); err != nil {
+						return output.New(2, err.Error())
+					}
 					return a.emit(map[string]any{"pulled": true, "resource": imported.Alias, "path": filepath.Join(c.RootPath(), imported.Path), "environment": env, "resources": len(bundle.Graph.Components), "next_command": "woobe " + kind + " " + fmt.Sprintf("%q", "@"+imported.Alias) + " push"})
 				}
 				if resolveErr != nil {
@@ -167,7 +171,62 @@ func (a *App) developmentCommands() {
 					if err != nil {
 						return output.New(2, err.Error())
 					}
-					return a.emit(map[string]any{"resource": resource.Alias, "native_id": bound.ResourceID, "changes": changes, "changed": len(changes) > 0, "scope": "local", "environment": "draft"})
+					data := map[string]any{"resource": resource.Alias, "resource_uid": resource.UID, "native_id": bound.ResourceID, "changes": changes, "changed": len(changes) > 0, "scope": "local", "remote_status": "unverified", "write_environment": "draft"}
+					tracking, trackErr := c.ReadTracking(*resource)
+					if trackErr == nil {
+						data["origin"] = tracking.Origin
+						data["working_revision"] = tracking.Working
+						data["tracking_environment"] = tracking.TrackedEnvironment
+					} else if !os.IsNotExist(trackErr) {
+						return output.New(9, trackErr.Error())
+					} else {
+						data["origin_status"] = "unknown_origin"
+					}
+					modified := len(changes) > 0
+					if trackErr == nil && tracking.Working != "" {
+						record, err := c.ReadRevision(*resource, tracking.Working)
+						if err != nil {
+							return output.New(9, err.Error())
+						}
+						digests, err := graph.DefinitionDigests(resource.Key)
+						if err != nil {
+							return output.New(2, err.Error())
+						}
+						modified = digests[resource.Key] != record.DefinitionDigest
+						data["changed"] = modified
+						data["comparison_base"] = "working_revision"
+					}
+					codes := []string{}
+					if modified {
+						codes = append(codes, "local_modified")
+					}
+					if remote {
+						if bound.ResourceID == "" {
+							return output.New(2, "Remote status needs a validated native binding")
+						}
+						draft, err := a.asacCurrent(cmd, kind, bound.ResourceID, "draft")
+						if err != nil {
+							return err
+						}
+						data["draft"] = draft
+						if bound.Revision != nil && fmt.Sprint(bound.Revision) != fmt.Sprint(draft["draft_generation"]) {
+							codes = append(codes, "draft_changed")
+						}
+						if trackErr == nil && (tracking.TrackedEnvironment == "production" || tracking.TrackedEnvironment == "staging") {
+							selection, err := a.asacCurrent(cmd, kind, bound.ResourceID, tracking.TrackedEnvironment)
+							if err != nil {
+								return err
+							}
+							data["tracked_selection"] = selection
+							if tracking.Origin.SnapshotID != "" && tracking.Origin.SnapshotID != selection["snapshot_id"] {
+								codes = append(codes, "tracked_ref_changed")
+							}
+						}
+						data["remote_status"] = "verified"
+						data["scope"] = "local_and_remote"
+					}
+					data["status_codes"] = codes
+					return a.emit(data)
 				}
 				if resource.Frozen {
 					return output.New(2, "Frozen Network constituents cannot be pushed; pull the Agent Draft or clone it explicitly")
@@ -218,6 +277,9 @@ func (a *App) developmentCommands() {
 				return a.developmentPush(ctx, client, c, state, resource, acceptedBases, bundle.ArtifactDigest, bindings, targets, func() (packageapi.Upload, error) { return client.Upload(ctx, bundle, false) })
 			}}
 			command.Flags().StringVar(&localPath, "path", "", "Registered artifact folder; pull defaults to the configured root")
+			if action == "status" {
+				command.Flags().BoolVar(&remote, "remote", false, "Observe Draft and the tracked environment; offline status never claims remote freshness")
+			}
 			command.Flags().StringVar(&alias, "alias", "", "Local typed alias for a newly registered pull")
 			command.Flags().StringVar(&env, "env", "draft", "Pull source: draft, staging, release or production")
 			command.Flags().StringVar(&version, "version", "", "Required immutable Release version when --env release")

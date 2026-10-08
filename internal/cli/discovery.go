@@ -39,6 +39,18 @@ func (a *App) completeDiscovery() {
 					if strings.HasSuffix(path, " push") {
 						kind, effect, availability = "development-http", "mutation", "server-dependent"
 					}
+					if strings.HasSuffix(path, " current") {
+						kind, effect, availability = "development-http", "read", "server-dependent"
+					}
+					if strings.HasSuffix(path, " history") {
+						effect, availability = "local_history_or_remote_fetch", "local_or_server-dependent"
+					}
+					if strings.HasSuffix(path, " status") {
+						effect, availability = "local_or_explicit_remote_read", "local_or_server-dependent"
+					}
+					if strings.HasSuffix(path, " revision") {
+						effect = "local_checkpoint_or_read"
+					}
 				case strings.HasPrefix(path, "completion "):
 					kind = "shell-completion"
 					effect = "local"

@@ -2,6 +2,7 @@ package devworkspace
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -298,6 +299,64 @@ func (c *Config) Move(kind, reference, destination string, dryRun bool) error {
 		writes[target] = data
 		if !shared[source] {
 			removals = append(removals, filepath.Join(c.RootPath(), filepath.FromSlash(source)))
+		}
+	}
+	// Move portable tracking/history with the stable UID. Objects stay shared at
+	// the workspace root; private operational state is not copied into author files.
+	oldHistory, err := c.historyDirectory(*resource)
+	if err != nil {
+		return err
+	}
+	newHistory, err := c.historyDirectory(moved)
+	if err != nil {
+		return err
+	}
+	if oldHistory != newHistory {
+		if _, err := c.ReadTracking(*resource); err == nil {
+			if _, err := c.VerifyHistory(*resource); err != nil {
+				return err
+			}
+			names := []string{strings.ToLower(resource.Kind) + ".lock.yaml", "revisions", "releases", "deployments"}
+			for _, name := range names {
+				sourceBase := filepath.Join(oldHistory, name)
+				walkErr := filepath.WalkDir(sourceBase, func(path string, entry fs.DirEntry, readErr error) error {
+					if os.IsNotExist(readErr) && path == sourceBase {
+						return nil
+					}
+					if readErr != nil {
+						return readErr
+					}
+					if entry.IsDir() {
+						return nil
+					}
+					if strings.HasPrefix(entry.Name(), ".asac-") {
+						return nil
+					}
+					relative, err := filepath.Rel(oldHistory, path)
+					if err != nil {
+						return err
+					}
+					target := filepath.Join(newHistory, relative)
+					if err := c.validateAuthorWrite(target); err != nil {
+						return err
+					}
+					if _, err := os.Lstat(target); !os.IsNotExist(err) {
+						return fmt.Errorf("move history destination already exists")
+					}
+					data, err := c.ReadOperationalFile(path, packagebundle.MaxFileBytes)
+					if err != nil {
+						return err
+					}
+					writes[target] = data
+					removals = append(removals, path)
+					return nil
+				})
+				if walkErr != nil {
+					return walkErr
+				}
+			}
+		} else if !os.IsNotExist(err) {
+			return err
 		}
 	}
 	data, err := yaml.Marshal(&next)
