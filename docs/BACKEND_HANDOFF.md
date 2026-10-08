@@ -1,6 +1,14 @@
-# Backend handoff completed; client continuation
+# Current backend boundary
 
-Updated 2026-10-05. The integration described below was delivered in [Woobe PR #177](https://github.com/A1b3rt0M3rcad0/woobe/pull/177), at `77c53832f0e5b35488d1574b3cf62777486f5189`. Seven workflows passed, including required real API/worker CLI scenarios and migration/upgrade acceptance. The PR remains draft and unmerged for user approval.
+The assistant skill adds no API routes or backend changes. Its documented
+managed-development/package operations require the compatible backend delivered
+in merged [Woobe PR #179](https://github.com/A1b3rt0M3rcad0/woobe/pull/179).
+CLI examples target 0.13.7 or newer. Runtime Skills in Woobe remain distinct from
+the terminal assistant skill. See [AGENT_SKILL.md](AGENT_SKILL.md).
+
+## Historical handoff evidence
+
+Updated 2026-10-05. The integration described below was delivered in [Woobe PR #177](https://github.com/A1b3rt0M3rcad0/woobe/pull/177), at `77c53832f0e5b35488d1574b3cf62777486f5189`. Seven workflows passed, including required real API/worker CLI scenarios and migration/upgrade acceptance. That PR was merged on 2026-10-06.
 
 The current client continuation delivers reviewed body pagination; the existing backend PR can pin that immutable client revision and extend live category/audit history tests. Native credentials, complete semantic reconciliation and schema coverage, and stream replay/gaps remain independent client work. See [STATUS.md](STATUS.md) and [REMAINING.md](REMAINING.md).
 

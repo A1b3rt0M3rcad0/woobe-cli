@@ -1,53 +1,60 @@
-# CI do Woobe CLI
+# CI and release validation
 
-O workflow `CLI` roda em PRs, pushes nas branches `feat/**`/`docs/**`, além de execução manual. Versões geradas pelo CI continuam sendo builds de desenvolvimento.
+The `CLI` workflow runs on pull requests, `feat/**`/`docs/**` pushes, manual
+requests and as the reusable validation gate for `Release CLI`.
 
-| Job | Aceite |
+| Job | Acceptance |
 | --- | --- |
-| `test` | Piso VERSION e metadados reservados consistentes, testes de incrementos automáticos/identidade/conflitos/recuperação, gofmt, auditoria de 101 requisitos, módulos, vet, suíte Go com race/coverage, fuzz de schema por 10 segundos com dois workers, build e discovery. |
-| `package` | Seis arquivos Linux/macOS/Windows × amd64/arm64, schemas v1/v2, notices, SHA256SUMS e artifacts.json. Conteúdo, alvos, nomes, permissões executáveis e SHA de origem devem coincidir. |
-| `native-smoke` (três runners) | Baixar os pacotes do mesmo run e executar o alvo correspondente ao host; verificar versão/commit/OS/arch, discovery, schemas, manifest local válido, recusa de JSON inválido, duas páginas por cursor e metadados de coleção parcial em fixture HTTP loopback. |
-| `ci` | Todos os três grupos anteriores devem terminar em success. Failure, cancelled ou skipped impedem o sucesso deste job agregador. |
+| `test` | Version floor for both npm packages, Python publication/recovery tests, Node installer tests, roadmap audit, Go formatting/modules/vet/race/coverage and bounded fuzzing; native build/discovery |
+| `package` | Six OS/architecture archives plus `woobe-cli` and `woobe-cli-skill` npm tarballs, schemas/notices, exact source identity and SHA256SUMS/artifacts.json |
+| `native-smoke` × six | Linux amd64/arm64, macOS Intel/arm64, Windows amd64/arm64: filesystem/checkpoint/credential tests, installer regressions, downloaded archive validation, real binary and both npm tarballs installed offline; every fenced skill CLI example checked against packaged help |
+| `ci` | All three validation groups must succeed; failed/cancelled/skipped groups reject the stable aggregate gate |
 
-Os seis jobs concretos são `test`, `package`, três instâncias de `native-smoke` e `ci`. Empacotamento substitui a matriz anterior que apenas compilava seis executáveis. O workflow mantém permissions `contents: read`, timeouts e cancelamento de execuções anteriores do mesmo workflow/event/ref.
+Nine concrete jobs execute. The stable `ci` check can be required by repository
+branch rules; the workflow does not change those rules. Permissions are read-only.
+The new installer never calls Woobe, edits credentials or modifies agent settings.
+Its tests cover managed update/removal, local edit protection, multi-target preflight,
+links/hardlinks, receipts, locks, rollback and preservation of concurrent edits.
 
-O job `ci` é o check estável para configurar nas regras da branch. Sua presença no workflow não configura automaticamente uma proteção obrigatória do GitHub; essas regras dependem da administração do repositório.
+## Evidence and reproduction
 
-## Evidências remotas
-
-- `cli-validation`: coverage.out e discovery.json.
-- `woobe-distribution`: seis arquivos compactados, SHA256SUMS e artifacts.json.
-- `native-smoke-<runner>`: relatórios JSON do binário com identidade da origem, alvo efetivamente executado e checks.
-
-O upload falha se os arquivos não existirem. A retenção solicitada é de 90 dias, sujeita às políticas do GitHub. Essas evidências ficam associadas ao run; não são um release permanente. A versão de desenvolvimento contém run number e attempt. Em PRs, o checkout e o pacote correspondem ao commit de integração temporário do GitHub; em push da master, correspondem ao commit efetivo da master. Nenhum job publica tags ou releases.
-
-## Reprodução
+`cli-validation` stores coverage/discovery; `woobe-distribution` stores six native
+archives, both npm tarballs, SHA256SUMS and artifacts.json. Each native runner
+uploads `native-smoke.json`, `npm-smoke.json` and `skill-smoke.json`. Uploads fail
+when evidence is absent, with 90-day requested retention subject to GitHub policy.
+PR packages use `0.0.0-ci.RUN.ATTEMPT` and the exact checked-out integration SHA;
+these are review artifacts, not published releases.
 
 ```sh
 make check
-bash scripts/package.sh 0.0.0-dev
+bash scripts/package.sh 0.0.0-ci.1 --with-npm
 python3 scripts/verify_artifacts.py --commit "$(git rev-parse HEAD)"
 python3 scripts/smoke_artifacts.py --commit "$(git rev-parse HEAD)" --report native-smoke.json
+python3 scripts/smoke_npm.py --commit "$(git rev-parse HEAD)" --report npm-smoke.json
+python3 scripts/smoke_skill.py --commit "$(git rev-parse HEAD)" --report skill-smoke.json
 ```
 
-O smoke exige um host Linux, macOS ou Windows em amd64/arm64 e executa somente seu próprio alvo. A matriz hospedada executa três combinações concretas de OS/arquitetura, que constam nos relatórios; ela não afirma execução nativa de todos os seis alvos. Não há validação de providers de keychain, sessão protegida Windows, login real, permissões do servidor ou runtime remoto. A evidência de backend está no PR #177; providers nativos e a matriz completa permanecem no planejamento.
+Use Go 1.27.1, Python 3, Node 24/npm 11.5.1 and GNU archive/checksum tools.
+Smokes execute their host's actual target. Loopback fixtures and offline installer
+checks do not certify arbitrary live Woobe permissions, provider execution or host
+assistant skill discovery. Paired live backend evidence is maintained separately.
 
-Cada push na `master` inicia **Release CLI**, que calcula automaticamente a
-versão, fixa o SHA e reutiliza este workflow. Retorna o ID imutável do artefato
-e SHA-256 do manifest ao publicador. A execução de release não é cancelada por
-novos pushes e substitui o run standalone na master, evitando dois CI completos.
-Depois dos gates, o publicador reserva a tag e publica somente os seis arquivos
-nativos e seus metadados no GitHub Releases, com verificação posterior. O job
-`image` cria o pacote GHCR Linux amd64/arm64 a partir dos mesmos binários
-validados, verifica digest e comportamento antes do job `publish`. Esse job
-promove a versão no GHCR, publica o Release e atualiza `latest`. Tags explícitas
-`v*` passam pelos mesmos gates e permitem publicar sem merge. Usa apenas
-GITHUB_TOKEN com contents:write e packages:write. npm, Node.js, instalação npm,
-registry npm, NPM_TOKEN e OIDC não fazem
-parte desse fluxo; os helpers npm permanecem adiados.
+## Publication
 
-Veja [INSTALLATION.md](INSTALLATION.md) para cálculo de versões e recuperação.
-Preparar a branch não ativa o workflow nem publica releases.
+Master pushes and explicit `v*` tags start `Release CLI`: resolve immutable source
+and SemVer, reuse CI, build/test GHCR from validated Linux binaries, preflight and
+publish GitHub/GHCR, then publish exact npm tarballs. Releases are serialized;
+existing tags/assets cannot be overwritten and recovery cannot downgrade latest.
+GitHub uses job-scoped GITHUB_TOKEN permissions; npm jobs use only OIDC with
+`id-token: write`, Node 24/npm 11.5.1, and clear NODE_AUTH_TOKEN. They never read
+NPM_TOKEN. Pull requests never publish, reserve tags or request npm credentials.
+
+The existing `npm` job remains independent. `npm-skill` is gated by repository
+variable `WOOBE_SKILL_NPM_PUBLISH=true`, initially disabled until the new npm name
+is bootstrapped and its own `release.yml` Trusted Publisher configured. Its
+validated tarball is included in GitHub Releases regardless of that variable.
+See [installation/recovery](INSTALLATION.md) and the
+[new package bootstrap](AGENT_SKILL.md#versioning-and-initial-npm-publication-owner-once).
 
 ## Pagination continuation evidence — 2026-10-05
 

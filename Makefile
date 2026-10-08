@@ -5,6 +5,7 @@ build:
 test:
 	go test -race ./...
 check:
+	node --test scripts/tests/skill-installer.test.cjs
 	python3 scripts/version.py
 	python3 -m unittest discover -s scripts/tests
 	python3 scripts/completeness.py

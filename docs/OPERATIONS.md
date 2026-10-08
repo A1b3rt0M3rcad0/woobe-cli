@@ -1,6 +1,8 @@
 # Executable command catalog
 
-Generated from discovery: 241 executable entries, including 190 HTTP operations. Route advertisement does not grant authority. Use `manifest kinds` for 14 declared resource kinds and `COMPLETENESS.md` for roadmap delivery evidence. Reviewed pagination is described in [PAGINATION.md](PAGINATION.md).
+Generated from current discovery: 308 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for the separate local skill installer.
+
+Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. The coding-assistant installer is a separate executable and is not an HTTP operation.
 
 | Command | Kind | HTTP | Availability | Permission hint | Pagination |
 | --- | --- | --- | --- | --- | --- |
@@ -10,6 +12,7 @@ Generated from discovery: 241 executable entries, including 190 HTTP operations.
 | `auth credential remove` | `local` | — | `local` | — | — |
 | `auth invite accept` | `http` | `POST /identity/invites/{invite_id}/accept` | `observed` | — | — |
 | `auth invite list` | `http` | `GET /identity/invites/pending` | `observed` | — | — |
+| `auth key inspect` | `http` | `GET /identity/control-key/me` | `observed` | — | — |
 | `auth login` | `http` | `POST /identity/auth/login` | `observed` | — | — |
 | `auth logout` | `http-session` | — | `observed` | — | — |
 | `auth refresh` | `http` | `POST /identity/auth/refresh` | `observed` | — | — |
@@ -19,11 +22,14 @@ Generated from discovery: 241 executable entries, including 190 HTTP operations.
 | `completion fish` | `shell-completion` | — | `local` | — | — |
 | `completion powershell` | `shell-completion` | — | `local` | — | — |
 | `completion zsh` | `shell-completion` | — | `local` | — | — |
+| `config check` | `local` | — | `local` | — | — |
+| `config show` | `local` | — | `local` | — | — |
 | `context create` | `local` | — | `local` | — | — |
 | `context credential attach` | `local` | — | `local` | — | — |
 | `context credential detach` | `local` | — | `local` | — | — |
 | `context delete` | `local` | — | `local` | — | — |
 | `context list` | `local` | — | `local` | — | — |
+| `context project select` | `local` | — | `local` | — | — |
 | `context runtime-credential attach` | `local` | — | `local` | — | — |
 | `context runtime-credential detach` | `local` | — | `local` | — | — |
 | `context set` | `local` | — | `local` | — | — |
@@ -32,11 +38,44 @@ Generated from discovery: 241 executable entries, including 190 HTTP operations.
 | `context update` | `local` | — | `local` | — | — |
 | `context use` | `local` | — | `local` | — | — |
 | `control-key` | `alias` | — | `local` | — | — |
+| `develop agent activate` | `development` | — | `local` | — | — |
+| `develop agent archive` | `development` | — | `local` | — | — |
+| `develop agent create` | `development` | — | `local` | — | — |
+| `develop agent delete` | `development` | — | `local` | — | — |
+| `develop agent diff` | `development` | — | `local` | — | — |
+| `develop agent publish` | `development` | — | `local` | — | — |
+| `develop agent pull` | `development-http` | — | `server-dependent` | — | — |
+| `develop agent push` | `development-http` | — | `server-dependent` | — | — |
+| `develop agent reconcile` | `development` | — | `local` | — | — |
+| `develop agent rollback` | `development` | — | `local` | — | — |
+| `develop agent stage` | `development` | — | `local` | — | — |
+| `develop agent status` | `development` | — | `local` | — | — |
+| `develop agent test` | `development` | — | `local` | — | — |
+| `develop agent validate` | `development` | — | `local` | — | — |
+| `develop network activate` | `development` | — | `local` | — | — |
+| `develop network create` | `development` | — | `local` | — | — |
+| `develop network diff` | `development` | — | `local` | — | — |
+| `develop network publish` | `development` | — | `local` | — | — |
+| `develop network pull` | `development-http` | — | `server-dependent` | — | — |
+| `develop network push` | `development-http` | — | `server-dependent` | — | — |
+| `develop network reconcile` | `development` | — | `local` | — | — |
+| `develop network rollback` | `development` | — | `local` | — | — |
+| `develop network stage` | `development` | — | `local` | — | — |
+| `develop network status` | `development` | — | `local` | — | — |
+| `develop network validate` | `development` | — | `local` | — | — |
+| `develop surface create` | `development` | — | `local` | — | — |
+| `develop surface diff` | `development` | — | `local` | — | — |
+| `develop surface pull` | `development-http` | — | `server-dependent` | — | — |
+| `develop surface push` | `development-http` | — | `server-dependent` | — | — |
+| `develop surface status` | `development` | — | `local` | — | — |
+| `develop surface validate` | `development` | — | `local` | — | — |
 | `doctor` | `diagnostic-http` | — | `server-dependent` | — | — |
 | `export` | `http-projection` | — | `observed` | — | — |
 | `help` | `local` | — | `local` | — | — |
+| `init` | `local` | — | `local` | — | — |
 | `instance bootstrap` | `http` | `POST /identity/instance/bootstrap` | `observed` | — | — |
 | `instance status` | `http` | `GET /identity/instance/status` | `observed` | — | — |
+| `knowledge` | `local` | — | `local` | — | — |
 | `manifest apply` | `composition` | — | `local` | — | — |
 | `manifest capture` | `http-projection` | — | `observed` | — | — |
 | `manifest compile` | `local` | — | `local` | — | — |
@@ -48,162 +87,189 @@ Generated from discovery: 241 executable entries, including 190 HTTP operations.
 | `manifest reconcile` | `composition` | — | `local` | — | — |
 | `manifest status` | `local` | — | `local` | — | — |
 | `manifest validate` | `local` | — | `local` | — | — |
+| `model` | `local` | — | `local` | — | — |
 | `network` | `alias` | — | `local` | — | — |
+| `package bindings` | `local` | — | `local` | — | — |
+| `package cancel` | `package-http` | — | `server-dependent` | — | — |
+| `package doctor` | `diagnostic-http` | — | `server-dependent` | — | — |
+| `package export agent` | `package-http` | — | `server-dependent` | — | — |
+| `package export network` | `package-http` | — | `server-dependent` | — | — |
+| `package import` | `package-http` | — | `server-dependent` | — | — |
+| `package plan` | `package-http` | — | `server-dependent` | — | — |
+| `package resume` | `package-http` | — | `server-dependent` | — | — |
+| `package status` | `package-http` | — | `server-dependent` | — | — |
+| `package validate` | `local` | — | `local` | — | — |
 | `permission check` | `http` | `POST /identity/access/check` | `proposed` | — | — |
 | `permission effective` | `http` | `GET /identity/access/me` | `proposed` | — | — |
 | `permission explain` | `http` | `POST /identity/access/check` | `proposed` | — | — |
 | `permission list` | `http` | `GET /identity/permissions` | `proposed` | — | — |
 | `project access grant` | `http` | `POST /core/projects/{project_id}/access` | `observed` | — | — |
 | `project access revoke` | `http` | `DELETE /core/projects/{project_id}/access/{subject_type}/{subject_id}` | `observed` | — | — |
-| `project agent contract create` | `http` | `POST /ai/agents/{agent_id}/contracts` | `observed` | `agent:write` | — |
-| `project agent contract get` | `http` | `GET /ai/agents/{agent_id}/contracts/{contract_id}` | `observed` | `agent:read` | — |
-| `project agent contract list` | `http` | `GET /ai/agents/{agent_id}/contracts` | `observed` | `agent:read` | — |
-| `project agent contract update` | `http` | `PATCH /ai/agents/{agent_id}/contracts/{contract_id}` | `observed` | `agent:write` | — |
-| `project agent create` | `http` | `POST /ai/agents` | `observed` | `agent:write` | — |
-| `project agent environment list` | `http` | `GET /ai/agents/{agent_id}/runtime-environments` | `observed` | `agent:read` | — |
-| `project agent environment update` | `http` | `PATCH /ai/agents/{agent_id}/runtime-environments/{environment}` | `observed` | `agent:write` | — |
+| `project agent contract create` | `http` | `POST /ai/agents/{agent_id}/contracts` | `observed` | agent:write | — |
+| `project agent contract get` | `http` | `GET /ai/agents/{agent_id}/contracts/{contract_id}` | `observed` | agent:read | — |
+| `project agent contract list` | `http` | `GET /ai/agents/{agent_id}/contracts` | `observed` | agent:read | — |
+| `project agent contract update` | `http` | `PATCH /ai/agents/{agent_id}/contracts/{contract_id}` | `observed` | agent:write | — |
+| `project agent create` | `http` | `POST /ai/agents` | `observed` | agent:write | — |
+| `project agent delete` | `http` | `DELETE /ai/agents/{agent_id}` | `observed` | agent:delete | — |
+| `project agent environment list` | `http` | `GET /ai/agents/{agent_id}/runtime-environments` | `observed` | agent:read | — |
+| `project agent environment update` | `http` | `PATCH /ai/agents/{agent_id}/runtime-environments/{environment}` | `observed` | agent:write | — |
 | `project agent export` | `http-projection` | — | `observed` | — | — |
-| `project agent get` | `http` | `GET /ai/agents/{agent_id}` | `observed` | `agent:read` | — |
-| `project agent knowledge bind` | `http` | `POST /knowledge/agent-collections` | `observed` | `agent:write` | — |
-| `project agent knowledge list` | `http` | `GET /knowledge/agent-collections` | `observed` | `agent:read` | — |
-| `project agent knowledge unbind` | `http` | `DELETE /knowledge/agent-collections/{link_id}` | `observed` | `agent:delete` | — |
-| `project agent knowledge version-create` | `http` | `POST /knowledge/agents/{agent_id}/knowledge-versions` | `observed` | `agent:write` | — |
-| `project agent knowledge version-list` | `http` | `GET /knowledge/agents/{agent_id}/knowledge-versions` | `observed` | `agent:read` | — |
-| `project agent list` | `http` | `GET /ai/agents` | `observed` | `agent:read` | — |
-| `project agent model-config create` | `http` | `POST /ai/agents/{agent_id}/model-configs` | `observed` | `agent:write` | — |
-| `project agent model-config get` | `http` | `GET /ai/agents/{agent_id}/model-configs/{config_id}` | `observed` | `agent:read` | — |
-| `project agent model-config list` | `http` | `GET /ai/agents/{agent_id}/model-configs` | `observed` | `agent:read` | — |
-| `project agent prompt create` | `http` | `POST /ai/agents/{agent_id}/prompts` | `observed` | `agent:write` | — |
-| `project agent prompt get` | `http` | `GET /ai/agents/{agent_id}/prompts/{version_id}` | `observed` | `agent:read` | — |
-| `project agent prompt list` | `http` | `GET /ai/agents/{agent_id}/prompts` | `observed` | `agent:read` | — |
-| `project agent release activations` | `http` | `GET /ai/agents/{agent_id}/release-activations` | `observed` | `agent:read` | — |
-| `project agent release create` | `http` | `POST /ai/agents/{agent_id}/releases` | `observed` | `agent:version` | — |
-| `project agent release delete` | `http` | `DELETE /ai/agents/{agent_id}/releases/{release_id}` | `observed` | `agent:delete` | — |
-| `project agent release get` | `http` | `GET /ai/agents/{agent_id}/releases/{release_id}` | `observed` | `agent:read` | — |
-| `project agent release list` | `http` | `GET /ai/agents/{agent_id}/releases` | `observed` | `agent:read` | — |
-| `project agent release promote` | `http` | `POST /ai/agents/{agent_id}/releases/{release_id}/promote` | `observed` | `agent:production` | — |
-| `project agent release rollback` | `http` | `POST /ai/agents/{agent_id}/releases/{release_id}/rollback` | `observed` | `agent:production` | — |
-| `project agent release test` | `http` | `POST /ai/agents/{agent_id}/release-tests` | `observed` | `agent:version` | — |
-| `project agent release tests` | `http` | `GET /ai/agents/{agent_id}/releases/{release_id}/tests` | `observed` | `agent:read` | — |
-| `project agent tool list` | `http` | `GET /tools/agents/{agent_id}/tools` | `observed` | `agent:read` | — |
-| `project agent update` | `http` | `PATCH /ai/agents/{agent_id}` | `observed` | `agent:write` | — |
-| `project agent usage daily` | `http` | `GET /metering/agents/{agent_id}/daily` | `observed` | `agent:read` | — |
-| `project api-key create` | `http` | `POST /core/projects/{project_id}/api-keys` | `observed` | `api_key:write` | — |
-| `project api-key list` | `http` | `GET /core/projects/{project_id}/api-keys` | `observed` | `api_key:read` | — |
-| `project api-key revoke` | `http` | `POST /core/projects/{project_id}/api-keys/{api_key_id}/revoke` | `observed` | `api_key:write` | — |
-| `project api-key rotate` | `http` | `POST /core/projects/{project_id}/api-keys/{api_key_id}/rotate` | `observed` | `api_key:write` | — |
-| `project api-key update` | `http` | `PATCH /core/projects/{project_id}/api-keys/{api_key_id}` | `observed` | `api_key:write` | — |
+| `project agent get` | `http` | `GET /ai/agents/{agent_id}` | `observed` | agent:read | — |
+| `project agent knowledge bind` | `http` | `POST /knowledge/agent-collections` | `observed` | agent:write | — |
+| `project agent knowledge list` | `http` | `GET /knowledge/agent-collections` | `observed` | agent:read | — |
+| `project agent knowledge unbind` | `http` | `DELETE /knowledge/agent-collections/{link_id}` | `observed` | agent:delete | — |
+| `project agent knowledge version-create` | `http` | `POST /knowledge/agents/{agent_id}/knowledge-versions` | `observed` | agent:write | — |
+| `project agent knowledge version-list` | `http` | `GET /knowledge/agents/{agent_id}/knowledge-versions` | `observed` | agent:read | — |
+| `project agent list` | `http` | `GET /ai/agents` | `observed` | agent:read | — |
+| `project agent model-config create` | `http` | `POST /ai/agents/{agent_id}/model-configs` | `observed` | agent:write | — |
+| `project agent model-config get` | `http` | `GET /ai/agents/{agent_id}/model-configs/{config_id}` | `observed` | agent:read | — |
+| `project agent model-config list` | `http` | `GET /ai/agents/{agent_id}/model-configs` | `observed` | agent:read | — |
+| `project agent prompt create` | `http` | `POST /ai/agents/{agent_id}/prompts` | `observed` | agent:write | — |
+| `project agent prompt get` | `http` | `GET /ai/agents/{agent_id}/prompts/{version_id}` | `observed` | agent:read | — |
+| `project agent prompt list` | `http` | `GET /ai/agents/{agent_id}/prompts` | `observed` | agent:read | — |
+| `project agent release activations` | `http` | `GET /ai/agents/{agent_id}/release-activations` | `observed` | agent:read | — |
+| `project agent release create` | `http` | `POST /ai/agents/{agent_id}/releases` | `observed` | agent:version | — |
+| `project agent release delete` | `http` | `DELETE /ai/agents/{agent_id}/releases/{release_id}` | `observed` | agent:delete | — |
+| `project agent release get` | `http` | `GET /ai/agents/{agent_id}/releases/{release_id}` | `observed` | agent:read | — |
+| `project agent release list` | `http` | `GET /ai/agents/{agent_id}/releases` | `observed` | agent:read | — |
+| `project agent release promote` | `http` | `POST /ai/agents/{agent_id}/releases/{release_id}/promote` | `observed` | agent:production | — |
+| `project agent release rollback` | `http` | `POST /ai/agents/{agent_id}/releases/{release_id}/rollback` | `observed` | agent:production | — |
+| `project agent release run-test` | `http` | `POST /ai/agents/{agent_id}/release-tests/run` | `observed` | agent:write | — |
+| `project agent release test` | `http` | `POST /ai/agents/{agent_id}/release-tests` | `observed` | agent:version | — |
+| `project agent release tests` | `http` | `GET /ai/agents/{agent_id}/releases/{release_id}/tests` | `observed` | agent:read | — |
+| `project agent tool list` | `http` | `GET /tools/agents/{agent_id}/tools` | `observed` | agent:read | — |
+| `project agent update` | `http` | `PATCH /ai/agents/{agent_id}` | `observed` | agent:write | — |
+| `project agent usage daily` | `http` | `GET /metering/agents/{agent_id}/daily` | `observed` | agent:read | — |
+| `project api-key create` | `http` | `POST /core/projects/{project_id}/api-keys` | `observed` | api_key:write | — |
+| `project api-key list` | `http` | `GET /core/projects/{project_id}/api-keys` | `observed` | api_key:read | — |
+| `project api-key revoke` | `http` | `POST /core/projects/{project_id}/api-keys/{api_key_id}/revoke` | `observed` | api_key:write | — |
+| `project api-key rotate` | `http` | `POST /core/projects/{project_id}/api-keys/{api_key_id}/rotate` | `observed` | api_key:write | — |
+| `project api-key update` | `http` | `PATCH /core/projects/{project_id}/api-keys/{api_key_id}` | `observed` | api_key:write | — |
 | `project catalog context-assemblers` | `http` | `GET /ai/context-assemblers` | `observed` | — | — |
 | `project catalog execution-strategies` | `http` | `GET /ai/execution-strategies` | `observed` | — | — |
 | `project catalog knowledge-strategies` | `http` | `GET /ai/knowledge-strategies` | `observed` | — | — |
 | `project catalog rag-strategies` | `http` | `GET /ai/rag-strategies` | `observed` | — | — |
 | `project create` | `http` | `POST /core/projects` | `observed` | — | — |
-| `project env list` | `http` | `GET /core/projects/{project_id}/environment-keys` | `observed` | `project:environment:read` | — |
-| `project env set` | `http` | `PUT /core/projects/{project_id}/environment-keys/{key}` | `observed` | `project:environment:write` | — |
-| `project env unset` | `http` | `DELETE /core/projects/{project_id}/environment-keys/{key}` | `observed` | `project:environment:delete` | — |
+| `project env list` | `http` | `GET /core/projects/{project_id}/environment-keys` | `observed` | project:environment:read | — |
+| `project env set` | `http` | `PUT /core/projects/{project_id}/environment-keys/{key}` | `observed` | project:environment:write | — |
+| `project env unset` | `http` | `DELETE /core/projects/{project_id}/environment-keys/{key}` | `observed` | project:environment:delete | — |
 | `project get` | `http` | `GET /core/projects/{resource_id}` | `observed` | — | — |
-| `project knowledge collection create` | `http` | `POST /knowledge/collections` | `observed` | `knowledge:write` | — |
-| `project knowledge collection get` | `http` | `GET /knowledge/collections/{collection_id}` | `observed` | `knowledge:read` | — |
-| `project knowledge collection list` | `http` | `GET /knowledge/collections` | `observed` | `knowledge:read` | — |
-| `project knowledge collection overview` | `http` | `GET /agent/knowledge/collections/{collection_id}/overview` | `observed` | `knowledge:read` | — |
-| `project knowledge collection update` | `http` | `PATCH /knowledge/collections/{collection_id}` | `observed` | `knowledge:write` | — |
-| `project knowledge collection vector-preview` | `http` | `POST /agent/knowledge/collections/{collection_id}/vector-preview` | `observed` | `knowledge:write` | — |
-| `project knowledge document create` | `http` | `POST /knowledge/documents` | `observed` | `knowledge:write` | — |
-| `project knowledge document delete` | `http` | `DELETE /knowledge/documents/{document_id}` | `observed` | `knowledge:delete` | — |
-| `project knowledge document get` | `http` | `GET /knowledge/documents/{document_id}` | `observed` | `knowledge:read` | — |
-| `project knowledge document list` | `http` | `GET /knowledge/documents` | `observed` | `knowledge:read` | — |
+| `project knowledge collection create` | `http` | `POST /knowledge/collections` | `observed` | knowledge:write | — |
+| `project knowledge collection get` | `http` | `GET /knowledge/collections/{collection_id}` | `observed` | knowledge:read | — |
+| `project knowledge collection list` | `http` | `GET /knowledge/collections` | `observed` | knowledge:read | — |
+| `project knowledge collection overview` | `http` | `GET /agent/knowledge/collections/{collection_id}/overview` | `observed` | knowledge:read | — |
+| `project knowledge collection update` | `http` | `PATCH /knowledge/collections/{collection_id}` | `observed` | knowledge:write | — |
+| `project knowledge collection vector-preview` | `http` | `POST /agent/knowledge/collections/{collection_id}/vector-preview` | `observed` | knowledge:write | — |
+| `project knowledge document create` | `http` | `POST /knowledge/documents` | `observed` | knowledge:write | — |
+| `project knowledge document delete` | `http` | `DELETE /knowledge/documents/{document_id}` | `observed` | knowledge:delete | — |
+| `project knowledge document get` | `http` | `GET /knowledge/documents/{document_id}` | `observed` | knowledge:read | — |
+| `project knowledge document list` | `http` | `GET /knowledge/documents` | `observed` | knowledge:read | — |
 | `project knowledge document upload` | `multipart-http` | — | `observed` | — | — |
-| `project knowledge search` | `http` | `POST /knowledge/search` | `observed` | `knowledge:write` | — |
-| `project knowledge snapshot create` | `http` | `POST /agent/knowledge/collections/{collection_id}/vector-snapshots` | `observed` | `knowledge:write` | — |
-| `project knowledge snapshot get` | `http` | `GET /agent/knowledge/vector-snapshots/{snapshot_id}` | `observed` | `knowledge:read` | — |
-| `project knowledge snapshot list` | `http` | `GET /agent/knowledge/collections/{collection_id}/vector-snapshots` | `observed` | `knowledge:read` | — |
+| `project knowledge search` | `http` | `POST /knowledge/search` | `observed` | knowledge:write | — |
+| `project knowledge snapshot create` | `http` | `POST /agent/knowledge/collections/{collection_id}/vector-snapshots` | `observed` | knowledge:write | — |
+| `project knowledge snapshot get` | `http` | `GET /agent/knowledge/vector-snapshots/{snapshot_id}` | `observed` | knowledge:read | — |
+| `project knowledge snapshot list` | `http` | `GET /agent/knowledge/collections/{collection_id}/vector-snapshots` | `observed` | knowledge:read | — |
 | `project list` | `http` | `GET /core/projects` | `observed` | — | — |
 | `project member grant` | `http` | `POST /core/projects/{project_id}/members` | `observed` | — | — |
 | `project member list` | `http` | `GET /core/projects/{project_id}/members` | `observed` | — | — |
 | `project member revoke` | `http` | `DELETE /core/projects/{project_id}/members/{user_id}` | `observed` | — | — |
-| `project network activation create` | `http` | `POST /network/{network_id}/production/activations` | `observed` | `network:production` | — |
-| `project network activation list` | `http` | `GET /network/{network_id}/management/activations` | `observed` | `network:read` | — |
-| `project network create` | `http` | `POST /network/projects/{project_id}/networks` | `observed` | `network:write` | — |
-| `project network draft update` | `http` | `PATCH /network/{network_id}/draft` | `observed` | `network:write` | — |
-| `project network environment list` | `http` | `GET /network/{network_id}/runtime-environments` | `observed` | `network:read` | — |
-| `project network environment update` | `http` | `PATCH /network/{network_id}/runtime-environments/{environment}` | `observed` | `network:write` | — |
-| `project network execution cancel` | `http` | `POST /network/executions/{execution_id}/cancel` | `observed` | `network:write` | — |
-| `project network execution diagnostics` | `http` | `GET /network/executions/{execution_id}/diagnostics` | `observed` | `network:read` | — |
-| `project network execution events` | `http` | `GET /network/executions/{execution_id}/events` | `observed` | `network:read` | — |
-| `project network execution snapshot` | `http` | `GET /network/executions/{execution_id}/snapshot` | `observed` | `network:read` | — |
-| `project network get` | `http` | `GET /network/projects/{project_id}/networks/{network_id}` | `observed` | `network:read` | — |
-| `project network list` | `http` | `GET /network/projects/{project_id}/networks` | `observed` | `network:read` | — |
-| `project network management external-context` | `http` | `GET /network/{network_id}/management/external-context-contract` | `observed` | `network:read` | — |
-| `project network management versions` | `http` | `GET /network/{network_id}/management/versions` | `observed` | `network:read` | — |
-| `project network promotion create` | `http` | `POST /network/{network_id}/promotions` | `observed` | `network:production` | — |
-| `project network promotion preview` | `http` | `POST /network/{network_id}/promotions/preview` | `observed` | `network:write` | — |
-| `project network rollback` | `http` | `POST /network/{network_id}/rollback` | `observed` | `network:production` | — |
-| `project network session create` | `http` | `POST /network/{network_id}/sessions` | `observed` | `network:write` | — |
-| `project network session list` | `http` | `GET /network/{network_id}/sessions` | `observed` | `network:read` | — |
-| `project network session messages` | `http` | `GET /network/{network_id}/sessions/{session_id}/messages` | `observed` | `network:read` | — |
-| `project network session reset-context` | `http` | `POST /network/{network_id}/sessions/{session_id}/reset-context` | `observed` | `network:write` | — |
-| `project network update` | `http` | `PATCH /network/projects/{project_id}/networks/{network_id}` | `observed` | `network:write` | — |
-| `project network version list` | `http` | `GET /network/{network_id}/versions` | `observed` | `network:read` | — |
+| `project network activation create` | `http` | `POST /network/{network_id}/production/activations` | `observed` | network:production | — |
+| `project network activation list` | `http` | `GET /network/{network_id}/management/activations` | `observed` | network:read | — |
+| `project network create` | `http` | `POST /network/projects/{project_id}/networks` | `observed` | network:write | — |
+| `project network draft update` | `http` | `PATCH /network/{network_id}/draft` | `observed` | network:write | — |
+| `project network environment list` | `http` | `GET /network/{network_id}/runtime-environments` | `observed` | network:read | — |
+| `project network environment update` | `http` | `PATCH /network/{network_id}/runtime-environments/{environment}` | `observed` | network:write | — |
+| `project network execution cancel` | `http` | `POST /network/executions/{execution_id}/cancel` | `observed` | network:write | — |
+| `project network execution diagnostics` | `http` | `GET /network/executions/{execution_id}/diagnostics` | `observed` | network:read | — |
+| `project network execution events` | `http` | `GET /network/executions/{execution_id}/events` | `observed` | network:read | — |
+| `project network execution snapshot` | `http` | `GET /network/executions/{execution_id}/snapshot` | `observed` | network:read | — |
+| `project network get` | `http` | `GET /network/projects/{project_id}/networks/{network_id}` | `observed` | network:read | — |
+| `project network list` | `http` | `GET /network/projects/{project_id}/networks` | `observed` | network:read | — |
+| `project network management external-context` | `http` | `GET /network/{network_id}/management/external-context-contract` | `observed` | network:read | — |
+| `project network management versions` | `http` | `GET /network/{network_id}/management/versions` | `observed` | network:read | — |
+| `project network promotion create` | `http` | `POST /network/{network_id}/promotions` | `observed` | network:production | — |
+| `project network promotion preview` | `http` | `POST /network/{network_id}/promotions/preview` | `observed` | network:write | — |
+| `project network rollback` | `http` | `POST /network/{network_id}/rollback` | `observed` | network:production | — |
+| `project network session create` | `http` | `POST /network/{network_id}/sessions` | `observed` | network:write | — |
+| `project network session list` | `http` | `GET /network/{network_id}/sessions` | `observed` | network:read | — |
+| `project network session messages` | `http` | `GET /network/{network_id}/sessions/{session_id}/messages` | `observed` | network:read | — |
+| `project network session reset-context` | `http` | `POST /network/{network_id}/sessions/{session_id}/reset-context` | `observed` | network:write | — |
+| `project network update` | `http` | `PATCH /network/projects/{project_id}/networks/{network_id}` | `observed` | network:write | — |
+| `project network version list` | `http` | `GET /network/{network_id}/versions` | `observed` | network:read | — |
 | `project overview` | `http` | `GET /core/projects/{project_id}/overview` | `observed` | — | — |
-| `project provider-credential create` | `http` | `POST /ai/credentials` | `observed` | `provider:write` | — |
-| `project provider-credential list` | `http` | `GET /ai/credentials` | `observed` | `provider:read` | — |
-| `project provider-credential revoke` | `http` | `POST /ai/credentials/{credential_id}/revoke` | `observed` | `provider:credential:revoke` | — |
-| `project provider-credential rotate` | `http` | `POST /ai/credentials/{credential_id}/rotate` | `observed` | `provider:credential:rotate` | — |
-| `project provider-credential update` | `http` | `PATCH /ai/credentials/{credential_id}` | `observed` | `provider:write` | — |
-| `project provider-credential usage` | `http` | `GET /ai/credentials/{credential_id}/usage` | `observed` | `provider:read` | — |
-| `project provider-model create` | `http` | `POST /ai/provider-models` | `observed` | `model:write` | — |
-| `project provider-model get` | `http` | `GET /ai/provider-models/{provider_model_id}` | `observed` | `model:read` | — |
-| `project provider-model list` | `http` | `GET /ai/provider-models` | `observed` | `model:read` | — |
-| `project provider-model update` | `http` | `PATCH /ai/provider-models/{provider_model_id}` | `observed` | `model:write` | — |
-| `project provider-model usage` | `http` | `GET /ai/provider-models/{provider_model_id}/usage` | `observed` | `model:read` | — |
+| `project provider-credential create` | `http` | `POST /ai/credentials` | `observed` | provider:write | — |
+| `project provider-credential list` | `http` | `GET /ai/credentials` | `observed` | provider:read | — |
+| `project provider-credential revoke` | `http` | `POST /ai/credentials/{credential_id}/revoke` | `observed` | provider:credential:revoke | — |
+| `project provider-credential rotate` | `http` | `POST /ai/credentials/{credential_id}/rotate` | `observed` | provider:credential:rotate | — |
+| `project provider-credential update` | `http` | `PATCH /ai/credentials/{credential_id}` | `observed` | provider:write | — |
+| `project provider-credential usage` | `http` | `GET /ai/credentials/{credential_id}/usage` | `observed` | provider:read | — |
+| `project provider-model create` | `http` | `POST /ai/provider-models` | `observed` | model:write | — |
+| `project provider-model get` | `http` | `GET /ai/provider-models/{provider_model_id}` | `observed` | model:read | — |
+| `project provider-model list` | `http` | `GET /ai/provider-models` | `observed` | model:read | — |
+| `project provider-model update` | `http` | `PATCH /ai/provider-models/{provider_model_id}` | `observed` | model:write | — |
+| `project provider-model usage` | `http` | `GET /ai/provider-models/{provider_model_id}/usage` | `observed` | model:read | — |
 | `project run list` | `http` | `GET /core/projects/{project_id}/runs` | `observed` | — | — |
-| `project runtime-key create` | `http` | `POST /core/projects/{project_id}/runtime-keys` | `observed` | `api_key:write` | — |
-| `project skill create` | `http` | `POST /ai/projects/{project_id}/skills` | `observed` | `skill:write` | — |
-| `project skill list` | `http` | `GET /ai/projects/{project_id}/skills` | `observed` | `skill:read` | — |
-| `project skill version create` | `http` | `POST /ai/projects/{project_id}/skills/{skill_id}/versions` | `observed` | `skill:write` | — |
-| `project skill version get` | `http` | `GET /ai/projects/{project_id}/skills/versions/{skill_version_id}` | `observed` | `skill:read` | — |
-| `project skill version list` | `http` | `GET /ai/projects/{project_id}/skills/{skill_id}/versions` | `observed` | `skill:read` | — |
-| `project surface access-key create` | `http` | `POST /chat-surfaces/{surface_id}/access-keys` | `observed` | `chat_surface:write` | — |
-| `project surface access-key list` | `http` | `GET /chat-surfaces/{surface_id}/access-keys` | `observed` | `chat_surface:read` | — |
-| `project surface access-key revoke` | `http` | `POST /chat-surfaces/{surface_id}/access-keys/{api_key_id}/revoke` | `observed` | `chat_surface:write` | — |
-| `project surface access-key rotate` | `http` | `POST /chat-surfaces/{surface_id}/access-keys/{api_key_id}/rotate` | `observed` | `chat_surface:write` | — |
-| `project surface activate` | `http` | `POST /chat-surfaces/{surface_id}/activate` | `observed` | `chat_surface:release` | — |
-| `project surface activity` | `http` | `GET /chat-surfaces/{surface_id}/activity` | `observed` | `chat_surface:read` | — |
-| `project surface archive` | `http` | `POST /chat-surfaces/{surface_id}/archive` | `observed` | `chat_surface:write` | — |
-| `project surface create` | `http` | `POST /chat-surfaces/projects/{project_id}` | `observed` | `chat_surface:write` | — |
-| `project surface disable` | `http` | `POST /chat-surfaces/{surface_id}/disable` | `observed` | `chat_surface:write` | — |
-| `project surface get` | `http` | `GET /chat-surfaces/{surface_id}` | `observed` | `chat_surface:read` | — |
-| `project surface list` | `http` | `GET /chat-surfaces/projects/{project_id}` | `observed` | `chat_surface:read` | — |
-| `project surface release` | `http` | `POST /chat-surfaces/{surface_id}/release` | `observed` | `chat_surface:release` | — |
-| `project surface sessions` | `http` | `GET /chat-surfaces/{surface_id}/sessions` | `observed` | `chat_surface:read` | — |
-| `project surface test-sessions` | `http` | `POST /chat-surfaces/{surface_id}/test-sessions` | `observed` | `chat_surface:write` | — |
-| `project surface update` | `http` | `PATCH /chat-surfaces/{surface_id}` | `observed` | `chat_surface:write` | — |
-| `project tool create` | `http` | `POST /tools/tools` | `observed` | `tool:write` | — |
-| `project tool delete` | `http` | `DELETE /tools/tools/{tool_id}` | `observed` | `tool:delete` | — |
-| `project tool execute` | `http` | `POST /tools/tools/execute` | `observed` | `tool:write` | — |
-| `project tool list` | `http` | `GET /tools/tools` | `observed` | `tool:read` | — |
-| `project tool mcp bulk` | `http` | `POST /tools/mcp/permissions/bulk` | `observed` | `tool:write` | — |
-| `project tool mcp discover` | `http` | `POST /tools/mcp/discover` | `observed` | `tool:write` | — |
-| `project tool mcp oauth complete` | `http` | `POST /tools/mcp/oauth/complete` | `observed` | `tool:write` | — |
-| `project tool mcp oauth device-poll` | `http` | `POST /tools/mcp/oauth/device/poll` | `observed` | `tool:write` | — |
-| `project tool mcp oauth device-start` | `http` | `POST /tools/mcp/oauth/device/start` | `observed` | `tool:write` | — |
-| `project tool mcp oauth disconnect` | `http` | `POST /tools/mcp/oauth/disconnect` | `observed` | `tool:write` | — |
-| `project tool mcp oauth start` | `http` | `POST /tools/mcp/oauth/start` | `observed` | `tool:write` | — |
-| `project tool mcp oauth status` | `http` | `POST /tools/mcp/oauth/status` | `observed` | `tool:write` | — |
-| `project tool mcp refresh` | `http` | `POST /tools/mcp/refresh` | `observed` | `tool:write` | — |
-| `project tool mcp set` | `http` | `PATCH /tools/mcp/permissions` | `observed` | `tool:write` | — |
-| `project tool status` | `http` | `PATCH /tools/tools/{tool_id}/status` | `observed` | `tool:write` | — |
-| `project tool test` | `http` | `POST /tools/tools/test` | `observed` | `tool:write` | — |
-| `project tool update` | `http` | `PATCH /tools/tools/{tool_id}` | `observed` | `tool:write` | — |
-| `project tool usage-impact` | `http` | `GET /tools/tools/{tool_id}/usage-impact` | `observed` | `tool:read` | — |
-| `project trace get` | `http` | `GET /observability/traces/{trace_id}` | `observed` | `observability:read` | — |
-| `project trace list` | `http` | `GET /observability/traces` | `observed` | `observability:read` | — |
+| `project runtime-key create` | `http` | `POST /core/projects/{project_id}/runtime-keys` | `observed` | api_key:write | — |
+| `project skill create` | `http` | `POST /ai/projects/{project_id}/skills` | `observed` | skill:write | — |
+| `project skill list` | `http` | `GET /ai/projects/{project_id}/skills` | `observed` | skill:read | — |
+| `project skill version create` | `http` | `POST /ai/projects/{project_id}/skills/{skill_id}/versions` | `observed` | skill:write | — |
+| `project skill version get` | `http` | `GET /ai/projects/{project_id}/skills/versions/{skill_version_id}` | `observed` | skill:read | — |
+| `project skill version list` | `http` | `GET /ai/projects/{project_id}/skills/{skill_id}/versions` | `observed` | skill:read | — |
+| `project surface access-key create` | `http` | `POST /chat-surfaces/{surface_id}/access-keys` | `observed` | chat_surface:write | — |
+| `project surface access-key list` | `http` | `GET /chat-surfaces/{surface_id}/access-keys` | `observed` | chat_surface:read | — |
+| `project surface access-key revoke` | `http` | `POST /chat-surfaces/{surface_id}/access-keys/{api_key_id}/revoke` | `observed` | chat_surface:write | — |
+| `project surface access-key rotate` | `http` | `POST /chat-surfaces/{surface_id}/access-keys/{api_key_id}/rotate` | `observed` | chat_surface:write | — |
+| `project surface activate` | `http` | `POST /chat-surfaces/{surface_id}/activate` | `observed` | chat_surface:release | — |
+| `project surface activity` | `http` | `GET /chat-surfaces/{surface_id}/activity` | `observed` | chat_surface:read | — |
+| `project surface archive` | `http` | `POST /chat-surfaces/{surface_id}/archive` | `observed` | chat_surface:write | — |
+| `project surface create` | `http` | `POST /chat-surfaces/projects/{project_id}` | `observed` | chat_surface:write | — |
+| `project surface disable` | `http` | `POST /chat-surfaces/{surface_id}/disable` | `observed` | chat_surface:write | — |
+| `project surface get` | `http` | `GET /chat-surfaces/{surface_id}` | `observed` | chat_surface:read | — |
+| `project surface list` | `http` | `GET /chat-surfaces/projects/{project_id}` | `observed` | chat_surface:read | — |
+| `project surface release` | `http` | `POST /chat-surfaces/{surface_id}/release` | `observed` | chat_surface:release | — |
+| `project surface sessions` | `http` | `GET /chat-surfaces/{surface_id}/sessions` | `observed` | chat_surface:read | — |
+| `project surface test-sessions` | `http` | `POST /chat-surfaces/{surface_id}/test-sessions` | `observed` | chat_surface:write | — |
+| `project surface update` | `http` | `PATCH /chat-surfaces/{surface_id}` | `observed` | chat_surface:write | — |
+| `project tool create` | `http` | `POST /tools/tools` | `observed` | tool:write | — |
+| `project tool delete` | `http` | `DELETE /tools/tools/{tool_id}` | `observed` | tool:delete | — |
+| `project tool execute` | `http` | `POST /tools/tools/execute` | `observed` | tool:write | — |
+| `project tool list` | `http` | `GET /tools/tools` | `observed` | tool:read | — |
+| `project tool mcp bulk` | `http` | `POST /tools/mcp/permissions/bulk` | `observed` | tool:write | — |
+| `project tool mcp discover` | `http` | `POST /tools/mcp/discover` | `observed` | tool:write | — |
+| `project tool mcp oauth complete` | `http` | `POST /tools/mcp/oauth/complete` | `observed` | tool:write | — |
+| `project tool mcp oauth device-poll` | `http` | `POST /tools/mcp/oauth/device/poll` | `observed` | tool:write | — |
+| `project tool mcp oauth device-start` | `http` | `POST /tools/mcp/oauth/device/start` | `observed` | tool:write | — |
+| `project tool mcp oauth disconnect` | `http` | `POST /tools/mcp/oauth/disconnect` | `observed` | tool:write | — |
+| `project tool mcp oauth start` | `http` | `POST /tools/mcp/oauth/start` | `observed` | tool:write | — |
+| `project tool mcp oauth status` | `http` | `POST /tools/mcp/oauth/status` | `observed` | tool:write | — |
+| `project tool mcp refresh` | `http` | `POST /tools/mcp/refresh` | `observed` | tool:write | — |
+| `project tool mcp set` | `http` | `PATCH /tools/mcp/permissions` | `observed` | tool:write | — |
+| `project tool status` | `http` | `PATCH /tools/tools/{tool_id}/status` | `observed` | tool:write | — |
+| `project tool test` | `http` | `POST /tools/tools/test` | `observed` | tool:write | — |
+| `project tool update` | `http` | `PATCH /tools/tools/{tool_id}` | `observed` | tool:write | — |
+| `project tool usage-impact` | `http` | `GET /tools/tools/{tool_id}/usage-impact` | `observed` | tool:read | — |
+| `project trace get` | `http` | `GET /observability/traces/{trace_id}` | `observed` | observability:read | — |
+| `project trace list` | `http` | `GET /observability/traces` | `observed` | observability:read | — |
 | `project update` | `http` | `PATCH /core/projects/{resource_id}` | `observed` | — | — |
-| `project usage daily` | `http` | `GET /metering/projects/{project_id}/daily` | `observed` | `usage:read` | — |
-| `project usage summary` | `http` | `GET /metering/projects/{project_id}/usage` | `observed` | `usage:read` | — |
+| `project usage daily` | `http` | `GET /metering/projects/{project_id}/daily` | `observed` | usage:read | — |
+| `project usage summary` | `http` | `GET /metering/projects/{project_id}/usage` | `observed` | usage:read | — |
+| `provider` | `local` | — | `local` | — | — |
 | `request` | `generic-http` | — | `server-dependent` | — | — |
 | `request-pages` | `generic-http` | — | `server-dependent` | — | — |
-| `runtime agent sessions` | `http` | `GET /runtime/agents/{agent_id}/sessions` | `observed` | — | `cursor-has-next` |
+| `resources alias` | `local` | — | `local` | — | — |
+| `resources bind` | `local` | — | `local` | — | — |
+| `resources clone` | `local` | — | `local` | — | — |
+| `resources create` | `local` | — | `local` | — | — |
+| `resources diff` | `local` | — | `local` | — | — |
+| `resources list` | `local` | — | `local` | — | — |
+| `resources move` | `local` | — | `local` | — | — |
+| `resources prune` | `local` | — | `local` | — | — |
+| `resources push` | `local` | — | `local` | — | — |
+| `resources register` | `local` | — | `local` | — | — |
+| `resources unregister` | `local` | — | `local` | — | — |
+| `resources used-by` | `local` | — | `local` | — | — |
+| `resources validate` | `local` | — | `local` | — | — |
+| `runtime agent sessions` | `http` | `GET /runtime/agents/{agent_id}/sessions` | `observed` | — | cursor-has-next |
 | `runtime run cancel` | `http` | `POST /runtime/runs/{run_id}/cancel` | `observed` | — | — |
 | `runtime run get` | `http` | `GET /runtime/runs/{run_id}` | `observed` | — | — |
 | `runtime run invocations` | `http` | `GET /runtime/runs/{run_id}/model-invocations` | `observed` | — | — |
@@ -218,23 +284,26 @@ Generated from discovery: 241 executable entries, including 190 HTTP operations.
 | `runtime target stream` | `runtime-sdk` | — | `server-dependent` | — | — |
 | `schema` | `local` | — | `local` | — | — |
 | `server-schema` | `diagnostic-http` | — | `server-dependent` | — | — |
+| `skill` | `local` | — | `local` | — | — |
+| `surface` | `local` | — | `local` | — | — |
+| `tool` | `local` | — | `local` | — | — |
 | `validate-input` | `diagnostic-http` | — | `server-dependent` | — | — |
 | `version` | `local` | — | `local` | — | — |
-| `workspace authority audit` | `http` | `GET /identity/workspaces/{workspace_id}/authority-audit` | `proposed` | — | `cursor-complete` |
+| `workspace authority audit` | `http` | `GET /identity/workspaces/{workspace_id}/authority-audit` | `proposed` | — | cursor-complete |
 | `workspace authority category archive` | `http` | `POST /identity/workspaces/{workspace_id}/authority-categories/{category_id}/archive` | `proposed` | — | — |
 | `workspace authority category clone` | `http` | `POST /identity/workspaces/{workspace_id}/authority-categories/{category_id}/clone` | `proposed` | — | — |
 | `workspace authority category create` | `http` | `POST /identity/workspaces/{workspace_id}/authority-categories` | `proposed` | — | — |
 | `workspace authority category delete` | `http` | `DELETE /identity/workspaces/{workspace_id}/authority-categories/{category_id}` | `proposed` | — | — |
 | `workspace authority category diff` | `composition` | — | `server-dependent` | — | — |
 | `workspace authority category get` | `http` | `GET /identity/workspaces/{workspace_id}/authority-categories/{category_id}` | `proposed` | — | — |
-| `workspace authority category history` | `http` | `GET /identity/workspaces/{workspace_id}/authority-categories/{category_id}/versions` | `proposed` | — | `revision-complete` |
-| `workspace authority category list` | `http` | `GET /identity/workspaces/{workspace_id}/authority-categories` | `proposed` | — | `cursor-complete` |
+| `workspace authority category history` | `http` | `GET /identity/workspaces/{workspace_id}/authority-categories/{category_id}/versions` | `proposed` | — | revision-complete |
+| `workspace authority category list` | `http` | `GET /identity/workspaces/{workspace_id}/authority-categories` | `proposed` | — | cursor-complete |
 | `workspace authority category update` | `http` | `PATCH /identity/workspaces/{workspace_id}/authority-categories/{category_id}` | `proposed` | — | — |
-| `workspace control-key create` | `http` | `POST /core/workspaces/{workspace_id}/control-keys` | `branch-dependent` | `keys:create` | — |
-| `workspace control-key list` | `http` | `GET /core/workspaces/{workspace_id}/control-keys` | `branch-dependent` | `keys:read` | — |
-| `workspace control-key revoke` | `http` | `POST /core/workspaces/{workspace_id}/control-keys/{control_key_id}/revoke` | `branch-dependent` | `keys:revoke` | — |
-| `workspace control-key rotate` | `http` | `POST /core/workspaces/{workspace_id}/control-keys/{control_key_id}/rotate` | `branch-dependent` | `keys:rotate` | — |
-| `workspace control-key update` | `http` | `PATCH /core/workspaces/{workspace_id}/control-keys/{control_key_id}` | `branch-dependent` | `keys:update` | — |
+| `workspace control-key create` | `http` | `POST /core/workspaces/{workspace_id}/control-keys` | `branch-dependent` | keys:create | — |
+| `workspace control-key list` | `http` | `GET /core/workspaces/{workspace_id}/control-keys` | `branch-dependent` | keys:read | — |
+| `workspace control-key revoke` | `http` | `POST /core/workspaces/{workspace_id}/control-keys/{control_key_id}/revoke` | `branch-dependent` | keys:revoke | — |
+| `workspace control-key rotate` | `http` | `POST /core/workspaces/{workspace_id}/control-keys/{control_key_id}/rotate` | `branch-dependent` | keys:rotate | — |
+| `workspace control-key update` | `http` | `PATCH /core/workspaces/{workspace_id}/control-keys/{control_key_id}` | `branch-dependent` | keys:update | — |
 | `workspace create` | `http` | `POST /identity/workspaces` | `observed` | — | — |
 | `workspace get` | `http` | `GET /identity/workspaces/{workspace_id}` | `observed` | — | — |
 | `workspace invite cancel` | `http` | `DELETE /identity/workspaces/{workspace_id}/invites/{invite_id}` | `observed` | — | — |
@@ -245,32 +314,3 @@ Generated from discovery: 241 executable entries, including 190 HTTP operations.
 | `workspace member remove` | `http` | `DELETE /identity/workspaces/{workspace_id}/members/{user_id}` | `observed` | — | — |
 | `workspace project-access list` | `http` | `GET /core/workspaces/{workspace_id}/project-access` | `observed` | — | — |
 | `workspace update` | `http` | `PATCH /identity/workspaces/{workspace_id}` | `observed` | — | — |
-
-
-## Package operation recovery
-
-Keep the private plan receipt and Package checkpoint outside the portable bundle.
-Use `woobe package status --checkpoint PATH` to observe an accepted or uncertain
-request. The checkpoint binds API origin, Project, principal fingerprint, original
-plan/artifact, idempotency key and observed revision. A lost Apply response is
-reconciled by the original key; a lookup miss never authorizes another Apply.
-
-`resume --checkpoint PATH --revision REVISION` uses the observed wait revision.
-A conflict means re-observe; it is not a reason to replay a stale mutation.
-`cancel --checkpoint PATH` fences later effects and retains committed inventory.
-Timeout/Ctrl+C leaves the remote operation running unless explicitly cancelled.
-
-Check native VectorSnapshot/MCP readiness before resuming dependency waits.
-Providers and OAuth configuration belong to the destination. Export artifacts
-expire and require their captured closure grants again at download. Private
-operational files use POSIX mode/locks or Windows owner/DACL/native locks; unsafe
-protection fails closed. See [PACKAGES.md](PACKAGES.md).
-
-## Connection authentication
-
-`auth login --cli-key` and `context project select` are discovery workflows using
-`GET /identity/control-key/me` with `access:self`. `auth status` selects this endpoint
-for machine keys and `/identity/users/me` for human sessions. `auth logout --cli-key`
-is local only. The original human login/register/refresh/logout remains supported.
-`--cli-key` is a boolean, never a secret argument. `--stdin`, `--select-project`,
-and `--no-input` support automation. API overrides cannot reuse a saved connection key.

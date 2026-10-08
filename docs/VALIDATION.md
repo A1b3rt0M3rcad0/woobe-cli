@@ -1,5 +1,29 @@
 # Validation
 
+## Assistant skill delivery — 2026-10-08
+
+Current validation for the new skill is separate from historical backend evidence.
+Installer tests cover exact multi-host payloads, update/removal, user/custom roots,
+read-only modes, unmanaged/edited/extra files, malformed/traversal receipts,
+links/hardlinks, size bounds, locks, ordinary rollback and concurrent-edit preservation.
+All 59 Python tests passed, including both npm identities, candidate verification
+and release recovery; all nine installer regression groups passed. The full local
+Go race/module/vet checks and offline native/npm/skill smokes passed.
+
+`make check` runs Node/Python regression tests plus formatting/modules/vet/Go race.
+Distribution qualification builds six archives and both npm tarballs, verifies
+source/version/content/checksums, then exercises the native binary and both npm
+installers offline. All 38 fenced CLI skill examples are checked through packaged
+help without server operations. CI repeats on all six native OS/architecture
+runners and stores separate skill-smoke reports. PR checks carry the exact reviewed
+revision evidence; this does not claim an assistant UI loaded the skill or certify
+live remote operations beyond the separately recorded backend evidence.
+
+Reproduce with [CI.md](CI.md). The regenerated command catalog currently lists
+308 executable entries including 193 HTTP operations; the optional skill installer
+is a separate executable. Published CLI baseline remains 0.13.7; the new npm name
+requires the documented owner bootstrap after approved merge.
+
 ## Historical baseline — 2026-10-04
 
 Go 1.27.1, Linux amd64. Module verification, formatting, diff checks, vet, race tests and native build passed. 89 test functions plus subtests. Statement coverage: 71.2% total, 69.9% CLI, 85.9% transport, 89.2% strict JSON, 82.9% manifest, 64.5% bounded schema validator.

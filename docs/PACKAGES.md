@@ -1,5 +1,11 @@
 # Portable packages
 
+## Assistant npm package versus portable packages
+
+`woobe-cli-skill` installs instructions for coding assistants. It is not a
+Woobe portable package or runtime Skill. This guide describes Agent/Network
+composition transfer; [AGENT_SKILL.md](AGENT_SKILL.md) describes npm installation.
+
 Package V1 is implemented in woobe-cli and Woobe PR #179. These commands require the matching Package capability/schema catalog;
 the stable CLI's Manifest commands remain independent.
 

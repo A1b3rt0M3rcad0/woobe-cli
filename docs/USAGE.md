@@ -1,5 +1,12 @@
 # CLI workflows
 
+## Coding assistants
+
+The optional [assistant skill](AGENT_SKILL.md) routes to task-specific offline
+references and YAML examples. It teaches pull/edit/validate/diff/push to Draft,
+shared dependencies and explicit lifecycle operations using these same commands.
+Install it separately from the CLI; no authentication or writes happen on install.
+
 ## Build and discovery
 
 ```sh

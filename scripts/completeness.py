@@ -17,6 +17,7 @@ for item in items:
 counts = collections.Counter(item['status'] for item in items)
 percentage = 100 * counts['done'] / len(items)
 lines = ['# Completude do planejamento integral', '',
+         'Auditoria histórica do roadmap original de 101 itens. A nova skill de terminal é uma entrega adicional; veja [STATUS.md](STATUS.md) e [AGENT_SKILL.md](AGENT_SKILL.md) para o estado atual. Este percentual não mede essa entrega nem certifica produção.', '',
          f"**{percentage:.1f}% — {counts['done']}/{len(items)} entregas concluídas; {counts['partial']} parciais e {counts['pending']} pendentes.**", '',
          'Base: todas as 101 entregas das fases 0–9 do §18 de PLAN.md, com peso igual. Concluída=1; parcial=0; pendente=0. A classificação é uma avaliação de engenharia com evidência por item, não estimativa de esforço, cobertura de código ou certificação de produção.', '',
          'O denominador inclui backend, CLI, documentação e distribuição. Concluída significa implementação entregue no boundary indicado; evidências de API real/E2E estão registradas por item e no PR do backend. Nenhuma das 10 fases tem seu aceite integral verificado contra todos os seus critérios.', '',

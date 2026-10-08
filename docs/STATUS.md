@@ -1,4 +1,23 @@
-# Implementation status
+# Current implementation status
+
+Updated 2026-10-08. Published CLI: **0.13.7**, source
+`a0a1c1d147fdd167eb6fb742359dfa36eec00066`. Woobe PR #179 is merged at
+`a7fe483e772e879ee5318ed0e1d535ae29c8165d` (remote state checked on this date).
+Managed YAML development, environment-aware package transfer, compact output and
+safe stale-registry pruning are delivered. The new assistant skill package is
+implemented in a separate review PR; it is not yet a public npm publication.
+
+`woobe-cli-skill` adds an explicit cross-platform installer, portable task-focused
+references/templates, provenance-bound tarballs and independent OIDC publication.
+See [AGENT_SKILL.md](AGENT_SKILL.md), [CI.md](CI.md) and [VALIDATION.md](VALIDATION.md).
+Current user guides are listed in [INDEX.md](INDEX.md). No statement here grants
+merge approval or claims full acceptance of the original 101-item roadmap.
+
+## Historical implementation checkpoints
+
+The dated records below retain their original evidence and limitations. Branch,
+PR, release and incomplete-work statements in them describe those checkpoints;
+use the current guides and current discovery for today's behavior.
 
 Updated 2026-10-05 (America/Sao_Paulo). The canonical Go client is in `A1b3rt0M3rcad0/woobe-cli`; implementation PRs #1–#7 are merged at `a9c6ace053ea1f3e57abbb5d372f77010211ad56`. This continuation is on `feat/cli-pagination-contracts`; the code revision `659baea23458380b84bc7059d2a544c9c06fc1f5` passed all six [CLI CI jobs](https://github.com/A1b3rt0M3rcad0/woobe-cli/actions/runs/37385398090). No new PR, merge, tag or release is claimed.
 
@@ -102,4 +121,4 @@ export and tagged installation/release remain open.
 
 ## Portable Package delivery
 
-Draft PR #10 pairs with Woobe draft PR #179. Package is independent of Manifest and includes native Agent/Network snapshots, protected destination bindings, durable checkpoint reconciliation, fresh MCP discovery, portable Knowledge rebuilding and verified atomic export. The complete shared composition fixture is tested natively on all six distribution targets. Exact paired integration evidence and the T01–T26 qualification gates are recorded in [VALIDATION.md](VALIDATION.md).
+Historical package delivery: CLI PR #10 paired with Woobe PR #179 (now merged). Package is independent of Manifest and includes native Agent/Network snapshots, protected destination bindings, durable checkpoint reconciliation, fresh MCP discovery, portable Knowledge rebuilding and verified atomic export. The complete shared composition fixture is tested natively on all six distribution targets. Exact paired integration evidence and the T01–T26 qualification gates are recorded in [VALIDATION.md](VALIDATION.md).

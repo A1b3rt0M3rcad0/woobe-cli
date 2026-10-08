@@ -37,6 +37,8 @@ def smoke(root, commit):
         path = pathlib.Path(directory) / executable
         path.write_bytes(binary)
         path.chmod(0o700)
+        from validate_skill_commands import validate
+        validate(path.resolve())
         env = {k: v for k, v in os.environ.items() if not k.startswith('WOOBE_')}
 
         def invoke(args, body=None, code=0):

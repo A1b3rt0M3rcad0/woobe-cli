@@ -8,6 +8,7 @@ import re
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 VERSION_FILE = ROOT / 'VERSION'
 PACKAGE_FILE = ROOT / 'packages/woobe-cli/package.json'
+SKILL_PACKAGE_FILE = ROOT / 'packages/woobe-cli-skill/package.json'
 NUMBER = r'(?:0|[1-9][0-9]*)'
 IDENTIFIER = rf'(?:{NUMBER}|[0-9]*[A-Za-z-][0-9A-Za-z-]*)'
 SEMVER = re.compile(rf'{NUMBER}\.{NUMBER}\.{NUMBER}(?:-{IDENTIFIER}(?:\.{IDENTIFIER})*)?')
@@ -32,6 +33,8 @@ def check():
     package = json.loads(PACKAGE_FILE.read_text())
     if package['version'] != version:
         raise ValueError('npm package version differs from canonical VERSION')
+    if json.loads(SKILL_PACKAGE_FILE.read_text())['version'] != version:
+        raise ValueError('skill npm package version differs from canonical VERSION')
     return version
 
 
@@ -51,6 +54,9 @@ if __name__ == '__main__':
                 package['version'] = version
                 VERSION_FILE.write_text(version + '\n')
                 PACKAGE_FILE.write_text(json.dumps(package, indent=2) + '\n')
+                skill = json.loads(SKILL_PACKAGE_FILE.read_text())
+                skill['version'] = version
+                SKILL_PACKAGE_FILE.write_text(json.dumps(skill, indent=2) + '\n')
             print(check())
     except (ValueError, KeyError, OSError) as error:
         parser.exit(2, f'CLI version: {error}\n')

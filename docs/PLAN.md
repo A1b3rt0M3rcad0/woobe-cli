@@ -6,6 +6,22 @@
 
 **Decisão de implementação:** o CLI será desenvolvido em **Go**, como cliente externo e agent-friendly. O protótipo Python encontrado é referência histórica de comportamento e contratos, não a base de implementação do novo CLI.
 
+## Assistant skill delivery addendum — 2026-10-08
+
+A separate `woobe-cli-skill` npm distribution complements the native client.
+It bundles portable Agent Skills instructions and offline references, not runtime
+Woobe Skill resources. The explicit installer supports project/user scope for
+Codex, legacy .codex, Claude Code, Copilot, Cursor and custom skills directories.
+It preserves edited/unmanaged files and configuration, uses managed receipts,
+locks and rollback, and does not perform authentication/API operations.
+
+Both npm packages share calculated release version/source SHA; all six native
+runners install their actual tarballs offline. Skill npm publication is gated
+until its own first-publication/Trusted Publisher setup. The CLI publisher stays
+independent. See [AGENT_SKILL.md](AGENT_SKILL.md), [CI.md](CI.md) and
+[INDEX.md](INDEX.md). The original 101-item roadmap below remains an independent
+historical plan; this addendum does not alter its acceptance ledger.
+
 ## 1. Decisão central
 
 Construir um cliente do control plane da Woobe que permita executar todas as operações administrativas públicas suportadas pelo servidor, desde a consulta mínima até a administração máxima dos escopos explicitamente autorizados.

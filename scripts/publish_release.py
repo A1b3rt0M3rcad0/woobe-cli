@@ -193,6 +193,8 @@ def candidate(version, commit, manifest_sha256, trusted_tag=False, image=None):
                   artifacts=manifest['artifacts'])
     if 'npm' in manifest:
         record['npm'] = manifest['npm']
+    if 'skill_npm' in manifest:
+        record['skill_npm'] = manifest['skill_npm']
     if image:
         record['image'] = dict(image, version=version, platforms=['linux/amd64', 'linux/arm64'])
     permanent = pathlib.Path('dist/release-manifest.json')
@@ -200,6 +202,8 @@ def candidate(version, commit, manifest_sha256, trusted_tag=False, image=None):
     names = [item['name'] for item in manifest['artifacts']]
     if 'npm' in manifest:
         names.append(manifest['npm']['name'])
+    if 'skill_npm' in manifest:
+        names.append(manifest['skill_npm']['name'])
     names.extend(['SHA256SUMS', 'artifacts.json', permanent.name])
     return {name: pathlib.Path('dist') / name for name in names}
 

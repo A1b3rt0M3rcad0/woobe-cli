@@ -174,6 +174,7 @@ jobs:
             echo "Download the archive for your platform, verify SHA256SUMS, extract and run woobe version."
             echo "https://github.com/$GITHUB_REPOSITORY/releases/tag/v$CLI_VERSION"
             echo "GHCR package: ghcr.io/${GITHUB_REPOSITORY,,}:$CLI_VERSION"
+            echo "Assistant skill tarball: woobe-cli-skill-$CLI_VERSION.tgz (see docs/AGENT_SKILL.md for first npm publication)"
           } >> "$GITHUB_STEP_SUMMARY"
   npm:
     needs: [identity, validate, publish]
@@ -214,4 +215,45 @@ jobs:
             echo "npm: https://www.npmjs.com/package/woobe-cli/v/$CLI_VERSION"
             echo "npm install --global woobe-cli@$CLI_VERSION"
             echo "npx --yes --package=woobe-cli@$CLI_VERSION woobe version"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  npm-skill:
+    needs: [identity, validate, publish]
+    if: needs.identity.outputs.skip != 'true' && vars.WOOBE_SKILL_NPM_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.identity.outputs.revision }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          artifact-ids: ${{ needs.validate.outputs.artifact_id }}
+          merge-multiple: true
+          path: dist
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install the OIDC-capable npm client
+        run: npm install --global npm@11.5.1
+      - name: Publish the exact validated assistant skill
+        env:
+          # Enabled only after owner bootstrap and Trusted Publisher setup.
+          # Never use a long-lived secret, even if NPM_TOKEN remains.
+          NODE_AUTH_TOKEN: ''
+          CLI_VERSION: ${{ needs.identity.outputs.version }}
+          CLI_REVISION: ${{ needs.identity.outputs.revision }}
+          CANDIDATE_SHA256: ${{ needs.validate.outputs.manifest_sha256 }}
+        run: python3 scripts/publish_npm.py --package woobe-cli-skill --version "$CLI_VERSION" --commit "$CLI_REVISION" --manifest-sha256 "$CANDIDATE_SHA256"
+      - name: Record skill installation commands
+        env:
+          CLI_VERSION: ${{ needs.identity.outputs.version }}
+        run: |
+          {
+            echo "npm: https://www.npmjs.com/package/woobe-cli-skill/v/$CLI_VERSION"
+            echo "npm install --global woobe-cli-skill@$CLI_VERSION"
+            echo "npx --yes --package=woobe-cli-skill@$CLI_VERSION woobe-skill install --agent codex"
           } >> "$GITHUB_STEP_SUMMARY"

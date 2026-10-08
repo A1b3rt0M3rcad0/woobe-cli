@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Add `woobe-cli-skill`, a separate npm package and explicit coding-agent skill installer.
+- Support Codex, legacy `.codex`, Claude Code, Copilot, Cursor, user/project scopes and custom roots.
+- Preserve local edits/settings with receipts, preflight, locks and rollback.
+- Include offline task references/YAML templates and six-host npm skill qualification.
+- Add immutable skill release artifacts and independent, opt-in OIDC publishing.
+- Refresh installation/authentication, release/CI and historical documentation boundaries.
+
+## 0.13.7
+
+- Recover intentionally deleted local descriptors with safe registry prune.
+- Preserve referenced resources, bindings and server identities during local cleanup.
+
 ## 0.1.4
 
 - Find draft releases by immutable ID when the published by-tag endpoint returns 404.

@@ -2,6 +2,7 @@
 """Verify released archive contents and the exact manifest/checksum contract."""
 import argparse, hashlib, json, pathlib, re, tarfile, zipfile
 from version import validate
+from verify_skill import verify as verify_skill
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--commit")
 parser.add_argument("--version")
@@ -21,7 +22,11 @@ checksum_lines = [line.split() for line in (root / 'SHA256SUMS').read_text().spl
 assert all(len(row) == 2 and re.fullmatch(r'[a-f0-9]{64}', row[0]) for row in checksum_lines)
 checksums = {row[1]: row[0] for row in checksum_lines}
 assert len(checksums) == len(checksum_lines), 'duplicate checksum entry'
-assert set(checksums) == {a['name'] for a in manifest['artifacts']} | ({manifest['npm']['name']} if 'npm' in manifest else set())
+assert set(checksums) == {a['name'] for a in manifest['artifacts']} | ({manifest['npm']['name']} if 'npm' in manifest else set()) | ({manifest['skill_npm']['name']} if 'skill_npm' in manifest else set())
+if 'skill_npm' in manifest:
+    skill = manifest['skill_npm']
+    assert checksums[skill['name']] == skill['sha256']
+    verify_skill(root, skill, manifest['version'], manifest['commit'])
 native_binaries = {}
 native_notices = []
 for artifact in manifest['artifacts']:
@@ -85,4 +90,4 @@ with tarfile.open(npm_path) as archive:
         assert archive.getmember(name).mode & 0o111, 'packaged executable is not executable'
     assert names == expected
     assert archive.getmember('package/bin/woobe.cjs').mode & 0o111
-print('Verified six archives, npm package, identical binaries, schemas and checksum metadata')
+print('Verified six archives, npm packages, identical binaries, schemas, skill source and checksum metadata' if 'skill_npm' in manifest else 'Verified six archives, npm package, identical binaries, schemas and checksum metadata')

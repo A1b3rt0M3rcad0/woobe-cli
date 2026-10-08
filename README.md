@@ -5,6 +5,34 @@ control plane and runtime. Manage Workspace and Project resources, validate
 manifests, publish Agent and Network releases and execute released targets.
 The backend authorizes every operation.
 
+## Coding assistant skill
+
+The separate **`woobe-cli-skill`** npm package teaches Codex, Claude Code,
+Copilot, Cursor and other Agent Skills-compatible assistants to use this CLI.
+It includes a small task router, offline references and YAML templates. It does
+not replace the CLI or authenticate to Woobe.
+
+After the new package's initial npm publication:
+
+```sh
+npx --yes --package=woobe-cli-skill woobe-skill install --agent codex
+npx --yes --package=woobe-cli-skill woobe-skill install --agent claude
+```
+
+Codex defaults to `.agents/skills/woobe-cli`; `--agent codex-legacy` selects
+`.codex/skills/woobe-cli`. Use `--scope user`, multiple `--agent` values or
+`--path` for other skill roots. Installation/update/removal preserves local edits
+and agent settings. See [skill installation and publisher setup](docs/AGENT_SKILL.md).
+
+| npm package | Executable | Purpose |
+| --- | --- | --- |
+| `woobe-cli` | `woobe` | Native client, six bundled targets |
+| `woobe-cli-skill` | `woobe-skill` | Explicit assistant skill installation |
+
+See the [complete documentation index](docs/INDEX.md) for current guides and
+historical validation records. The new package is prepared in this PR; public
+npm availability starts after approved merge and its one-time owner bootstrap.
+
 ## Develop locally with YAML
 
 `woobe init`, then `woobe agent UUID pull --alias support`; edit the YAML and
@@ -21,7 +49,7 @@ with development synchronization capabilities.
 
 Download your platform archive and `SHA256SUMS` from
 [the latest GitHub Release](https://github.com/A1b3rt0M3rcad0/woobe-cli/releases/latest).
-The published `v0.1.4` release includes all six targets:
+The published `v0.13.7` release includes all six targets:
 
 | System | x64 | arm64 |
 | --- | --- | --- |
@@ -34,7 +62,7 @@ Verify the checksum, extract the archive and place `woobe` or `woobe.exe` on
 
 ```bash
 sha256sum --check --ignore-missing SHA256SUMS
-tar -xzf woobe_0.1.4_linux_amd64.tar.gz
+tar -xzf woobe_0.13.7_linux_amd64.tar.gz
 ./woobe version
 ./woobe help
 ```
@@ -48,7 +76,7 @@ supports Linux amd64 and arm64:
 
 ```bash
 docker run --rm ghcr.io/a1b3rt0m3rcad0/woobe-cli:latest version
-docker run --rm ghcr.io/a1b3rt0m3rcad0/woobe-cli:0.1.4 help
+docker run --rm ghcr.io/a1b3rt0m3rcad0/woobe-cli:0.13.7 help
 ```
 
 Pin a version for automation. Mount persistent configuration at `/data`, writable
@@ -56,8 +84,7 @@ by UID 10001. See [installation and container usage](docs/INSTALLATION.md).
 
 ## npm installation
 
-After the npm publisher is configured, each automatic release publishes the same
-version to npm. Node.js 22+ is required; Go is not.
+Each automatic release publishes the same validated version to npm. Node.js 22+ is required; Go is not.
 
 ```sh
 npm install --global woobe-cli
@@ -247,4 +274,4 @@ Providers, Models, Tools, Skills, Knowledge, Prompts and Contracts are registere
 once and reused through typed local references. Surface authoring uses the same
 registry and native identities. See [Provider bindings and Surface workflows](docs/DEVELOPMENT.md)
 and [local development and recovery](docs/USAGE.md#explicit-local-identities-and-recovery).
-The development server additions currently require [Woobe PR #179](https://github.com/A1b3rt0M3rcad0/woobe/pull/179).
+The development server additions were delivered in merged [Woobe PR #179](https://github.com/A1b3rt0M3rcad0/woobe/pull/179).
