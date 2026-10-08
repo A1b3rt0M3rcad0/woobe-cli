@@ -52,6 +52,7 @@ func loadPackage(source string, locked bool) (*packagebundle.Bundle, error) {
 
 func (a *App) packageCommands() {
 	group := a.group("package")
+	a.packageDoctorCommand(group)
 	var locked bool
 	validate := &cobra.Command{
 		Use: "validate SOURCE", Short: "Validate a portable package locally without credentials or HTTP",

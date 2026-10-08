@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 )
@@ -109,5 +110,34 @@ func TestPackageDiagnosticsAreBoundedAndDoNotEchoProtectedMessages(t *testing.T)
 	encoded, _ := json.Marshal(failure)
 	if bytes.Contains(encoded, []byte("private-provider-secret")) {
 		t.Fatal("protected message copied into diagnostic")
+	}
+}
+
+func TestPackageExportIncompleteMessagesUseOnlyExactKnownReasons(t *testing.T) {
+	for _, tc := range []struct{ message, expected string }{
+		{"Snapshot has no complete ModelSpec", "has no complete ModelSpec"},
+		{"Snapshot credential intent is unavailable", "has no Provider credential binding"},
+		{"Snapshot credential provider differs", "use different Providers"},
+		{"Project Environment requirement is unavailable", "Project Environment field is unavailable"},
+		{"Snapshot has no complete ModelSpec: private-provider-secret", "server rejected request"},
+		{"private-provider-secret", "server rejected request"},
+	} {
+		t.Run(tc.message, func(t *testing.T) {
+			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"package_schema_version": "1.0", "diagnostics": []map[string]any{{"code": "PACKAGE_EXPORT_INCOMPLETE", "message": tc.message, "input": "private-provider-secret", "file": "agent-1.yaml", "path": "/spec/model/primary"}}}})
+			}))
+			defer s.Close()
+			client, _ := New(s.URL, "fixture", time.Second)
+			_, _, err := client.Request(context.Background(), "POST", "/projects/p/packages/export", nil, nil)
+			failure := output.Normalize(err)
+			if failure.Code != 2 || failure.DomainCode != "PACKAGE_EXPORT_INCOMPLETE" || failure.Outcome != "rejected" || !strings.Contains(failure.Message, tc.expected) {
+				t.Fatalf("%+v", failure)
+			}
+			encoded, _ := json.Marshal(failure)
+			if bytes.Contains(encoded, []byte("private-provider-secret")) {
+				t.Fatal("untrusted diagnostic leaked")
+			}
+		})
 	}
 }

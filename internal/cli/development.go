@@ -15,7 +15,6 @@ import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packageapi"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagebundle"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagecheckpoint"
-	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/spf13/cobra"
 )
 
@@ -438,8 +437,11 @@ func developmentCapabilities(ctx context.Context, client *packageapi.Client) (pa
 	if err != nil {
 		return capabilities, err
 	}
-	if capabilities.SchemaCatalogSHA256 != packagefmt.CatalogDigest() || len(capabilities.PrincipalFingerprint) != 64 {
-		return capabilities, output.New(9, "Server development schema or authority fingerprint is incompatible")
+	if err := packageCatalogCompatibility(client, capabilities); err != nil {
+		return capabilities, err
+	}
+	if !validPackagePrincipal(capabilities.PrincipalFingerprint) {
+		return capabilities, output.New(9, "Server returned an invalid Package authority fingerprint; run woobe package doctor to inspect the selected API")
 	}
 	for _, operation := range capabilities.SupportedOperations {
 		if operation == "sync" {

@@ -58,3 +58,37 @@ shown by `resources list`; terminal references use `@alias`, UUID or path. Chang
 an alias does not rewrite dependency identity. Provider bind also records its
 native identity so a later target pull reuses that same Provider rather than
 creating another definition.
+
+### Diagnose a development connection
+
+`context use` selects the global default. A project's `.woobe-config` can pin a
+different connection; an explicit `--context NAME` takes precedence.
+
+```sh
+woobe package doctor --output json
+woobe package doctor --context local --output json
+woobe agent AGENT_UUID pull --alias support --context local
+```
+
+The read-only diagnostic reports the effective API/context, expected and server
+catalog digests, authority-fingerprint validity and managed-development support.
+An incompatible result exits with code 10 and retains the evidence. It does not
+create private state or display credentials or authority fingerprints.
+
+`catalog_status: windows_crlf` identifies a server hashing a Windows CRLF checkout
+without normalization. Update Woobe's backend with the LF-normalized digest fix
+and restart the API. Reinstalling the CLI or rerunning `init` cannot change that
+server hash. Genuine catalog mismatches still require matching backend/CLI schemas.
+
+`PACKAGE_EXPORT_INCOMPLETE` reports whether a ModelSpec, Provider credential
+binding, matching Provider, or Project Environment field is missing. These are
+classified from exact fixed owner reasons; arbitrary server messages and protected
+input values remain excluded. Draft pulls require the backend fix that captures
+the live Agent definition even when a saved legacy Draft has no ModelSpec.
+Historical environment and explicit snapshot exports remain exact.
+
+In PowerShell, quote comma-separated field lists:
+
+```powershell
+woobe agent get AGENT_UUID --fields "id,name,provider,model,provider_credential_id" --output compact
+```

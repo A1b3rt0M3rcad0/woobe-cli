@@ -33,7 +33,7 @@ func ValidateFields(fields []string) error {
 			}
 			for _, c := range segment {
 				if !unicode.IsLetter(c) && !unicode.IsDigit(c) && c != '_' && c != '-' && c != '$' {
-					return New(2, "--fields contains an invalid field path")
+					return New(2, "--fields contains an invalid field path; in PowerShell quote the list, e.g. --fields \"id,name\"")
 				}
 			}
 		}
