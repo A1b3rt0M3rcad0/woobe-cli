@@ -51,7 +51,17 @@ jobs:
       - run: go test -race -coverprofile=coverage.out ./...
       - run: go test ./internal/schemacheck -run='^$' -fuzz=FuzzSchemaCheck -fuzztime=10s -parallel=2
       - run: go test ./internal/packagefmt -run='^$' -fuzz=FuzzDecodePackage -fuzztime=10s -parallel=2
-      - run: go test ./internal/devworkspace -run='^$' -fuzz=FuzzEncodeRoundTrip -fuzztime=10s -parallel=2
+      - name: Fuzz editable YAML with actionable failure diagnostics
+        run: |
+          python3 - <<'PYFUZZ'
+          import subprocess
+          result = subprocess.run(['go', 'test', './internal/devworkspace', "-run=^$", '-fuzz=FuzzEncodeRoundTrip', '-fuzztime=10s', '-parallel=2'], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+          print(result.stdout, end='')
+          if result.returncode:
+              detail = result.stdout[-16000:].replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print('::error title=Editable YAML fuzz failure::' + detail)
+          raise SystemExit(result.returncode)
+          PYFUZZ
       - run: go test ./internal/jsoninput -run='^$' -fuzz=FuzzYAMLCompatibleJSON -fuzztime=10s -parallel=2
       - run: go test ./internal/packagebundle -run='^$' -fuzz=FuzzPortablePath -fuzztime=10s -parallel=2
       - run: go test ./internal/packagefmt -run='^$' -fuzz=FuzzReferenceClosure -fuzztime=5s -parallel=2
