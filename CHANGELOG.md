@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add guarded local Agent/Network revision checkout with exact retained author YAML and support bytes; executable identity is checked before restore.
+
 - Add negotiated Agent/Network isolated Draft storage with generation CAS, exact
   checkpoint registration and read-only reconciliation of uncertain writes.
 - Qualify closed-package portable definition digests against shared Go/Python

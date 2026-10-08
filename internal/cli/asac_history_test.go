@@ -110,7 +110,7 @@ func TestASaCRevisionCommandsAreOfflineAndCloneSafe(t *testing.T) {
 	if err = os.RemoveAll(filepath.Join(c.RootPath(), ".state")); err != nil {
 		t.Fatal(err)
 	}
-	for _, args := range [][]string{{"agent", "@support", "revision", "show", id}, {"agent", "@support", "history", "verify"}, {"agent", "@support", "heads"}, {"agent", "@support", "history"}, {"agent", "@support", "status"}, {"agent", "@support", "revision", "create", "--message", "fresh-clone"}} {
+	for _, args := range [][]string{{"agent", "@support", "revision", "show", id}, {"agent", "@support", "checkout", "--revision", id}, {"develop", "agent", "checkout", "@support", "--revision", id}, {"agent", "@support", "history", "verify"}, {"agent", "@support", "heads"}, {"agent", "@support", "history"}, {"agent", "@support", "status"}, {"agent", "@support", "revision", "create", "--message", "fresh-clone"}} {
 		code, value = invoke(t, append(args, flags...), "")
 		if code != 0 {
 			t.Fatal(args, value)

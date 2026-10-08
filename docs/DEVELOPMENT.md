@@ -141,3 +141,9 @@ Isolated ASaC Drafts use explicit `draft open/show/push/checkpoint/reconcile`
 operations. They preserve the native singleton Draft and Production while storing
 a verified closed artifact. See [ASaC](ASAC.md#isolated-remote-drafts) for generation
 preconditions, checkpoint integrity, capability negotiation and uncertain writes.
+
+Local sealed revisions can restore author files with
+`woobe agent '@support' checkout --revision REVISION_ID` (Network has the same
+command). This requires a clean source checkpoint, preserves origin/bindings and
+protects shared dependencies. See [ASaC source restoration](ASAC.md#restore-local-author-source)
+for the source retention and server verification boundaries.

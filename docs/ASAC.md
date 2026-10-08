@@ -99,3 +99,30 @@ Isolated saves currently validate closed package schema/inventory. Output report
 `semantic_validation: stage_required`; runtime candidate qualification and fenced
 deployment are separate negotiated contracts. The storage commands alone do not
 make an isolated Draft executable or eligible for legacy promotion.
+
+## Restore local author source
+
+```sh
+woobe agent '@support' checkout --revision REVISION_ID
+woobe network '@customer-support' checkout --revision REVISION_ID
+```
+
+New checkpoints retain exact author descriptors (including YAML comments) and
+support bytes in bounded immutable `.woobe/objects/author/<digest>.json` objects.
+The revision links this source using `author_artifact_digest`; this hash is
+separate from the verified portable executable definition. Checkout compiles the
+retained source in an isolated scratch registry and checks its definition and
+component identities before writing. It preserves current aliases, paths, origin
+and private destination bindings. The working revision changes locally; remote
+Drafts, Releases and Production do not change.
+
+Checkout requires working files to match their current source checkpoint. It
+rejects edits, changed shared dependency files, tampered source objects and
+unregistered target files. `--yes` cannot bypass those protections. Checkpoint
+edits explicitly before restoring another revision. Older revisions without
+retained author source remain readable but cannot use this local restore.
+
+Remote checkpointing negotiates `author_digest_declarations`. The server reports
+`declared_not_retained` for this source hash: it verifies the closed executable
+package, not the local author object's bytes. Keep author objects in the repository
+for offline clone/checkout; a remote record alone does not hydrate author source.

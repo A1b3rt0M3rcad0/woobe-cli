@@ -30,6 +30,42 @@ func (a *App) asacCommands() {
 		current.Flags().StringVar(&environment, "env", "production", "Environment selection to observe: draft, staging or production")
 		current.Flags().Bool("remote", true, "Consult the authoritative server; this command is always remote")
 		parent.AddCommand(current)
+		var checkoutRevision string
+		checkout := &cobra.Command{Use: "checkout REFERENCE --revision REVISION_ID", Short: "Restore a sealed local revision while preserving origin", Args: cobra.ExactArgs(1), Long: "Restores retained author YAML and declared support files only after verifying executable identity. Requires a clean source checkpoint. Local edits, shared dependency edits and unregistered files are protected; --yes cannot bypass protection. Changes only local author files and working revision, never the remote Draft or an environment.", RunE: func(cmd *cobra.Command, args []string) error {
+			if a.DryRun {
+				return output.New(2, "checkout is a local restore; use revision diff to inspect before writing")
+			}
+			c, err := a.developmentConfig(true)
+			if err != nil {
+				return err
+			}
+			unlock, err := c.Lock()
+			if err != nil {
+				return output.New(2, err.Error())
+			}
+			defer unlock()
+			resource, err := c.Resolve(strings.ToUpper(kind[:1])+kind[1:], args[0])
+			if err != nil {
+				return output.New(2, err.Error())
+			}
+			record, err := c.ReadRevision(*resource, checkoutRevision)
+			if err != nil {
+				return output.New(9, err.Error())
+			}
+			graph, err := devworkspace.LoadGraph(c)
+			if err != nil {
+				return output.New(2, err.Error())
+			}
+			data, err := graph.CheckoutRevision(*resource, record)
+			if err != nil {
+				return output.New(2, err.Error())
+			}
+			return a.emit(data)
+		}}
+		checkout.Flags().StringVar(&checkoutRevision, "revision", "", "Retained local revision ID (required)")
+		_ = checkout.MarkFlagRequired("revision")
+		parent.AddCommand(checkout)
+
 		for _, action := range []string{"history", "heads", "revision"} {
 			var message string
 			var parents []string

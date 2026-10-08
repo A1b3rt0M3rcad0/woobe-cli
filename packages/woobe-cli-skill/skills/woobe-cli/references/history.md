@@ -52,3 +52,10 @@ refused; never fall back to default Draft writes. Private operation identity is
 saved before writing. Reconcile only reads the original operation; missing receipt
 or unknown outcome never licenses a second write. Semantic qualification remains
 `stage_required` until the negotiated candidate lifecycle is available.
+
+For local author restoration, use `woobe agent '@support' checkout --revision REVISION_ID`
+or the same Network command. Checkpoint current edits first. Checkout rejects local
+or shared-file changes; do not delete files or private state to bypass that check.
+Keep `objects/author` with local revision history for offline clones. The optional
+remote author digest is declared metadata, not a server-verified source attestation;
+closed executable package verification remains separate.
