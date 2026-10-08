@@ -7,6 +7,7 @@ import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/config"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/devworkspace"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagecheckpoint"
 	"github.com/spf13/cobra"
 )
 
@@ -66,7 +67,7 @@ func (a *App) developmentConfigCommands() {
 		if err != nil {
 			return output.New(2, err.Error())
 		}
-		if err := os.MkdirAll(filepath.Join(c.RootPath(), ".state"), 0700); err != nil {
+		if err := packagecheckpoint.EnsurePrivateDirectory(filepath.Join(c.RootPath(), ".state")); err != nil {
 			return err
 		}
 		ignore := filepath.Join(c.RootPath(), ".gitignore")
