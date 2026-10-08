@@ -19,6 +19,8 @@ destinations, dry-run, exact payload bytes, repeat installation, status and remo
 Each packaged native executable additionally runs the project-local commands
 `woobe skill install --agent codex` and `--agent codex-legacy` without a connection
 or `--project-dir`, including both Windows architectures.
+The installed npm CLI launcher also installs/removes both Codex presets offline,
+so npm argument forwarding and the embedded payload are verified together.
 Its tests cover managed update/removal, local edit protection, multi-target preflight,
 links/hardlinks, receipts, locks, rollback and preservation of concurrent edits.
 
