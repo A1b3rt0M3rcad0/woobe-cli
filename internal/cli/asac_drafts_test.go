@@ -23,6 +23,7 @@ func TestASaCDraftUnknownWriteReconcilesWithoutSecondPUT(t *testing.T) {
 	writes := 0
 	operation := ""
 	generation := 1
+	mismatchedReceipt := true
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var data any
 		switch {
@@ -61,7 +62,11 @@ func TestASaCDraftUnknownWriteReconcilesWithoutSecondPUT(t *testing.T) {
 			_ = json.NewEncoder(w).Encode(map[string]any{"success": false, "message": "response unavailable"})
 			return
 		case strings.Contains(r.URL.Path, "/operations/"):
-			data = map[string]any{"state": "committed", "operation_id": operation, "complete": true, "result": map[string]any{"resource_id": "01a0a033-5820-770c-854b-902864857273", "resource_uid": resource.UID, "draft_id": "12345678-1234-4321-8321-123456789013", "generation": generation, "operation_id": operation, "definition_digest": "sha256:" + strings.Repeat("a", 64), "write_outcome": "committed"}}
+			receiptID := operation
+			if mismatchedReceipt {
+				receiptID = "12345678-1234-4321-8321-123456789099"
+			}
+			data = map[string]any{"state": "committed", "operation_id": receiptID, "complete": true, "result": map[string]any{"resource_id": "01a0a033-5820-770c-854b-902864857273", "resource_uid": resource.UID, "draft_id": "12345678-1234-4321-8321-123456789013", "generation": generation, "operation_id": operation, "definition_digest": "sha256:" + strings.Repeat("a", 64), "write_outcome": "committed"}}
 		default:
 			t.Error("unexpected request", r.Method, r.URL.Path)
 		}
@@ -85,6 +90,13 @@ func TestASaCDraftUnknownWriteReconcilesWithoutSecondPUT(t *testing.T) {
 	if code, value := run("push"); code != 9 || writes != 1 {
 		t.Fatal("uncertain write repeated", code, value, writes)
 	}
+	if code, value := run("reconcile"); code != 9 {
+		t.Fatal("Unrelated receipt was accepted", code, value)
+	}
+	if code, value := run("push"); code != 9 || writes != 1 {
+		t.Fatal("Mismatch cleared uncertain write", code, value, writes)
+	}
+	mismatchedReceipt = false
 	if code, value := run("reconcile"); code != 0 {
 		t.Fatal(code, value)
 	}

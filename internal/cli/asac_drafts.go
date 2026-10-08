@@ -145,8 +145,21 @@ func (a *App) asacDraftCommands() {
 				if err != nil {
 					return err
 				}
+				if data["operation_id"] != pending.OperationID {
+					return output.New(9, "Operation receipt belongs to another write")
+				}
 				if data["state"] == "committed" {
 					result := packagefmt.Object(data["result"])
+					if result["operation_id"] != pending.OperationID || result["write_outcome"] != "committed" {
+						return output.New(9, "Original write is not proven committed")
+					}
+					if pending.Path == base+"/revisions" {
+						record := packagefmt.Object(result["record"])
+						expected := packagefmt.Object(pending.Body["record"])
+						if record["record_digest"] != expected["record_digest"] || record["resource_uid"] != resource.UID || result["draft_id"] != pending.Body["draft_id"] {
+							return output.New(9, "Revision receipt differs from the recorded write")
+						}
+					}
 					if result["draft_id"] != nil && result["resource_id"] != nil {
 						if err = saveObservation(result); err != nil {
 							return err
