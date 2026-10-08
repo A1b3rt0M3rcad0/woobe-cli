@@ -2,6 +2,7 @@
 
 | Failure | Next step |
 | --- | --- |
+| Missing private native bindings after clone | `woobe agent '@support' bindings recover --dry-run`, then recover after review (or Network). Entire closure must have accepted server evidence; explicitly bind Providers afterward. Does not recover an accepted YAML base |
 | Missing isolated Draft selection after clone | `woobe agent '@support' draft select NAME_OR_UUID` (or Network); matching origin required; no remote mutation or file checkout |
 | Rebase comment conflict | Resolve the reported author comments explicitly; checkpoint the resolved content rather than dropping either edit |
 | Missing registered descriptor | `woobe config check`, then inspect the named path; restore accidental deletions or preview `woobe resources prune --dry-run` |

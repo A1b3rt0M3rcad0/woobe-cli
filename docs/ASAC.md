@@ -33,6 +33,36 @@ Local history does not promise remote freshness. A clone can inspect/checkpoint
 using tracking requirements without copying `.state`; remote writes still require
 validated bindings and authority.
 
+## Recover native bindings after cloning
+
+```sh
+woobe agent '@support' bindings recover --dry-run
+woobe agent '@support' bindings recover
+woobe network '@service' bindings recover
+woobe resources bind provider '@primary' CREDENTIAL_UUID
+```
+
+Recovery reads the destination registry and restores private native identities
+and their **accepted** generations for the complete registered closure. It
+requires prior successful synchronization in that registry. A native UUID can
+resolve through matching durable origin without `.state`; ambiguous origins
+require an alias. No server writes, YAML edits, head changes or Production changes
+occur. Providers still require explicit verified binding; credentials are not
+restored.
+
+The response says `author_base: not_recovered`. Identity evidence cannot prove
+that today's local YAML was accepted. Native edits remain stale accepted bases
+and are rejected by subsequent write CAS; recovery never refreshes the accepted
+generation to hide that conflict. Existing contradictory bindings, missing
+dependencies, unsealed operations and uncertain local writes block recovery
+without partially changing state. Reconcile pending writes first.
+
+Frozen Network constituents retain an exact `snapshot_id` in `.woobe-config`.
+Legacy canonical `snapshots/AGENT_UUID/SNAPSHOT_UUID` paths remain recognized.
+Reuse requires the server's retained owner snapshot proof and unchanged full
+definition/bindings. It never selects the latest Agent version. Unavailable
+legacy evidence is rejected rather than treated as synchronized content.
+
 ## Observe the remote
 
 ```sh

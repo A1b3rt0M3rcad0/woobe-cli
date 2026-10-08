@@ -103,6 +103,11 @@ func (a *App) developmentCommands() {
 					target := reference
 					if resolveErr == nil {
 						target = state.Bindings[resource.UID].ResourceID
+						if target == "" {
+							if tracking, err := c.ReadTracking(*resource); err == nil && tracking.Origin.Target == state.API && tracking.Origin.Workspace == state.Workspace && tracking.Origin.Project == state.Project {
+								target = tracking.Origin.ResourceID
+							}
+						}
 					}
 					if target == "" || strings.HasPrefix(target, "@") {
 						return output.New(2, "Pull needs an existing native UUID or exact name, or a bound alias")
@@ -181,6 +186,9 @@ func (a *App) developmentCommands() {
 						return output.New(2, err.Error())
 					}
 					data := map[string]any{"resource": resource.Alias, "resource_uid": resource.UID, "native_id": bound.ResourceID, "changes": changes, "changed": len(changes) > 0, "scope": "local", "remote_status": "unverified", "write_environment": "draft"}
+					if bound.Base == nil {
+						data["author_base"] = "not_recovered"
+					}
 					tracking, trackErr := c.ReadTracking(*resource)
 					if trackErr == nil {
 						data["origin"] = tracking.Origin
@@ -308,6 +316,7 @@ func (a *App) developmentCommands() {
 			parent.AddCommand(command)
 		}
 	}
+	a.developmentBindingRecoveryCommands()
 }
 func developmentReference(c *devworkspace.Config, state *devworkspace.State, kind, reference, localPath string) (*devworkspace.Resource, error) {
 	if reference != "" {
@@ -315,6 +324,7 @@ func developmentReference(c *devworkspace.Config, state *devworkspace.State, kin
 			return r, nil
 		}
 		if state != nil {
+			var originMatch *devworkspace.Resource
 			for i := range c.Resources {
 				r := &c.Resources[i]
 				bound := state.Bindings[r.UID].ResourceID
@@ -322,6 +332,18 @@ func developmentReference(c *devworkspace.Config, state *devworkspace.State, kin
 				if strings.EqualFold(r.Kind, kind) && matches && !r.Frozen {
 					return r, nil
 				}
+				if strings.EqualFold(r.Kind, kind) && !r.Frozen && packageUUID.MatchString(reference) {
+					tracking, err := c.ReadTracking(*r)
+					if err == nil && strings.EqualFold(tracking.Origin.ResourceID, reference) && tracking.Origin.Target == state.API && tracking.Origin.Workspace == state.Workspace && tracking.Origin.Project == state.Project {
+						if originMatch != nil {
+							return nil, output.New(2, "Native UUID has multiple registered origins; use a typed alias")
+						}
+						originMatch = r
+					}
+				}
+			}
+			if originMatch != nil {
+				return originMatch, nil
 			}
 		}
 	}

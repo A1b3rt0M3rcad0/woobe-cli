@@ -149,6 +149,9 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 				folder = filepath.ToSlash(relative)
 			}
 			existing = &Resource{UID: uid, Kind: kind, Key: key, Alias: name, Path: folder, Frozen: frozen}
+			if frozen {
+				existing.SnapshotID = native.SnapshotID
+			}
 			staged.Resources = append(staged.Resources, *existing)
 		}
 		keys[oldKey] = existing.Key

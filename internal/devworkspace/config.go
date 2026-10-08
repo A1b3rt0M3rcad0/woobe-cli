@@ -23,12 +23,13 @@ type Defaults struct {
 	PullEnvironment string `json:"pull_environment" yaml:"pull_environment"`
 }
 type Resource struct {
-	Frozen bool   `json:"frozen,omitempty" yaml:"frozen,omitempty"`
-	UID    string `json:"uid" yaml:"uid"`
-	Kind   string `json:"kind" yaml:"kind"`
-	Key    string `json:"key" yaml:"key"`
-	Alias  string `json:"alias" yaml:"alias"`
-	Path   string `json:"path" yaml:"path"`
+	SnapshotID string `json:"snapshot_id,omitempty" yaml:"snapshot_id,omitempty"`
+	Frozen     bool   `json:"frozen,omitempty" yaml:"frozen,omitempty"`
+	UID        string `json:"uid" yaml:"uid"`
+	Kind       string `json:"kind" yaml:"kind"`
+	Key        string `json:"key" yaml:"key"`
+	Alias      string `json:"alias" yaml:"alias"`
+	Path       string `json:"path" yaml:"path"`
 }
 type Config struct {
 	SchemaVersion int        `json:"schema_version" yaml:"schema_version"`
@@ -141,6 +142,9 @@ func (c *Config) Validate() error {
 	}
 	seen := map[string]bool{}
 	for _, resource := range c.Resources {
+		if resource.SnapshotID != "" && (!resource.Frozen || resource.Kind != "Agent" || !uuidPattern.MatchString(resource.SnapshotID)) {
+			return fmt.Errorf("snapshot_id requires a frozen Agent and exact snapshot UUID")
+		}
 		if !uuidPattern.MatchString(resource.UID) || kinds[resource.Kind] == "" || !keyPattern.MatchString(resource.Key) || !keyPattern.MatchString(resource.Alias) {
 			return fmt.Errorf("invalid resource identity, kind, key or alias")
 		}

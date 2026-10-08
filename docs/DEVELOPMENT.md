@@ -3,6 +3,12 @@
 
 # Managed development
 
+After cloning without private `.state`, use `woobe agent '@support' bindings recover`
+(or Network) to verify and restore accepted native identities, then explicitly
+bind destination Providers. Recovery does not establish an accepted YAML base.
+See [ASaC recovery](ASAC.md#recover-native-bindings-after-cloning) for conflicts,
+exact frozen snapshots and dry-run behavior.
+
 For coding assistants, use `woobe skill install --agent codex` or `claude`;
 the [Woobe CLI skill](AGENT_SKILL.md) is embedded and installs offline.
 It follows these same development flows; it does not upload a runtime Skill or
