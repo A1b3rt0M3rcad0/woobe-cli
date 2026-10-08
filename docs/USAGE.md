@@ -722,3 +722,9 @@ checkpoint registration and recovery. They are separate from native Draft push.
 Restore a local source checkpoint with `woobe agent '@support' checkout --revision REVISION_ID`
 (or `woobe network`); see [ASaC](ASAC.md#restore-local-author-source). This protects
 uncheckpointed edits and changes only local files, not a remote environment.
+
+Use `woobe agent '@support' rebase --onto REVISION_ID` to reconcile sealed local
+branches, and `revision merge REV_A REV_B --message 'Resolved content'` to seal
+manually resolved files with both parents. These operations preserve old revisions
+and do not contact the backend; [conflict behavior](ASAC.md#reconcile-sealed-local-branches)
+is explicit and never bypassed by `--yes`.

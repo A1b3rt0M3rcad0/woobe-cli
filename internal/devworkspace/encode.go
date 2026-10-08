@@ -153,3 +153,71 @@ func orderFields(node *yaml.Node, preferred []string) {
 	}
 	node.Content = ordered
 }
+
+// EncodeWithComments applies semantic changes to fresh safe YAML nodes while
+// carrying comments attached to surviving fields. Deleted fields have no target.
+// JSON descriptors retain JSON format and do not acquire YAML comments.
+func EncodeWithComments(document map[string]any, filename, original string) ([]byte, error) {
+	if strings.EqualFold(filepath.Ext(filename), ".json") {
+		return EncodeFile(document, filename)
+	}
+	encoded, err := Encode(document)
+	if err != nil {
+		return nil, err
+	}
+	var old, next yaml.Node
+	if err = yaml.Unmarshal([]byte(original), &old); err != nil {
+		return nil, err
+	}
+	if err = yaml.Unmarshal(encoded, &next); err != nil {
+		return nil, err
+	}
+	var carry func(*yaml.Node, *yaml.Node)
+	carry = func(before, after *yaml.Node) {
+		after.HeadComment = before.HeadComment
+		after.LineComment = before.LineComment
+		after.FootComment = before.FootComment
+		if before.Kind != after.Kind {
+			return
+		}
+		if before.Kind == yaml.DocumentNode && len(before.Content) == 1 && len(after.Content) == 1 {
+			carry(before.Content[0], after.Content[0])
+			return
+		}
+		if before.Kind == yaml.MappingNode {
+			fields := map[string]int{}
+			for i := 0; i+1 < len(before.Content); i += 2 {
+				fields[before.Content[i].Value] = i
+			}
+			for i := 0; i+1 < len(after.Content); i += 2 {
+				if old, ok := fields[after.Content[i].Value]; ok {
+					carry(before.Content[old], after.Content[i])
+					carry(before.Content[old+1], after.Content[i+1])
+				}
+			}
+		}
+		// Lists are atomic in three-way merge. Carry individual comments only when
+		// unchanged scalar entries retain the same identity and position.
+		if before.Kind == yaml.SequenceNode {
+			for i, node := range after.Content {
+				if i < len(before.Content) && before.Content[i].Kind == node.Kind && before.Content[i].Tag == node.Tag && before.Content[i].Value == node.Value && node.Kind == yaml.ScalarNode {
+					carry(before.Content[i], node)
+				}
+			}
+		}
+	}
+	carry(&old, &next)
+	var result bytes.Buffer
+	writer := yaml.NewEncoder(&result)
+	writer.SetIndent(2)
+	if err = writer.Encode(&next); err != nil {
+		return nil, err
+	}
+	if err = writer.Close(); err != nil {
+		return nil, err
+	}
+	if result.Len() > requestinput.MaxBytes {
+		return nil, fmt.Errorf("rendered descriptor exceeds 8 MiB")
+	}
+	return result.Bytes(), nil
+}

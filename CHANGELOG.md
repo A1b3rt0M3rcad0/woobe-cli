@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add guarded semantic local rebase and explicit resolved-content merge checkpoints; preserve old revisions and protect newly referenced local support files.
+
 - Add guarded local Agent/Network revision checkout with exact retained author YAML and support bytes; executable identity is checked before restore.
 
 - Add negotiated Agent/Network isolated Draft storage with generation CAS, exact

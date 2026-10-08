@@ -126,3 +126,31 @@ Remote checkpointing negotiates `author_digest_declarations`. The server reports
 `declared_not_retained` for this source hash: it verifies the closed executable
 package, not the local author object's bytes. Keep author objects in the repository
 for offline clone/checkout; a remote record alone does not hydrate author source.
+
+## Reconcile sealed local branches
+
+```sh
+woobe agent '@support' rebase --onto REVISION_ID
+woobe network '@customer-support' rebase --onto REVISION_ID --message 'Reconcile network changes'
+woobe agent '@support' revision merge REV_A REV_B --message 'Resolved combined content'
+```
+
+Rebase computes a three-way semantic merge of the current checkpoint and the
+selected revision against their known common ancestor. It merges independent
+object fields, treats arrays and support files as atomic, validates the complete
+result in scratch space, and seals a new revision whose parent is `--onto`.
+Original revisions and origin remain unchanged. Surviving YAML field comments
+are carried forward when fields are recomposed; deleted fields have no place to
+retain their comments. JSON descriptors remain JSON. Private destination bindings
+are unchanged. The result is local, not a remote push or deployment.
+
+Rebase requires clean checkpointed files. Conflicts report component/field paths
+with `ASAC_REBASE_CONFLICT` (exit 6) and do not change files or revision history.
+Incomplete ancestry is not guessed; obtain missing history first. Multiple common
+ancestors require an explicit `--base REVISION_ID`, which must be an ancestor of
+both branches. Review `revision diff` before writing; `--yes` does not discard edits.
+
+`revision merge REV_A REV_B` seals the **currently resolved author content** with
+both immutable parents. It does not silently choose a winner or merge YAML for
+you. Resolve conflicts and validate the resulting files before this checkpoint.
+Neither command publishes, stages, activates nor rewrites a shared revision.

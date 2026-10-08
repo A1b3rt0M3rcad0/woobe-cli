@@ -144,3 +144,30 @@ func TestHistoryDistinguishesMissingAuthorFromMissingExecutable(t *testing.T) {
 		t.Fatal(report)
 	}
 }
+
+func TestCheckoutProtectsNewlyReferencedUnregisteredSupport(t *testing.T) {
+	c, g := completeGraph(t)
+	r := g.Nodes["support"].Resource
+	state := authorState()
+	first, err := g.CreateRevision(r, state, "with support", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g = editAuthor(t, c, g, "support-skill", func(doc map[string]any) {
+		doc["spec"].(map[string]any)["package"].(map[string]any)["resources"] = []any{}
+	})
+	if _, err = g.CreateRevision(r, state, "without support", nil); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(c.RootPath(), "references", "checklist.md")
+	if err = os.WriteFile(target, []byte("unregistered local notes\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = g.CheckoutRevision(r, first); err == nil || !strings.Contains(err.Error(), "unregistered support") {
+		t.Fatal("unregistered support overwritten", err)
+	}
+	got, _ := os.ReadFile(target)
+	if string(got) != "unregistered local notes\n" {
+		t.Fatal("local notes changed")
+	}
+}
