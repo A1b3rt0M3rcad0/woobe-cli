@@ -1,9 +1,32 @@
-# Pagination continuation
+# Built-in offline Woobe CLI skill installation
 
-The client previously traversed advertised next links but did not consume the actual cursor/revision metadata returned by Woobe. Reviewed body pagination now supports category list/history/audit and Agent sessions, with --all, explicit continuation and collection evidence. Filters, scopes and credentials remain fixed; bounds and failures preserve partial data, with secrets redacted in JSON and table output.
+Install coding-assistant instructions directly from the CLI:
+`woobe skill install --agent codex` or `--agent claude`. The reviewed portable
+payload is embedded in all six binaries, so installation needs no npm, Node.js,
+network, login or `.woobe-config`. The canonical `woobe skills` group provides
+install/status/uninstall/agents, project/user scope, legacy `.codex` and custom
+roots. `--project-dir` selects a local directory; runtime `project skill` operations
+and their existing singular aliases remain separate.
 
-Two client commits deliver the implementation, 17 regression tests, native pagination smoke and current backend-aware documentation/audit. CLI code `659baea23458380b84bc7059d2a544c9c06fc1f5` passed all six jobs in run 37385398090, including packaged binaries on Linux/macOS/Windows. Local race/vet/module/fuzz checks passed; total coverage is 79.1%.
+The optional `woobe-cli-skill` npm package supplies the same skill independently.
+Both installers recognize the same version/source/hash receipt and preserve
+unmanaged/edited files and unrelated agent settings. Preflight, locks, swaps and
+rollback protect managed updates/removal, including concurrent edits. Neither
+installer handles credentials or executes remote operations.
 
-Two backend commits in existing PR #177 pin that client and validate all four pagination endpoints against live API/workers/persistence. Agent session GET now requires run:read with owning-Project and effective environment/target conditions. Required live CLI tests passed at backend `8ab9d13953c1cd77462af85a3a3a957395141edc`; final workflow evidence is maintained in the PR.
+A small skill router, seven offline references and two YAML templates teach real
+connection, Draft YAML editing, shared dependencies, package transfer, tests,
+lifecycle, economical output and uncertain-write recovery. Native and npm payloads
+come from one source tree; packaging excludes implementation Go source/tests.
 
-No new PR or merge is created by this continuation. Backend PR #177 remains draft for user approval. Native credentials, complete declarative reconciliation, full schema coverage and stream recovery remain; this is not a complete CLI release.
+Distribution binds both npm tarballs to the release version/source, with immutable
+checksums and manifests. Existing CLI OIDC publishing is unchanged. The separate
+skill npm publisher remains opt-in until its one-time owner bootstrap; built-in
+installation does not depend on that publication.
+
+Validation includes Go native installer/CLI regression and race tests, Python
+artifact/publication tests, standalone Node tests and six-host native/npm smoke.
+Actual packaged binaries test embedded installation, receipt interoperability and
+all 38 fenced skill CLI examples offline. Documentation and the generated command
+catalog cover the new workflow. No backend code, merge or publication is performed;
+merge requires owner approval after green CI.

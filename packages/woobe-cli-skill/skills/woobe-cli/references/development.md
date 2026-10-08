@@ -1,0 +1,51 @@
+# Local YAML development
+
+Use `.woobe-config` only for managed development. If it exists, check it; do not
+reinitialize it or delete `.state/`. Initialize a new project explicitly:
+
+```sh
+woobe init --root .woobe --context local
+woobe agent AGENT_UUID pull --alias support
+woobe network NETWORK_UUID pull --alias service
+```
+
+Pull registers the root and its dependency closure, reusing bound shared native
+identities. The default is current Draft. `--env staging` and `--env production`
+select their current frozen definitions; `--env release --version VERSION`
+selects one exact Release. Unavailable environments fail without fallback.
+
+Edit the registered `agent.yaml`/`network.yaml` and declared support files. YAML
+uses blocks and multiline text; JSON descriptors remain accepted. Stable registry
+keys are used in refs inside YAML; `@alias` is for terminal commands.
+
+```sh
+woobe agent '@support' validate
+woobe agent '@support' diff --output compact
+woobe agent '@support' push --dry-run
+woobe agent '@support' push
+```
+
+Local validation cannot certify server semantics or authorization. Managed push
+dry-run uploads/plans against the server without applying Draft changes. A normal
+push updates the existing Draft only, with identity/revision evidence and a
+semantic merge. Conflicts stop the write. Staging/Production require separate
+lifecycle commands. Repeat the same workflow for `network`.
+
+Create a new root explicitly with a local author descriptor referencing existing
+registered dependency keys:
+
+```sh
+woobe resources create agent support-new --file ./agent-author.yaml
+woobe agent '@support-new' validate
+woobe agent '@support-new' create --dry-run
+woobe agent '@support-new' create --yes
+```
+
+The bundled [author template](../assets/agent-author.yaml) requires replacing the
+Model ref with a real registry key. It is not an apply-ready example. Clone uses a
+new UID; `woobe resources clone agent '@support' --alias support-copy` intentionally
+creates another local identity while sharing appropriate dependencies. Do not
+use clone/create for an update. `resources move` and `resources alias` preserve UID.
+
+Use `--path` only for a path within the configured registry root. Inspect
+`resources list` rather than guessing file names or adding duplicate entries.

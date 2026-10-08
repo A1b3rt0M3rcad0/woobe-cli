@@ -18,12 +18,12 @@ and download your platform archive plus `SHA256SUMS`.
 
 | Platform | Example archive |
 | --- | --- |
-| Linux x64 | `woobe_0.1.4_linux_amd64.tar.gz` |
-| Linux arm64 | `woobe_0.1.4_linux_arm64.tar.gz` |
-| macOS Intel | `woobe_0.1.4_darwin_amd64.tar.gz` |
-| macOS Apple Silicon | `woobe_0.1.4_darwin_arm64.tar.gz` |
-| Windows x64 | `woobe_0.1.4_windows_amd64.zip` |
-| Windows arm64 | `woobe_0.1.4_windows_arm64.zip` |
+| Linux x64 | `woobe_0.13.7_linux_amd64.tar.gz` |
+| Linux arm64 | `woobe_0.13.7_linux_arm64.tar.gz` |
+| macOS Intel | `woobe_0.13.7_darwin_amd64.tar.gz` |
+| macOS Apple Silicon | `woobe_0.13.7_darwin_arm64.tar.gz` |
+| Windows x64 | `woobe_0.13.7_windows_amd64.zip` |
+| Windows arm64 | `woobe_0.13.7_windows_arm64.zip` |
 
 Verify the downloaded file's SHA-256 against `SHA256SUMS` before extraction.
 Use `sha256sum` on Linux, `shasum -a 256` on macOS or
@@ -75,7 +75,7 @@ never pushes changes into `master`.
 1. Pin the source to the push's exact SHA, require it to belong to `master`,
    and calculate the version from existing immutable `v*` tags and commit history.
 2. Run the full reusable CI: Go/race/fuzz checks, six cross-builds, archive/schema/
-   license/checksum validation, and native binary plus npm install/launcher smoke
+   license/checksum validation, and native binary plus both npm package install/launcher smoke
    tests on Linux/macOS/Windows. The npm tarball contains identical binary bytes.
 3. Download the immutable Actions artifact ID and verify its manifest SHA-256.
    Extract the tested Linux binaries into a non-root, multi-platform GHCR image
@@ -94,7 +94,9 @@ never pushes changes into `master`.
    Compare the registry SHA-512 integrity with the local tarball. An identical
    retry succeeds without republishing; conflicting bytes fail. Stable versions
    use `latest`, prereleases use `next`, and older recovery uses `historical`
-   without moving npm `latest` backwards.
+   without moving npm `latest` backwards. The separate `npm-skill` job publishes
+   `woobe-cli-skill` only when `WOOBE_SKILL_NPM_PUBLISH=true`; the initial owner
+   bootstrap is described in [AGENT_SKILL.md](AGENT_SKILL.md#versioning-and-initial-npm-publication-owner-once).
 
 The workflow uses the built-in **GITHUB_TOKEN** with job permissions
 `contents: write` and `packages: write`. No additional token is required for GitHub/GHCR. npm authorization is configured
@@ -107,7 +109,7 @@ workflow's GITHUB_TOKEN do not trigger another workflow run.
 The repository package is `ghcr.io/a1b3rt0m3rcad0/woobe-cli`. After publication:
 
 ```sh
-docker run --rm ghcr.io/a1b3rt0m3rcad0/woobe-cli:0.1.4 version
+docker run --rm ghcr.io/a1b3rt0m3rcad0/woobe-cli:0.13.7 version
 docker run --rm ghcr.io/a1b3rt0m3rcad0/woobe-cli:latest help
 ```
 
@@ -120,7 +122,7 @@ GitHub authentication. Native release downloads are public independently.
 ### Automatic version calculation
 
 `VERSION` is the reviewed **minimum release version**, initially `0.1.0`.
-The private npm source manifest mirrors this floor. Packaging removes `private`
+Both private npm source manifests mirror this floor. Packaging removes `private`
 only from the staged distribution and sets the calculated release version.
 Published versions are authoritative in Git tags and permanent artifact
 manifests; automatic increments do not rewrite source files.
@@ -180,9 +182,10 @@ artifacts, not public releases.
 For a local npm candidate, install Node.js 22+ and npm, then run:
 
 ```sh
-bash scripts/package.sh 0.1.4 --with-npm
+bash scripts/package.sh 0.13.7 --with-npm
 python3 scripts/verify_artifacts.py --commit "$(git rev-parse HEAD)"
 python3 scripts/smoke_npm.py --commit "$(git rev-parse HEAD)" --report npm-smoke.json
+python3 scripts/smoke_skill.py --commit "$(git rev-parse HEAD)" --report skill-smoke.json
 ```
 
 Use your actual release version instead of the example. The repository currently
@@ -244,3 +247,41 @@ No manual npm login, version-file edit or tag creation is required. Install with
 npm install --global woobe-cli
 npx --yes --package=woobe-cli woobe version
 ```
+
+
+## Assistant skill installation
+
+The CLI binary embeds the reviewed skill. No extra package, Node.js, npm,
+network access or backend login is needed:
+
+```sh
+woobe skill install --agent codex
+woobe skill install --agent claude
+woobe skill status --agent codex,claude
+woobe skill install --agent codex-legacy --scope user
+```
+
+Use `--project-dir` for an existing local directory, `--path` for a custom skills
+root and `--dry-run` to preview. Updating the CLI and re-running install updates
+unchanged managed skills. Native and npm installers recognize the same receipts.
+Runtime Skills inside Woobe still use `project skill` operations.
+
+### Optional independent npm package
+
+`woobe-cli-skill` is packaged beside the native client at the same release
+version/source SHA. It has no binary dependencies or npm lifecycle scripts.
+Its tarball is always included in a post-merge GitHub release, even while its
+npm publication is disabled pending first-publication setup. Install from npm
+or directly from the verified release tarball. Installation is explicit and
+supports Windows, macOS and Linux.
+
+```sh
+npx --yes --package=woobe-cli-skill woobe-skill install --agent codex,claude
+npx --yes --package=woobe-cli-skill woobe-skill status --agent codex --json
+```
+
+The full [assistant guide](AGENT_SKILL.md) documents `.agents/skills`, explicit
+`.codex/skills`, user scope, custom paths, updates, uninstall and the separate
+Trusted Publisher. Existing `woobe-cli` publication remains independent.
+Local `make check` now also requires Node.js 22+ for installer regression tests;
+release builds pin Node 24 and npm 11.5.1.

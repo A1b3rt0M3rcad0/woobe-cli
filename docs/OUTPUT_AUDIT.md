@@ -1,5 +1,9 @@
 # Complete command output audit
 
+These dated fixture measurements retain their original command set; newer commands
+and the separate skill installer are listed in [OPERATIONS.md](OPERATIONS.md)
+and [AGENT_SKILL.md](AGENT_SKILL.md). See [INDEX.md](INDEX.md) for current guides.
+
 Every discovered command is listed: 251 entries, 217 successful measured scenarios.
 
 Measurements are UTF-8 bytes from the real executable, comparing full JSON to compact. HTTP commands use a loopback presentation fixture; except the Agent records, response shapes are generic probes, not authoritative Woobe DTOs. These numbers are illustrative and do not qualify actual backend writes or estimate production token counts. Local scenarios use temporary state. All remote writes go only to the fixture API. Blank sizes mean not measured, never zero. Scripts, aliases and streams have explicit classifications.

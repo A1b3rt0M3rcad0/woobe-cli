@@ -9,7 +9,14 @@ import (
 func (a *App) aliasCommands() {
 	for name, target := range map[string][]string{"agent": {"project", "agent"}, "network": {"project", "network"}, "provider": {"project", "provider-credential"}, "model": {"project", "provider-model"}, "tool": {"project", "tool"}, "skill": {"project", "skill"}, "knowledge": {"project", "knowledge"}, "surface": {"project", "surface"}, "control-key": {"workspace", "control-key"}} {
 		name, target := name, target
-		a.Root.AddCommand(&cobra.Command{Use: name, Short: "Canonical operations and reference-first YAML development", Long: "Use agent/network REFERENCE pull|push|diff|status|validate for managed YAML development. REFERENCE accepts a native UUID, exact remote name for pull, registered @alias or local path. Quote @aliases in PowerShell. sync aliases pull and update aliases push when following a reference. Raw list/create/get/update/delete and release commands remain available. Run woobe help develop agent pull for focused discovery.", DisableFlagParsing: true, RunE: func(cmd *cobra.Command, args []string) error {
+		description := "Use agent/network REFERENCE pull|push|diff|status|validate for managed YAML development. REFERENCE accepts a native UUID, exact remote name for pull, registered @alias or local path. Quote @aliases in PowerShell. sync aliases pull and update aliases push when following a reference. Raw list/create/get/update/delete and release commands remain available. Run woobe help develop agent pull for focused discovery."
+		if name == "skill" {
+			description = "Install coding-assistant instructions offline with woobe skill install --agent codex or claude. Use status, uninstall or agents for local setup; use --project-dir for a local folder. Runtime Skills remain woobe skill list/create/get/update/delete (project skill operations). No npm, Node.js, connection or login is required for assistant setup."
+		}
+		a.Root.AddCommand(&cobra.Command{Use: name, Short: "Canonical operations and reference-first YAML development", Long: description, DisableFlagParsing: true, RunE: func(cmd *cobra.Command, args []string) error {
+			if name == "skill" && (len(args) == 0 || len(args) == 1 && (args[0] == "--help" || args[0] == "-h")) {
+				return cmd.Help()
+			}
 			child := New(a.In, a.Out, a.Err)
 			// Persistent flags supplied before an alias belong to its parent.
 			// Forward them so presentation and connection flags have one meaning.
@@ -43,6 +50,12 @@ func (a *App) aliasCommands() {
 			forwarded = append(forwarded, args[:prefix]...)
 			args = args[prefix:]
 			routed := append(append(forwarded, target...), args...)
+			if name == "skill" && len(args) > 0 {
+				switch args[0] {
+				case "install", "status", "uninstall", "agents":
+					routed = append(append(forwarded, "skills"), args...)
+				}
+			}
 			if name == "agent" || name == "network" || name == "surface" {
 				actions := map[string]string{"pull": "pull", "sync": "pull", "push": "push", "update": "push", "diff": "diff", "validate": "validate", "status": "status", "create": "create", "reconcile": "reconcile"}
 				for _, action := range []string{"stage", "publish", "activate", "rollback"} {

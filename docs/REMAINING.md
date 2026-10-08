@@ -1,4 +1,17 @@
-# Remaining full-plan work
+# Scope and remaining roadmap work
+
+The assistant skill package is implemented for review. Public npm distribution
+needs approved merge, first publication of the new name, its own Trusted Publisher
+and `WOOBE_SKILL_NPM_PUBLISH=true`; these owner steps are documented in
+[AGENT_SKILL.md](AGENT_SKILL.md). Built-in `woobe skill install` is independent of npm publication and requires
+no Node/npm, authentication or backend change.
+
+The original roadmap audit below is historical. Later package/development work
+and current credentials must be assessed from [STATUS.md](STATUS.md), current
+commands and their acceptance evidence; it is not a promise that every original
+roadmap criterion is complete. Woobe PR #179 is now merged.
+
+## Historical full-plan backlog — 2026-10-05
 
 Checkpoint: 2026-10-05. Backend implementation is delivered in [Woobe PR #177](https://github.com/A1b3rt0M3rcad0/woobe/pull/177), with seven workflows passed at the previous validated head `747ee0dd`; current head evidence is maintained in that PR. That PR was merged on 2026-10-06. CLI PRs #1–#7 are merged; the body-pagination continuation is published separately in the client repository and consumed by an immutable backend CI pin.
 

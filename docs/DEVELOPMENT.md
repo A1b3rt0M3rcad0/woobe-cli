@@ -1,6 +1,12 @@
 
 ### Bind a Provider before the first Agent push
 
+# Managed development
+
+For coding assistants, use `woobe skill install --agent codex` or `claude`;
+the [Woobe CLI skill](AGENT_SKILL.md) is embedded and installs offline.
+It follows these same development flows; it does not upload a runtime Skill or
+replace the optional registry. UUID API/runtime commands still work without it.
 Create/register a public Provider descriptor with `spec.provider` (and optional
 base URL); credentials belong to the destination, never the author YAML.
 

@@ -1,5 +1,8 @@
 # Reviewed pagination contracts
 
+The [assistant skill](AGENT_SKILL.md) uses these same bounds and partial-collection
+evidence. Skill installation does not change pagination or server permissions.
+
 Body formats reviewed: Woobe `77c53832f0e5b35488d1574b3cf62777486f5189`, 2026-10-05. Control Key authority for Agent session listing is delivered at `8ab9d13953c1cd77462af85a3a3a957395141edc` (catalog revision `2026-10-05.2`). The client uses explicit response contracts rather than guessing from arbitrary fields or item counts.
 
 | Command | Protocol | Response marker | Query marker | Page size |

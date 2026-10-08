@@ -58,7 +58,8 @@ PYRESOURCE
 done
 if [[ "$with_npm" == --with-npm ]]; then
   python3 scripts/package_npm.py "$version"
-  (cd dist && sha256sum "woobe_${version}_"*.tar.gz "woobe_${version}_"*.zip "woobe-cli-${version}.tgz" > SHA256SUMS)
+  python3 scripts/package_skill.py "$version" --commit "$(git rev-parse HEAD)"
+  (cd dist && sha256sum "woobe_${version}_"*.tar.gz "woobe_${version}_"*.zip "woobe-cli-${version}.tgz" "woobe-cli-skill-${version}.tgz" > SHA256SUMS)
 else
   (cd dist && sha256sum "woobe_${version}_"*.tar.gz "woobe_${version}_"*.zip > SHA256SUMS)
 fi

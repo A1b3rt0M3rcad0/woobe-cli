@@ -71,6 +71,8 @@ class NpmPublicationTests(unittest.TestCase):
                 metadata = pathlib.Path('dist/artifacts.json')
                 data = json.loads(metadata.read_text())
                 data['version'] = version
+                data['npm']['name'] = f'woobe-cli-{version}.tgz'
+                pathlib.Path('dist', data['npm']['name']).write_bytes(b'tested npm candidate')
                 metadata.write_text(json.dumps(data))
                 digest = hashlib.sha256(metadata.read_bytes()).hexdigest()
                 with patch.object(publish_npm, 'view', side_effect=[None, latest, self.integrity]), patch.object(publish_npm.subprocess, 'run') as run:
@@ -90,3 +92,27 @@ class NpmPublicationTests(unittest.TestCase):
         result = type('Result', (), dict(returncode=1, stdout='{"error":{"code":"E404"}}', stderr=''))()
         with patch.object(publish_npm.subprocess, 'run', return_value=result):
             self.assertIsNone(publish_npm.view('woobe-cli@1.2.3', 'dist.integrity'))
+
+    def test_skill_uses_its_own_registry_namespace_and_candidate(self):
+        metadata = pathlib.Path('dist/artifacts.json')
+        data = json.loads(metadata.read_text())
+        archive = pathlib.Path('dist/woobe-cli-skill-1.2.3.tgz')
+        archive.write_bytes(b'tested npm candidate')
+        data['skill_npm'] = dict(name=archive.name)
+        metadata.write_text(json.dumps(data))
+        digest = hashlib.sha256(metadata.read_bytes()).hexdigest()
+        with patch.object(publish_npm, 'view', side_effect=[None, '1.2.2', self.integrity]) as view, patch.object(publish_npm.subprocess, 'run') as run:
+            publish_npm.publish(self.commit, self.version, digest, 'woobe-cli-skill')
+            self.assertEqual(view.call_args_list[0].args[0], 'woobe-cli-skill@1.2.3')
+            self.assertEqual(view.call_args_list[1].args[0], 'woobe-cli-skill@latest')
+            self.assertIn(archive.name, run.call_args_list[1].args[0][2])
+
+    def test_skill_cannot_publish_the_cli_candidate(self):
+        metadata = pathlib.Path('dist/artifacts.json')
+        data = json.loads(metadata.read_text())
+        data['skill_npm'] = data['npm']
+        metadata.write_text(json.dumps(data))
+        with patch.object(publish_npm, 'view') as view, patch.object(publish_npm.subprocess, 'run'):
+            with self.assertRaises(ValueError):
+                publish_npm.publish(self.commit, self.version, hashlib.sha256(metadata.read_bytes()).hexdigest(), 'woobe-cli-skill')
+            view.assert_not_called()

@@ -1,5 +1,15 @@
 # Terminal and agent output
 
+## Assistant guidance
+
+`woobe skill install/status/uninstall` uses normal text/compact/JSON output;
+installation destinations, version and drift evidence remain visible.
+
+The embedded [assistant skill](AGENT_SKILL.md) selects compact output and exact
+fields for inspection, and reads only the reference needed for the task. Full
+JSON remains available for structured processing. It never hides incomplete
+collection/write evidence or substitutes presentation for server authorization.
+
 Woobe separates the information needed for the next action from the complete API
 response. Presentation never changes the request, authorization, saved credential
 or resource. The CLI keeps full IDs and every returned row.

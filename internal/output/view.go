@@ -195,6 +195,9 @@ var relevantFields = []string{
 }
 
 func summarize(command string, value any) any {
+	if strings.HasPrefix(command, "skills ") {
+		return value // Keep installation destinations and drift evidence visible.
+	}
 	if strings.HasPrefix(command, "package export ") {
 		if obj, ok := value.(map[string]any); ok {
 			summary := project(obj, []string{"name", "version", "destination", "integrity", "closure_complete", "self_contained", "knowledge", "next_command"}, false).(map[string]any)

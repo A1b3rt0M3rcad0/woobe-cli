@@ -1,5 +1,7 @@
 # Completude do planejamento integral
 
+Auditoria histórica do roadmap original de 101 itens. A nova skill de terminal é uma entrega adicional; veja [STATUS.md](STATUS.md) e [AGENT_SKILL.md](AGENT_SKILL.md) para o estado atual. Este percentual não mede essa entrega nem certifica produção.
+
 **65.3% — 66/101 entregas concluídas; 34 parciais e 1 pendentes.**
 
 Base: todas as 101 entregas das fases 0–9 do §18 de PLAN.md, com peso igual. Concluída=1; parcial=0; pendente=0. A classificação é uma avaliação de engenharia com evidência por item, não estimativa de esforço, cobertura de código ou certificação de produção.

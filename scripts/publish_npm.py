@@ -44,7 +44,9 @@ def view(spec, field):
     return json.loads(result.stdout) if result.stdout.strip() else None
 
 
-def publish(commit, version, manifest_sha256):
+def publish(commit, version, manifest_sha256, package_name='woobe-cli'):
+    if package_name not in ('woobe-cli', 'woobe-cli-skill'):
+        raise ValueError('unsupported npm package')
     validate(version)
     root = pathlib.Path('dist')
     metadata = root / 'artifacts.json'
@@ -56,16 +58,19 @@ def publish(commit, version, manifest_sha256):
     subprocess.run([sys.executable, 'scripts/verify_artifacts.py', '--commit', commit,
                     '--version', version], check=True)
     # npm treats bare "dist/file.tgz" as a GitHub shorthand, not a file.
-    artifact = (root / manifest['npm']['name']).resolve()
+    record = manifest['skill_npm' if package_name == 'woobe-cli-skill' else 'npm']
+    if record['name'] != f'{package_name}-{version}.tgz':
+        raise ValueError('npm package filename differs from selected package')
+    artifact = (root / record['name']).resolve()
     integrity = 'sha512-' + base64.b64encode(hashlib.sha512(artifact.read_bytes()).digest()).decode()
-    spec = f'woobe-cli@{version}'
+    spec = f'{package_name}@{version}'
     existing = view(spec, 'dist.integrity')
     if existing is not None:
         if existing != integrity:
             raise ValueError('immutable npm version already contains different bytes')
         print(f'{spec} already published with identical bytes; no changes')
         return
-    latest = view('woobe-cli@latest', 'version')
+    latest = view(f'{package_name}@latest', 'version')
     # Explicit recovery of an older version must never move latest backwards.
     tag = 'next' if '-' in version else 'latest'
     if latest and tag == 'latest' and semver_key(version) <= semver_key(latest):
@@ -81,5 +86,6 @@ if __name__ == '__main__':
     parser.add_argument('--commit', required=True)
     parser.add_argument('--version', required=True)
     parser.add_argument('--manifest-sha256', required=True)
+    parser.add_argument('--package', choices=['woobe-cli', 'woobe-cli-skill'], default='woobe-cli')
     options = parser.parse_args()
-    publish(options.commit, options.version, options.manifest_sha256)
+    publish(options.commit, options.version, options.manifest_sha256, options.package)
