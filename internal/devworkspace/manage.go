@@ -187,13 +187,6 @@ func (c *Config) Unregister(kind, reference string, dryRun bool) error {
 	if err != nil {
 		return err
 	}
-	graph, err := LoadGraph(c)
-	if err != nil {
-		return err
-	}
-	if users := graph.UsedBy(resource.Key); len(users) != 0 {
-		return fmt.Errorf("resource still has registered consumers; remove their references first")
-	}
 	// Native bindings and files remain recoverable. This operation never calls
 	// remote deletion and never removes shared author files.
 	next := *c
@@ -202,6 +195,11 @@ func (c *Config) Unregister(kind, reference string, dryRun bool) error {
 		if candidate.UID != resource.UID {
 			next.Resources = append(next.Resources, candidate)
 		}
+	}
+	// Validate the registry that would remain, allowing a missing selected
+	// descriptor to be unregistered while still rejecting live consumers.
+	if _, err := LoadGraph(&next); err != nil {
+		return err
 	}
 	data, err := yaml.Marshal(&next)
 	if err != nil {

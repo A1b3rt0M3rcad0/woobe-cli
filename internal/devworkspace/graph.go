@@ -3,6 +3,7 @@ package devworkspace
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -46,6 +47,9 @@ func LoadGraph(config *Config) (*Graph, error) {
 		return graph, nil
 	}
 	info, err := os.Lstat(config.RootPath())
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("configured artifact root is missing; .woobe-config still registers %d resources; restore the directory or preview stale entries with woobe resources prune --dry-run", len(config.Resources))
+	}
 	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return nil, fmt.Errorf("artifact root must be a real directory")
 	}
@@ -58,7 +62,7 @@ func LoadGraph(config *Config) (*Graph, error) {
 		path := descriptor(resource)
 		data, err := readConfined(root, path)
 		if err != nil {
-			return nil, fmt.Errorf("%s: resource descriptor unavailable", resource.Key)
+			return nil, descriptorReadError(resource, err)
 		}
 		node, err := decodeNode(resource, data)
 		if err != nil {
@@ -70,6 +74,13 @@ func LoadGraph(config *Config) (*Graph, error) {
 		return nil, err
 	}
 	return graph, nil
+}
+
+func descriptorReadError(resource Resource, err error) error {
+	if errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("%s: registered descriptor %q is missing; .woobe-config still references it; restore the file or preview stale entries with woobe resources prune --dry-run", resource.Key, descriptor(resource))
+	}
+	return fmt.Errorf("%s: cannot safely read registered descriptor %q: %w", resource.Key, descriptor(resource), err)
 }
 
 func decodeNode(resource Resource, data []byte) (*Node, error) {

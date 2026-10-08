@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -42,7 +43,11 @@ func confinedOpen(root *os.Root, path string) (*os.File, error) {
 	parts := strings.Split(path, "/")
 	for i := range parts {
 		info, err := root.Lstat(strings.Join(parts[:i+1], "/"))
-		if err != nil || info.Mode()&os.ModeSymlink != 0 {
+		if err != nil {
+			// Preserve the OS cause without weakening path confinement.
+			return nil, fmt.Errorf("%w: %w", failure("PACKAGE_PATH_INVALID", "Declared file or parent could not be inspected", path), err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
 			return nil, failure("PACKAGE_PATH_INVALID", "Symlinks or unavailable files are forbidden", path)
 		}
 		if i == len(parts)-1 && (!info.Mode().IsRegular() || !singleLink(info)) {

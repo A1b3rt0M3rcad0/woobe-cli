@@ -15,6 +15,32 @@ import (
 
 func (a *App) developmentManageCommands() {
 	group := a.group("resources")
+	group.AddCommand(&cobra.Command{Use: "prune", Args: cobra.NoArgs, Short: "Unregister deleted local artifacts after validating remaining references", Long: "Remove only registry entries whose descriptor file or folder is absent. Preview with --dry-run; apply explicitly with --yes. Remaining references must be valid. Unsafe or unreadable files are rejected, not pruned. Author files, native bindings and remote resources are retained.", Example: "woobe resources prune --dry-run\nwoobe resources prune --yes", RunE: func(cmd *cobra.Command, _ []string) error {
+		if !a.DryRun && !a.Yes {
+			return output.New(2, "Preview deleted local artifacts with --dry-run, or explicitly unregister them with --yes")
+		}
+		if err := packageFlags(cmd, "yes"); err != nil {
+			return err
+		}
+		c, err := a.developmentConfig(true)
+		if err != nil {
+			return err
+		}
+		unlock, err := c.Lock()
+		if err != nil {
+			return output.New(2, err.Error())
+		}
+		defer unlock()
+		c, err = devworkspace.Load(c.File)
+		if err != nil {
+			return output.New(2, err.Error())
+		}
+		missing, err := c.PruneMissing(a.DryRun)
+		if err != nil {
+			return output.New(2, err.Error())
+		}
+		return a.emit(map[string]any{"resources": missing, "executed": !a.DryRun, "scope": "local", "files_retained": true, "bindings_retained": true, "remote_deleted": false})
+	}})
 	for _, action := range []string{"create", "register", "clone", "move", "alias", "unregister"} {
 		var file, destination, alias string
 		command := &cobra.Command{Use: action + " KIND REFERENCE", Args: cobra.ExactArgs(2), Short: action + " an explicitly registered local artifact", Long: "Local registry operation; never deletes remote resources. create copies an author YAML and its declared support files with a new UID; register links an existing descriptor under the configured root; clone gives an existing artifact a new identity and shares its referenced dependencies. unregister retains author files and private native bindings. All writes are journaled and references validated.", Example: "woobe resources clone agent '@support' --alias support-v2\nwoobe resources create provider openai --file provider.yaml\nwoobe agent '@support-v2' create", RunE: func(cmd *cobra.Command, args []string) error {
