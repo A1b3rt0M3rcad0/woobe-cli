@@ -412,3 +412,113 @@ func TestCaptureOfMinimalPackageKeepsEmptyRequirementArraysCompilable(t *testing
 	}
 	compiled.Close()
 }
+
+func TestCompilerPreservesModelEndpointOverrideAndProviderDefaultSeparately(t *testing.T) {
+	for _, override := range []string{"", "https://model.example/v1"} {
+		t.Run(override, func(t *testing.T) {
+			c, g := completeGraph(t)
+			uid, _ := NewID()
+			provider := Resource{UID: uid, Kind: "Provider", Key: "endpoint-provider", Alias: "endpoint-provider", Path: "providers/endpoint-provider"}
+			c.Resources = append(c.Resources, provider)
+			if err := os.MkdirAll(filepath.Join(c.RootPath(), provider.Path), 0700); err != nil {
+				t.Fatal(err)
+			}
+			doc := map[string]any{"kind": "Provider", "metadata": map[string]any{"key": provider.Key, "name": provider.Alias}, "spec": map[string]any{"provider": "custom", "credential_ref": provider.Key, "base_url": "https://provider.example/v1"}}
+			encoded, err := EncodeFile(doc, descriptor(provider))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = os.WriteFile(filepath.Join(c.RootPath(), descriptor(provider)), encoded, 0600); err != nil {
+				t.Fatal(err)
+			}
+			var modelKey string
+			for key, node := range g.Nodes {
+				if node.Resource.Kind != "Model" {
+					continue
+				}
+				modelKey = key
+				model := clone(node.Document)
+				spec := packagefmt.Object(model["spec"])
+				delete(spec, "credential")
+				spec["provider_ref"] = provider.Key
+				if override == "" {
+					delete(spec, "base_url")
+				} else {
+					spec["base_url"] = override
+				}
+				encoded, err = EncodeFile(model, node.Descriptor)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err = os.WriteFile(filepath.Join(c.RootPath(), node.Descriptor), encoded, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			graph, err := LoadGraph(c)
+			if err != nil {
+				t.Fatal(err)
+			}
+			bundle, _, err := graph.Compile("support-network", nil, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer bundle.Close()
+			spec := packagefmt.Object(bundle.Graph.Components[modelKey]["spec"])
+			if got := packagefmt.Text(spec["base_url"]); got != override {
+				t.Fatalf("Model override changed: %q", got)
+			}
+			legacy, _, err := graph.compileRecipe("support-network", nil, nil, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer legacy.Close()
+			if packagefmt.Text(packagefmt.Object(legacy.Graph.Components[modelKey]["spec"])["base_url"]) != "https://provider.example/v1" {
+				t.Fatal("legacy retained compiler recipe was silently rewritten")
+			}
+			if _, _, err = graph.compileRecipe("support-network", nil, nil, "unknown@9"); err == nil {
+				t.Fatal("unknown compiler recipe accepted")
+			}
+			// A retained pre-recipe source must still verify against its old
+			// executable object, even though compiling it today gives a new one.
+			root := graph.Nodes["support-network"].Resource
+			source, err := graph.captureAuthors(root, legacy)
+			if err != nil {
+				t.Fatal(err)
+			}
+			source.CompilerRecipe = ""
+			definition, components, err := PortableDefinition(legacy)
+			if err != nil {
+				t.Fatal(err)
+			}
+			record := &Revision{UID: root.UID, Kind: root.Kind, ArtifactDigest: "sha256:" + legacy.ArtifactDigest, DefinitionDigest: definition, DefinitionScope: PortableDefinitionScope, Components: map[string]string{}}
+			for key, digest := range components {
+				record.Components[graph.Nodes[key].Resource.UID] = digest
+			}
+			providers, err := PortableProviderDigests(legacy)
+			if err != nil {
+				t.Fatal(err)
+			}
+			record.Components[provider.UID] = providers[provider.Key]
+			var archive bytes.Buffer
+			if err = legacy.Archive(&archive, true); err != nil {
+				t.Fatal(err)
+			}
+			if err = c.immutableWrite(filepath.Join(c.RootPath(), "objects", "sha256", legacy.ArtifactDigest+".tar.gz"), archive.Bytes()); err != nil {
+				t.Fatal(err)
+			}
+			tracking := &Tracking{Requirements: packagefmt.Object(packagefmt.Object(legacy.Graph.Manifest["spec"])["requires"])}
+			if err = graph.validateAuthorExecution(root, record, source, tracking); err != nil {
+				t.Fatalf("historical source no longer verifies: %v", err)
+			}
+			source.CompilerRecipe = CurrentCompilerRecipe
+			if err = graph.validateAuthorExecution(root, record, source, tracking); err == nil {
+				t.Fatal("rewritten compiler recipe incorrectly matched the old executable")
+			}
+
+			credentials := packagefmt.List(packagefmt.Object(packagefmt.Object(bundle.Graph.Manifest["spec"])["requires"])["credentials"])
+			if len(credentials) != 1 || packagefmt.Text(packagefmt.Object(packagefmt.Object(credentials[0])["metadata"])["base_url"]) != "https://provider.example/v1" {
+				t.Fatal("Provider connection default was dropped")
+			}
+		})
+	}
+}

@@ -161,3 +161,16 @@ Draft, restore files, recover Provider secrets or enable ordinary native push.
 A pending write must be reconciled before changing selection. Known same-origin
 roots refuse `create` when their private binding is missing; use explicit clone
 with a new UID only when another resource is intended.
+
+Provider connection defaults and Model overrides remain distinct during compilation.
+A Provider's `base_url` stays in its public credential requirement metadata; it
+is not injected into, or allowed to replace, the Model's explicit `base_url`.
+An absent Model override remains absent. This preserves frozen Network component
+definitions during an unchanged pull/push round trip while the native credential
+retains its authorized connection settings.
+
+New author objects record `compiler_recipe: woobe-development-compiler@2.0`.
+Source objects without this field retain the earlier lowering recipe for exact
+checkout verification. Their immutable hashes and executable objects are not
+rewritten. New checkpoints/rebases use the current recipe; recompilation can
+therefore produce a different definition from the historical one.

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Require CLI 0.19.0+ for the assistant payload's current ASaC guides, with upgrade guidance and coordinated verifier metadata.
+- Record the compiler recipe in new author objects and verify pre-recipe source using its original lowering without rewriting hashes.
+- Preserve Model endpoint overrides and their absence when lowering Provider refs; unchanged frozen Network constituents no longer gain an unintended `base_url`.
+
 - Recover existing isolated Agent/Network Draft selection by name or UUID after a clone without private state; block unresolved writes and accidental same-origin root creation.
 - Preserve incoming comment-only rebase changes and report competing comments/deletion conflicts instead of silently dropping author source.
 - Exercise Agent and Network source checkpoint, exact checkout, rebase and resolved merge in the real distribution smoke on each native CI target.

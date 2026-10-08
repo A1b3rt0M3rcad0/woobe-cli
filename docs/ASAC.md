@@ -165,3 +165,10 @@ both branches. Review `revision diff` before writing; `--yes` does not discard e
 both immutable parents. It does not silently choose a winner or merge YAML for
 you. Resolve conflicts and validate the resulting files before this checkpoint.
 Neither command publishes, stages, activates nor rewrites a shared revision.
+
+Source verification uses the compiler recipe recorded in the author object.
+Older objects without a recipe use the original Provider-to-Model lowering;
+new objects use `woobe-development-compiler@2.0`, keeping Model endpoint overrides
+separate from Provider defaults. Checkout validates the historical object using
+its own recipe; a new checkpoint uses the current one. Unknown recipes are
+rejected rather than silently reinterpreted.
