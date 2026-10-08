@@ -128,6 +128,9 @@ func convert(node *yaml.Node, depth int) (any, error) {
 			}
 			return strings.EqualFold(node.Value, "true"), nil
 		case "!!int":
+			if json.Valid([]byte(node.Value)) {
+				return json.Number(node.Value), nil
+			}
 			text := strings.ReplaceAll(node.Value, "_", "")
 			number, ok := new(big.Int).SetString(text, 0)
 			if !ok {

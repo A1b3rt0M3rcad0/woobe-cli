@@ -277,7 +277,7 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 		} else if _, err := os.Lstat(filepath.Join(c.RootPath(), descriptor(r))); err == nil {
 			return nil, nil, fmt.Errorf("unregistered destination exists; choose another path")
 		}
-		data, err := Encode(merged)
+		data, err := EncodeFile(merged, descriptor(r))
 		if err != nil {
 			return nil, nil, err
 		}
@@ -290,7 +290,7 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 	}
 	for oldKey, r := range resources {
 		if strings.HasPrefix(oldKey, "provider:") {
-			data, err := Encode(nextState.Bindings[r.UID].Base)
+			data, err := EncodeFile(nextState.Bindings[r.UID].Base, descriptor(r))
 			if err != nil {
 				return nil, nil, err
 			}
@@ -316,7 +316,7 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 				binding := nextState.Bindings[r.UID]
 				binding.Base = merged
 				nextState.Bindings[r.UID] = binding
-				data, err = Encode(merged)
+				data, err = EncodeFile(merged, descriptor(r))
 				if err != nil {
 					return nil, nil, err
 				}

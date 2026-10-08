@@ -5,11 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/devworkspace"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagecheckpoint"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 )
@@ -85,7 +85,7 @@ func (a *App) packageBindingsCommand(group *cobra.Command) {
 			spec[group] = bindings
 		}
 		document := map[string]any{"format": "woobe-package", "schema_version": "1.0", "kind": "ImportBindings", "metadata": map[string]string{"name": "Destination"}, "spec": spec}
-		data, err := yaml.Marshal(document)
+		data, err := devworkspace.Encode(document)
 		if err != nil {
 			return err
 		}

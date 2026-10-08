@@ -274,6 +274,12 @@ func TestManagedCaptureReusesRegistryAndConflictsWithoutWriting(t *testing.T) {
 }
 
 func TestCaptureSupportsRespectRegisteredFileDescriptor(t *testing.T) {
+	for _, extension := range []string{".yaml", ".yml", ".json"} {
+		t.Run(extension, func(t *testing.T) { testCaptureSupportsRespectRegisteredFileDescriptor(t, extension) })
+	}
+}
+
+func testCaptureSupportsRespectRegisteredFileDescriptor(t *testing.T, extension string) {
 	source, _ := completeGraph(t)
 	bundle, err := packagebundle.Load(source.RootPath(), false)
 	if err != nil {
@@ -313,7 +319,7 @@ func TestCaptureSupportsRespectRegisteredFileDescriptor(t *testing.T) {
 	if skill.UID == "" {
 		t.Fatal("fixture has no Skill")
 	}
-	if err := target.Move("Skill", "@"+skill.Alias, "descriptors/skill.yaml", false); err != nil {
+	if err := target.Move("Skill", "@"+skill.Alias, "descriptors/skill"+extension, false); err != nil {
 		t.Fatal(err)
 	}
 	var remoteKey string
@@ -347,6 +353,9 @@ func TestCaptureSupportsRespectRegisteredFileDescriptor(t *testing.T) {
 	}
 	if len(target.Resources) != count {
 		t.Fatal("capture duplicated registered resources")
+	}
+	if _, err := LoadGraph(target); err != nil {
+		t.Fatalf("capture left an unreadable descriptor: %v", err)
 	}
 	after, err := os.ReadFile(filepath.Join(target.RootPath(), "descriptors", "files", "0", filepath.Base(paths[0])))
 	if err != nil || !bytes.Equal(after, updated) {

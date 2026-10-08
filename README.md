@@ -11,7 +11,9 @@ The backend authorizes every operation.
 run `woobe agent "@support" diff` followed by `woobe agent "@support" push`.
 Networks use the same workflow. Push writes Draft and preserves the native root
 UUID. The optional registry shares Providers, Models and other dependencies
-across artifacts. See [managed development](docs/USAGE.md#pull-edit-yaml-push-draft)
+across artifacts. Generated YAML uses two-space indentation and multiline
+instruction blocks; registered `.json` files remain indented JSON.
+See [managed development](docs/USAGE.md#pull-edit-yaml-push-draft)
 for environments, conflicts and recovery. Requires a matching Woobe backend
 with development synchronization capabilities.
 

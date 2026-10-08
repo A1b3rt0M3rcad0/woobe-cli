@@ -36,7 +36,7 @@ func (c *Config) Add(kind, alias, destination string, document map[string]any, s
 		return Resource{}, fmt.Errorf("descriptor requires metadata")
 	}
 	metadata["key"] = alias
-	data, err := Encode(document)
+	data, err := EncodeFile(document, descriptor(resource))
 	if err != nil {
 		return Resource{}, err
 	}
@@ -290,6 +290,12 @@ func (c *Config) Move(kind, reference, destination string, dryRun bool) error {
 		data, err := packagebundle.ReadConfined(root, source, packagebundle.MaxFileBytes)
 		if err != nil {
 			return err
+		}
+		if source == node.Descriptor && strings.EqualFold(filepath.Ext(source), ".json") != strings.EqualFold(filepath.Ext(targets[i]), ".json") {
+			data, err = EncodeFile(node.Document, targets[i])
+			if err != nil {
+				return err
+			}
 		}
 		writes[target] = data
 		if !shared[source] {

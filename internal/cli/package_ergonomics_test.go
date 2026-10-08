@@ -173,6 +173,9 @@ func TestPackageBindingsTemplateCanBeFilledAndPlannedOffline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !bytes.HasPrefix(data, []byte("format: woobe-package\nschema_version: \"1.0\"\nkind: ImportBindings\n")) || !bytes.Contains(data, []byte("\n  credentials:\n")) {
+		t.Fatalf("bindings template is not ordered, two-space block YAML:\n%s", data)
+	}
 	data = bytes.ReplaceAll(data, []byte("REPLACE_WITH_DESTINATION_CREDENTIAL_UUID"), []byte("00000000-0000-4000-8000-000000000002"))
 	if err = os.WriteFile(destination, data, 0600); err != nil {
 		t.Fatal(err)

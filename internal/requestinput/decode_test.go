@@ -7,7 +7,7 @@ import (
 )
 
 func TestYAMLPreservesExactTypesAndOmissions(t *testing.T) {
-	data, err := Decode([]byte("description: null\nlarge: 900719925474099312345\nrate: 1.0000000000000000001\nenabled: false\ntext: '001'\ndate: 2026-10-07\nitems: []\n"), "request.yaml", "auto")
+	data, err := Decode([]byte("description: null\nlarge: 900719925474099312345\nrate: 1.0000000000000000001\nzero: -0\nenabled: false\ntext: '001'\ndate: 2026-10-07\nitems: []\n"), "request.yaml", "auto")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -17,7 +17,7 @@ func TestYAMLPreservesExactTypesAndOmissions(t *testing.T) {
 	if err := decoder.Decode(&value); err != nil {
 		t.Fatal(err)
 	}
-	if value["large"] != json.Number("900719925474099312345") || value["rate"] != json.Number("1.0000000000000000001") || value["enabled"] != false || value["text"] != "001" || value["date"] != "2026-10-07" {
+	if value["large"] != json.Number("900719925474099312345") || value["rate"] != json.Number("1.0000000000000000001") || value["zero"] != json.Number("-0") || value["enabled"] != false || value["text"] != "001" || value["date"] != "2026-10-07" {
 		t.Fatal(value)
 	}
 	if v, exists := value["description"]; !exists || v != nil {
