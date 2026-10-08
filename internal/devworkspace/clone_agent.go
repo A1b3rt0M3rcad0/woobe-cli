@@ -66,7 +66,7 @@ func (c *Config) cloneAgent(graph *Graph, source *Node, alias, destination strin
 			result = resource
 		}
 		rewriteCloneRefs(document, keys)
-		data, err := Encode(document)
+		data, err := EncodeFile(document, descriptor(resource))
 		if err != nil {
 			return Resource{}, err
 		}

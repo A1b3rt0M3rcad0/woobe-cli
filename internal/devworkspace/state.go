@@ -204,20 +204,6 @@ func (c *Config) Save() error {
 	}
 	return privateWrite(c.File, data)
 }
-func Encode(document map[string]any) ([]byte, error) {
-	// JSON is also YAML; using a YAML node preserves numeric types and avoids
-	// emitting json.Number values as quoted strings.
-	data, err := json.Marshal(document)
-	if err != nil {
-		return nil, err
-	}
-	var node yaml.Node
-	if err = yaml.Unmarshal(data, &node); err != nil {
-		return nil, err
-	}
-	return yaml.Marshal(&node)
-}
-
 func confinedParents(root, file string) error {
 	relative, err := filepath.Rel(root, file)
 	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {

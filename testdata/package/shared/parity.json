@@ -541,5 +541,155 @@
     "input": "format: woobe-package\nschema_version: '1.0'\nkind: Tool\nmetadata:\n  key: mcp\n  name: MCP\nspec:\n  type: mcp\n  config:\n    mode: server\n    exposure: all_discovered\n    server:\n      url: https://mcp.test\n  permissions:\n  - remote_name: lookup\n    permission: approve\n    risk: unknown\n",
     "validate": true,
     "error": "PACKAGE_SCHEMA_INVALID"
+  },
+  {
+    "name": "json-unicode-separator-0-json",
+    "file": "agent.json",
+    "input": "{\"instructions\": \"FirstSecond\\n\"}",
+    "expected": {
+      "instructions": "FirstSecond\n"
+    }
+  },
+  {
+    "name": "json-unicode-separator-0-yaml",
+    "file": "agent.yaml",
+    "input": "{\"instructions\": \"FirstSecond\\n\"}",
+    "expected": {
+      "instructions": "FirstSecond\n"
+    }
+  },
+  {
+    "name": "json-unicode-separator-1-json",
+    "file": "agent.json",
+    "input": "{\"instructions\": \"FirstSecond\\n\"}",
+    "expected": {
+      "instructions": "FirstSecond\n"
+    }
+  },
+  {
+    "name": "json-unicode-separator-1-yaml",
+    "file": "agent.yaml",
+    "input": "{\"instructions\": \"FirstSecond\\n\"}",
+    "expected": {
+      "instructions": "FirstSecond\n"
+    }
+  },
+  {
+    "name": "json-unicode-separator-2-json",
+    "file": "agent.json",
+    "input": "{\"instructions\": \"FirstSecond\\n\"}",
+    "expected": {
+      "instructions": "FirstSecond\n"
+    }
+  },
+  {
+    "name": "json-unicode-separator-2-yaml",
+    "file": "agent.yaml",
+    "input": "{\"instructions\": \"FirstSecond\\n\"}",
+    "expected": {
+      "instructions": "FirstSecond\n"
+    }
+  },
+  {
+    "name": "json-unicode-separator-3-json",
+    "file": "agent.json",
+    "input": "{\"instructions\": \"First Second\\n\"}",
+    "expected": {
+      "instructions": "First Second\n"
+    }
+  },
+  {
+    "name": "json-unicode-separator-3-yaml",
+    "file": "agent.yaml",
+    "input": "{\"instructions\": \"First Second\\n\"}",
+    "expected": {
+      "instructions": "First Second\n"
+    }
+  },
+  {
+    "name": "json-unicode-separator-4-json",
+    "file": "agent.json",
+    "input": "{\"instructions\": \"First Second\\n\"}",
+    "expected": {
+      "instructions": "First Second\n"
+    }
+  },
+  {
+    "name": "json-unicode-separator-4-yaml",
+    "file": "agent.yaml",
+    "input": "{\"instructions\": \"First Second\\n\"}",
+    "expected": {
+      "instructions": "First Second\n"
+    }
+  },
+  {
+    "name": "json-unicode-pair-json",
+    "file": "agent.json",
+    "input": "{\"text\":\"\\ud83d\\ude00\"}",
+    "expected": {
+      "text": "😀"
+    }
+  },
+  {
+    "name": "json-lone-surrogate-0-json",
+    "file": "agent.json",
+    "input": "{\"text\":\"\\ud800\"}",
+    "error": "PACKAGE_PARSE_INVALID"
+  },
+  {
+    "name": "json-lone-surrogate-1-json",
+    "file": "agent.json",
+    "input": "{\"text\":\"\\udc00\"}",
+    "error": "PACKAGE_PARSE_INVALID"
+  },
+  {
+    "name": "json-lone-surrogate-2-json",
+    "file": "agent.json",
+    "input": "{\"text\":\"\\ud800\\ud800\"}",
+    "error": "PACKAGE_PARSE_INVALID"
+  },
+  {
+    "name": "json-unicode-pair-yaml",
+    "file": "agent.yaml",
+    "input": "{\"text\":\"\\ud83d\\ude00\"}",
+    "expected": {
+      "text": "😀"
+    }
+  },
+  {
+    "name": "json-lone-surrogate-0-yaml",
+    "file": "agent.yaml",
+    "input": "{\"text\":\"\\ud800\"}",
+    "error": "PACKAGE_PARSE_INVALID"
+  },
+  {
+    "name": "json-lone-surrogate-1-yaml",
+    "file": "agent.yaml",
+    "input": "{\"text\":\"\\udc00\"}",
+    "error": "PACKAGE_PARSE_INVALID"
+  },
+  {
+    "name": "json-lone-surrogate-2-yaml",
+    "file": "agent.yaml",
+    "input": "{\"text\":\"\\ud800\\ud800\"}",
+    "error": "PACKAGE_PARSE_INVALID"
+  },
+  {
+    "name": "yaml-surrogate-0",
+    "file": "agent.yaml",
+    "input": "text: \"\\ud800\"",
+    "error": "PACKAGE_PARSE_INVALID"
+  },
+  {
+    "name": "yaml-surrogate-1",
+    "file": "agent.yaml",
+    "input": "text: \"\\udc00\"",
+    "error": "PACKAGE_PARSE_INVALID"
+  },
+  {
+    "name": "yaml-surrogate-2",
+    "file": "agent.yaml",
+    "input": "\"\\ud800\": value",
+    "error": "PACKAGE_PARSE_INVALID"
   }
 ]

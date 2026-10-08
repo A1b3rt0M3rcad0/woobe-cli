@@ -55,6 +55,13 @@ func Decode(data []byte, file string) (*Document, error) {
 	if strings.HasSuffix(file, ".json") && jsoninput.Validate(data) != nil {
 		return nil, failure("PACKAGE_PARSE_INVALID", "Invalid or duplicate-key JSON")
 	}
+	if json.Valid(data) {
+		var err error
+		data, err = jsoninput.YAMLCompatibleJSON(data)
+		if err != nil {
+			return nil, failure("PACKAGE_PARSE_INVALID", "Invalid JSON Unicode encoding")
+		}
+	}
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	var root yaml.Node
 	if err := decoder.Decode(&root); err != nil {

@@ -477,7 +477,34 @@ woobe network "@helpdesk" push
 ```
 
 Edit the registered `agent.yaml`, `network.yaml` and dependency descriptors in
-between pull and push. Reference-first `sync` aliases `pull`, and `update` aliases
+between pull and push. Generated descriptors use block YAML with two-space
+indentation and literal blocks for multiline instructions:
+
+```yaml
+format: woobe-package
+schema_version: "1.0"
+kind: Agent
+metadata:
+  key: support
+  name: Technical Support Specialist
+spec:
+  behavior:
+    additional_instructions: |-
+      Establish observable symptoms first.
+      Separate symptoms from root cause.
+```
+
+This excerpt illustrates formatting; the complete descriptor retains all fields,
+references, exact numbers, nulls and empty collections. Strings requiring escaped
+line separators remain quoted to preserve their content. Registered `.json` paths
+remain indented JSON, including after pull and clone. Moving between YAML and JSON
+converts only the descriptor; declared support files and resource identities stay
+intact. Format-only edits do not produce semantic changes in `diff`.
+Existing author files are reformatted when pull successfully writes them; review
+local edits with `diff` first. Portable exports keep their server-issued lock and
+downloaded bytes; editing them requires a new artifact/lock for locked validation.
+
+Reference-first `sync` aliases `pull`, and `update` aliases
 `push`: `woobe agent UUID update --path ./.woobe/agents/support`. Canonical API
 `woobe agent update UUID --file patch.yaml` still accepts a raw request payload.
 Quote aliases in PowerShell (`"@support"`). UUID, exact remote name on the first

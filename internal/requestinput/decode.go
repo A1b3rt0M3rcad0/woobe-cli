@@ -46,6 +46,13 @@ func Decode(data []byte, source, format string) ([]byte, error) {
 	if format != "yaml" {
 		return nil, fmt.Errorf("input-format must be auto, json or yaml")
 	}
+	if json.Valid(data) {
+		var err error
+		data, err = jsoninput.YAMLCompatibleJSON(data)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON Unicode encoding")
+		}
+	}
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	var doc yaml.Node
 	if err := decoder.Decode(&doc); err != nil {
@@ -128,6 +135,9 @@ func convert(node *yaml.Node, depth int) (any, error) {
 			}
 			return strings.EqualFold(node.Value, "true"), nil
 		case "!!int":
+			if json.Valid([]byte(node.Value)) {
+				return json.Number(node.Value), nil
+			}
 			text := strings.ReplaceAll(node.Value, "_", "")
 			number, ok := new(big.Int).SetString(text, 0)
 			if !ok {

@@ -7,7 +7,7 @@ import (
 )
 
 func TestYAMLPreservesExactTypesAndOmissions(t *testing.T) {
-	data, err := Decode([]byte("description: null\nlarge: 900719925474099312345\nrate: 1.0000000000000000001\nenabled: false\ntext: '001'\ndate: 2026-10-07\nitems: []\n"), "request.yaml", "auto")
+	data, err := Decode([]byte("description: null\nlarge: 900719925474099312345\nrate: 1.0000000000000000001\nzero: -0\nenabled: false\ntext: '001'\ndate: 2026-10-07\nitems: []\n"), "request.yaml", "auto")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -17,7 +17,7 @@ func TestYAMLPreservesExactTypesAndOmissions(t *testing.T) {
 	if err := decoder.Decode(&value); err != nil {
 		t.Fatal(err)
 	}
-	if value["large"] != json.Number("900719925474099312345") || value["rate"] != json.Number("1.0000000000000000001") || value["enabled"] != false || value["text"] != "001" || value["date"] != "2026-10-07" {
+	if value["large"] != json.Number("900719925474099312345") || value["rate"] != json.Number("1.0000000000000000001") || value["zero"] != json.Number("-0") || value["enabled"] != false || value["text"] != "001" || value["date"] != "2026-10-07" {
 		t.Fatal(value)
 	}
 	if v, exists := value["description"]; !exists || v != nil {
@@ -57,6 +57,23 @@ func TestExplicitFormatsAndJSONCompatibility(t *testing.T) {
 	}
 	if _, err := Decode([]byte("a: 1"), "-", "xml"); err == nil {
 		t.Fatal("accepted unknown format")
+	}
+}
+
+func TestJSONInYAMLFilesPreservesUnicodeAndExactNumbers(t *testing.T) {
+	input := []byte("{\"text\":\"First\u0085Second\",\"emoji\":\"\\ud83d\\ude00\",\"number\":1.0000000000000000001}")
+	data, err := Decode(input, "agent.yaml", "auto")
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoder := json.NewDecoder(strings.NewReader(string(data)))
+	decoder.UseNumber()
+	var actual map[string]any
+	if err := decoder.Decode(&actual); err != nil {
+		t.Fatal(err)
+	}
+	if actual["text"] != "First\u0085Second" || actual["emoji"] != "😀" || actual["number"] != json.Number("1.0000000000000000001") {
+		t.Fatal("changed JSON author input", actual)
 	}
 }
 

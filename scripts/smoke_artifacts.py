@@ -54,6 +54,19 @@ def smoke(root, commit):
         version = invoke(['version'])['data']
         if any(version[k] != v for k, v in {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch}.items()):
             raise ValueError('packaged binary identity differs from archive metadata')
+        invoke(['init'])
+        author = pathlib.Path(directory) / 'author.json'
+        author.write_text(json.dumps({'kind': 'Agent', 'metadata': {'name': 'Support'}, 'spec': {'instructions': 'First line\nSecond line\n', 'limit': 9007199254740993}}), encoding='utf-8')
+        invoke(['resources', 'create', 'agent', 'support', '--file', str(author)])
+        rendered = (pathlib.Path(directory) / '.woobe/agents/support/agent.yaml').read_text(encoding='utf-8')
+        if not rendered.startswith('kind: Agent\nmetadata:\n  key: support\n') or '  instructions: |\n    First line\n    Second line\n' not in rendered or '  limit: 9007199254740993\n' not in rendered:
+            raise ValueError('packaged CLI did not write readable, lossless block YAML')
+        invoke(['resources', 'move', 'agent', '@support', '--path', 'agents/support.json'])
+        moved = json.loads((pathlib.Path(directory) / '.woobe/agents/support.json').read_text(encoding='utf-8'))
+        if moved['spec'] != json.loads(author.read_text(encoding='utf-8'))['spec']:
+            raise ValueError('packaged CLI changed author values when moving YAML to JSON')
+        invoke(['resources', 'clone', 'agent', '@support', '--alias', 'copy', '--path', 'agents/copy.json'])
+        invoke(['resources', 'used-by', 'agent', '@copy'])
         discovery = invoke(['help'])['data']
         commands = {row['command'] for row in discovery}
         if not {'manifest validate', 'manifest apply', 'manifest reconcile', 'runtime target run', 'version', 'workspace authority category diff'} <= commands:
