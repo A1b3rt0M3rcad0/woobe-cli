@@ -141,3 +141,17 @@ func TestPackageExportIncompleteMessagesUseOnlyExactKnownReasons(t *testing.T) {
 		})
 	}
 }
+
+func TestASaCDiagnosticsKeepCodesWithoutProtectedMessages(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(409)
+		_, _ = w.Write([]byte(`{"data":{"asac_schema_version":"1.0","diagnostics":[{"code":"ASAC_DRAFT_CHANGED","message":"private-provider-secret","input":"private-provider-secret"}]}}`))
+	}))
+	defer server.Close()
+	client, _ := New(server.URL, "fixture", time.Second)
+	_, _, err := client.Request(context.Background(), "PUT", "/projects/p/agents/a/asac/drafts/d", nil, []byte("{}"))
+	failure := output.Normalize(err)
+	if failure.Code != 6 || failure.DomainCode != "ASAC_DRAFT_CHANGED" || failure.Outcome != "rejected" || strings.Contains(failure.Message, "private-provider-secret") {
+		t.Fatal(failure)
+	}
+}

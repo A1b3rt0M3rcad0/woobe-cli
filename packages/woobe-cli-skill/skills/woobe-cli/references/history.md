@@ -30,5 +30,25 @@ provenance. Missing objects or unknown origin require explicit recovery; never
 invent parents, commits, bindings or activation authority.
 
 History support does not change legacy publication effects. Agent publish creates
-a Release; Network publish also activates Production. Checkpoint creation does
-not create isolated Draft lines or provide fenced deployment guarantees.
+a Release; Network publish also activates Production. Checkpoint creation alone does
+not open an isolated Draft or provide fenced deployment guarantees.
+
+For isolated remote Draft storage, check server capability and targeted help:
+
+```sh
+woobe agent '@support' draft list
+woobe agent '@support' draft open hotfix --from production
+woobe agent '@support' draft show
+woobe agent '@support' draft push
+woobe agent '@support' draft checkpoint REVISION_ID
+woobe agent '@support' draft reconcile
+```
+
+The same flow applies to Networks. Opening preserves author files; it is not a
+local checkout. `draft push` saves a closed artifact with the observed generation,
+without changing default native Draft, Staging or Production. A checkpoint must
+match the exact saved artifact and unchanged YAML. An unsupported server is
+refused; never fall back to default Draft writes. Private operation identity is
+saved before writing. Reconcile only reads the original operation; missing receipt
+or unknown outcome never licenses a second write. Semantic qualification remains
+`stage_required` until the negotiated candidate lifecycle is available.

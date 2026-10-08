@@ -136,3 +136,8 @@ In PowerShell, quote comma-separated field lists:
 ```powershell
 woobe agent get AGENT_UUID --fields "id,name,provider,model,provider_credential_id" --output compact
 ```
+
+Isolated ASaC Drafts use explicit `draft open/show/push/checkpoint/reconcile`
+operations. They preserve the native singleton Draft and Production while storing
+a verified closed artifact. See [ASaC](ASAC.md#isolated-remote-drafts) for generation
+preconditions, checkpoint integrity, capability negotiation and uncertain writes.

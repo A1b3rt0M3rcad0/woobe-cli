@@ -103,8 +103,13 @@ func TestMoveKeepsTrackingAndImmutableHistory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	digests, err := graph.DefinitionDigests(moved.Key)
-	if err != nil || digests[moved.Key] != revision.DefinitionDigest {
+	bundle, _, err := graph.Compile(moved.Key, state.Requirements, state.Credentials)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bundle.Close()
+	definition, digests, err := PortableDefinition(bundle)
+	if err != nil || definition != revision.DefinitionDigest {
 		t.Fatal("move changed semantic definition", digests, err)
 	}
 }

@@ -55,5 +55,47 @@ provenance.
 
 These commands do not change native lifecycle effects: Agent publish creates a
 Release; legacy Network publish also activates Production. Checkpoints do not
-grant authority, create isolated Draft lines or provide deployment fencing.
+grant authority or provide deployment fencing. Isolated Draft storage is explicit
+and described below.
 Check actual command/server compatibility before using a newer contract.
+
+## Isolated remote Drafts
+
+```sh
+woobe agent '@support' draft list
+woobe agent '@support' draft open hotfix --from production
+woobe agent '@support' draft show
+woobe agent '@support' draft push
+woobe agent '@support' revision create --message 'Correct citation instructions'
+woobe agent '@support' draft checkpoint REVISION_ID
+woobe agent '@support' draft reconcile
+```
+
+Networks use the same commands. Opening captures an authorized exact source
+(`draft`, `staging`, `production`, or `release --version VERSION`) and selects its
+remote Draft for subsequent `draft push`. It preserves local author files and
+the existing native default Draft. It is not a local checkout: review/diff local
+YAML against the chosen source before saving it. Ordinary `push` remains the
+existing native Draft synchronization command; the explicit `draft push` saves
+an isolated closed object. No publication or activation occurs.
+
+The server must advertise compatible isolated Draft support and the portable
+definition digest scope. An unsupported server is refused before opening/saving;
+there is no fallback that writes the default Draft instead. Save uses the last
+observed Draft generation. `draft show` refreshes it; review remote changes before
+retrying a conflict. Checkpoint registration requires an existing local revision
+whose exact object matches the saved isolated Draft and current YAML. Changing
+YAML after sealing is rejected. Providers outside its closure are excluded.
+
+Draft selection and pending operation payloads live in destination-scoped private
+`.state`. An operation ID is persisted before its request. A definite rejection
+clears the pending write; an uncertain outcome blocks additional writes until
+`draft reconcile` observes the original receipt. Reconcile never repeats POST/PUT.
+`not_observed` is incomplete and does not authorize another mutation. Read-only
+listing/inspection remains available. A fresh clone can open a Draft through its
+matching durable origin; the server verifies authority and logical/native binding.
+
+Isolated saves currently validate closed package schema/inventory. Output reports
+`semantic_validation: stage_required`; runtime candidate qualification and fenced
+deployment are separate negotiated contracts. The storage commands alone do not
+make an isolated Draft executable or eligible for legacy promotion.

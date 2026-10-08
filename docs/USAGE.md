@@ -713,3 +713,8 @@ Skill or Knowledge is deleted. The CLI reads the native revision and sends
 `If-Match`; an explicit `--if-match` remains authoritative. Native dependency
 checks can block archival while Networks or Chat Surfaces still depend on the
 Agent. `resources unregister` is a separate local registry operation.
+
+For isolated remote authoring, use `woobe agent '@support' draft open hotfix --from
+production`, then `draft push`. Networks support the same flow. These operations
+save closed objects without publication/activation; see [ASaC](ASAC.md) for exact
+checkpoint registration and recovery. They are separate from native Draft push.

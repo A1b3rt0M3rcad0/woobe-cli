@@ -28,6 +28,7 @@ type Revision struct {
 	Message          string            `json:"message"`
 	ArtifactDigest   string            `json:"artifact_digest"`
 	DefinitionDigest string            `json:"definition_digest"`
+	DefinitionScope  string            `json:"definition_digest_scope,omitempty"`
 	Components       map[string]string `json:"component_digests"`
 	RecordDigest     string            `json:"record_digest,omitempty"`
 }
@@ -332,11 +333,7 @@ func (g *Graph) CreateRevision(resource Resource, state *State, message string, 
 		return nil, err
 	}
 	defer bundle.Close()
-	bases, err := g.AcceptedBases(bundle)
-	if err != nil {
-		return nil, err
-	}
-	digests, err := g.definitionDigests(resource.Key, bases)
+	definition, digests, err := PortableDefinition(bundle)
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +356,22 @@ func (g *Graph) CreateRevision(resource Resource, state *State, message string, 
 	for key, digest := range digests {
 		components[g.Nodes[key].Resource.UID] = digest
 	}
-	record := Revision{Format: "woobe-revision", SchemaVersion: asac.Version, ID: "rv_" + id, UID: resource.UID, Kind: resource.Kind, Parents: parents, Message: message, ArtifactDigest: "sha256:" + bundle.ArtifactDigest, DefinitionDigest: digests[resource.Key], Components: components}
+	providers, err := PortableProviderDigests(bundle)
+	if err != nil {
+		return nil, err
+	}
+	closure, err := g.Closure(resource.Key)
+	if err != nil {
+		return nil, err
+	}
+	for _, node := range closure {
+		if node.Resource.Kind == "Provider" {
+			if digest, ok := providers[node.Resource.Key]; ok {
+				components[node.Resource.UID] = digest
+			}
+		}
+	}
+	record := Revision{Format: "woobe-revision", SchemaVersion: asac.Version, ID: "rv_" + id, UID: resource.UID, Kind: resource.Kind, Parents: parents, Message: message, ArtifactDigest: "sha256:" + bundle.ArtifactDigest, DefinitionDigest: definition, DefinitionScope: PortableDefinitionScope, Components: components}
 	record.RecordDigest, err = revisionRecordDigest(record)
 	if err != nil {
 		return nil, err

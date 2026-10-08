@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add negotiated Agent/Network isolated Draft storage with generation CAS, exact
+  checkpoint registration and read-only reconciliation of uncertain writes.
+- Qualify closed-package portable definition digests against shared Go/Python
+  fixtures and exclude unrelated Providers from checkpoint dependencies.
+
 - Add Agent/Network origin tracking, immutable local checkpoints and portable
   objects, explicit remote status/current reads and append-only history fetch.
 

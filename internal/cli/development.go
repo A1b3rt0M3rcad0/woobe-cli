@@ -193,6 +193,18 @@ func (a *App) developmentCommands() {
 							return output.New(2, err.Error())
 						}
 						modified = digests[resource.Key] != record.DefinitionDigest
+						if record.DefinitionScope == devworkspace.PortableDefinitionScope {
+							bundle, _, err := graph.Compile(resource.Key, tracking.Requirements, state.Credentials)
+							if err != nil {
+								return output.New(2, err.Error())
+							}
+							definition, _, err := devworkspace.PortableDefinition(bundle)
+							bundle.Close()
+							if err != nil {
+								return output.New(2, err.Error())
+							}
+							modified = definition != record.DefinitionDigest
+						}
 						data["changed"] = modified
 						data["comparison_base"] = "working_revision"
 					}

@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from current discovery: 320 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
+Generated from current discovery: 322 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
 
 Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. Assistant installation uses local `skills` commands, not HTTP operations. The optional npm `woobe-skill` executable uses the same payload and receipts.
 
@@ -44,6 +44,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `develop agent current` | `development-http` | — | `server-dependent` | — | — |
 | `develop agent delete` | `development` | — | `local` | — | — |
 | `develop agent diff` | `development` | — | `local` | — | — |
+| `develop agent draft` | `development` | — | `local` | — | — |
 | `develop agent heads` | `development` | — | `local` | — | — |
 | `develop agent history` | `development` | — | `local_or_server-dependent` | — | — |
 | `develop agent publish` | `development` | — | `local` | — | — |
@@ -60,6 +61,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `develop network create` | `development` | — | `local` | — | — |
 | `develop network current` | `development-http` | — | `server-dependent` | — | — |
 | `develop network diff` | `development` | — | `local` | — | — |
+| `develop network draft` | `development` | — | `local` | — | — |
 | `develop network heads` | `development` | — | `local` | — | — |
 | `develop network history` | `development` | — | `local_or_server-dependent` | — | — |
 | `develop network publish` | `development` | — | `local` | — | — |
