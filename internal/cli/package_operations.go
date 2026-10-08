@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
@@ -138,6 +139,9 @@ func (a *App) packageOperationCommands(group *cobra.Command) {
 			id := ""
 			if len(args) != 0 {
 				id = args[0]
+				if packageUUID.MatchString(id) {
+					id = strings.ToLower(id)
+				}
 			}
 			var result packageapi.Operation
 			if store != nil {
