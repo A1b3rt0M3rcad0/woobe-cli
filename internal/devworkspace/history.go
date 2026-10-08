@@ -231,6 +231,10 @@ func (c *Config) ReadRevision(resource Resource, id string) (*Revision, error) {
 	if err = readHistoryJSON(c, filepath.Join(dir, "revisions", id+".yaml"), &record); err != nil {
 		return nil, err
 	}
+	return validateRevision(resource, id, record)
+}
+
+func validateRevision(resource Resource, id string, record Revision) (*Revision, error) {
 	if record.Format != "woobe-revision" || record.SchemaVersion != asac.Version || record.ID != id || record.UID != resource.UID || record.Kind != resource.Kind || !historyDigest.MatchString(record.ArtifactDigest) || !historyDigest.MatchString(record.DefinitionDigest) || record.AuthorDigest != "" && !historyDigest.MatchString(record.AuthorDigest) {
 		return nil, fmt.Errorf("ASAC_REVISION_INVALID: record identity mismatch")
 	}
@@ -254,6 +258,39 @@ func (c *Config) ReadRevision(resource Resource, id string) (*Revision, error) {
 		seen[parent] = true
 	}
 	return &record, nil
+}
+
+func ValidateRemoteRevision(resource Resource, record Revision) error {
+	if !revisionID.MatchString(record.ID) || record.DefinitionScope != PortableDefinitionScope {
+		return fmt.Errorf("ASAC_REVISION_INVALID: remote revision scope mismatch")
+	}
+	_, err := validateRevision(resource, record.ID, record)
+	return err
+}
+
+// StoreRemoteRevision appends metadata without moving the working head or
+// claiming that executable/author objects were downloaded.
+func (c *Config) StoreRemoteRevision(resource Resource, record Revision) error {
+	if err := ValidateRemoteRevision(resource, record); err != nil {
+		return err
+	}
+	dir, err := c.historyDirectory(resource)
+	if err != nil {
+		return err
+	}
+	data, err := json.Marshal(record)
+	if err != nil {
+		return err
+	}
+	var document map[string]any
+	if err := json.Unmarshal(data, &document); err != nil {
+		return err
+	}
+	encoded, err := Encode(document)
+	if err != nil {
+		return err
+	}
+	return c.immutableWrite(filepath.Join(dir, "revisions", record.ID+".yaml"), encoded)
 }
 
 // immutableWrite publishes complete bytes with an exclusive link. Existing IDs

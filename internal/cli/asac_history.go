@@ -111,7 +111,11 @@ func (a *App) asacCommands() {
 		for _, action := range []string{"history", "heads", "revision"} {
 			var message string
 			var parents []string
+			var fetchRevisions bool
 			command := &cobra.Command{Use: action + " REFERENCE [ACTION] [REVISION...]", Short: "Inspect or seal local immutable ASaC " + action, Args: cobra.MinimumNArgs(1), Long: "Local history does not claim remote freshness. Revision create freezes a closed portable package without publishing, staging or activating it. history verify checks immutable record digests, DAG and object availability. Explicit multiple parents describe resolved content; no content is merged automatically.", RunE: func(cmd *cobra.Command, args []string) error {
+				if fetchRevisions && !(action == "history" && len(args) == 2 && args[1] == "fetch") {
+					return output.New(2, "--revisions applies only to history fetch")
+				}
 				if action == "heads" && len(args) != 1 {
 					return output.New(2, "heads expects only one resource reference")
 				}
@@ -156,6 +160,9 @@ func (a *App) asacCommands() {
 				}
 				if action == "history" {
 					if len(args) == 2 && args[1] == "fetch" {
+						if fetchRevisions {
+							return a.asacFetchRevisions(cmd, kind, c, state, resource)
+						}
 						return a.asacFetch(cmd, kind, c, state, resource)
 					}
 					if len(args) != 1 {
@@ -220,6 +227,9 @@ func (a *App) asacCommands() {
 			}}
 			command.Flags().StringVar(&message, "message", "", "Checkpoint message (required for revision create or merge)")
 			command.Flags().StringSliceVar(&parents, "parent", nil, "Explicit sealed parent revision IDs (repeatable); default current working revision")
+			if action == "history" {
+				command.Flags().BoolVar(&fetchRevisions, "revisions", false, "Fetch isolated revision metadata instead of legacy releases/deployments; never changes author files")
+			}
 			parent.AddCommand(command)
 		}
 	}

@@ -734,3 +734,15 @@ Recover an existing isolated Draft selection after a clone with
 `--dry-run` reads its identity/generation without saving private selection state.
 This preserves author files and remote resources; it does not hydrate native
 bindings or secrets. See [ASaC recovery](ASAC.md#isolated-remote-drafts).
+
+
+Fetch isolated revision metadata without touching local author files:
+
+```sh
+woobe agent @support history fetch --revisions
+woobe network @support history fetch --revisions --dry-run
+```
+
+Requires CLI 0.20.0+ and a backend advertising `asac.revision_catalog`.
+This does not download executable/source objects or change the working head.
+See [ASaC](ASAC.md) for the distinction from release/deployment history.
