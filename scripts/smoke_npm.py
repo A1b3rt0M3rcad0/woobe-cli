@@ -36,7 +36,7 @@ def smoke(commit):
         def invoke(arguments, body=None, expected=0):
             result = subprocess.run([str(launcher), *arguments, '--config', str(directory / 'config.json')],
                                     input=body, env=env, capture_output=True, text=True,
-                                    timeout=30, shell=os.name == 'nt')
+                                    timeout=30, shell=os.name == 'nt', cwd=directory)
             if result.returncode != expected:
                 raise ValueError(f'npm launcher exit {result.returncode}, expected {expected}: {result.stderr}')
             envelope = json.loads(result.stdout)
@@ -48,8 +48,17 @@ def smoke(commit):
         if version['version'] != manifest['version'] or version['commit'] != commit:
             raise ValueError('installed npm binary version/commit differs from artifact identity')
         commands = {item['command'] for item in invoke(['help'])['data']}
-        if not {'version', 'manifest validate', 'project agent list'} <= commands:
+        if not {'version', 'manifest validate', 'project agent list', 'skills install'} <= commands:
             raise ValueError('installed package is missing CLI commands')
+        for agent, folder in [('codex', '.agents'), ('codex-legacy', '.codex')]:
+            invoke(['skill', 'install', '--agent', agent])
+            target = directory / folder / 'skills' / 'woobe-cli'
+            expected = pathlib.Path('packages/woobe-cli-skill/skills/woobe-cli/SKILL.md').read_bytes()
+            if (target / 'SKILL.md').read_bytes() != expected:
+                raise ValueError(f'npm launcher did not install the embedded {agent} skill')
+            invoke(['skill', 'uninstall', '--agent', agent])
+            if target.exists():
+                raise ValueError(f'npm launcher did not remove the embedded {agent} skill')
         document = json.dumps({'schema_version': '2', 'workspace_id': 'w', 'resources': [
             {'key': 'reader', 'kind': 'AuthorityCategory', 'action': 'create',
              'spec': {'name': 'reader', 'permissions': ['agent:read']}}]})
@@ -66,6 +75,7 @@ def smoke(commit):
     return {'success': True, 'commit': commit, 'version': manifest['version'],
             'os': version['os'], 'arch': version['arch'], 'package': artifact.name,
             'checks': ['offline-install', 'ignore-scripts', 'version-commit', 'discovery',
+                       'codex-preset-install', 'codex-legacy-preset-install',
                        'stdin', 'native-error-exit-code', 'npm-exec']}
 
 

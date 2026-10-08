@@ -106,7 +106,9 @@ func authorNode(value any, depth int) (*yaml.Node, error) {
 		node.Tag, node.Value = "!!str", value
 		// Literal blocks normalize CR/NEL and other YAML line separators. Quote
 		// these strings so an edit/pull never silently changes instructions.
-		if strings.ContainsAny(value, "\r\u0085\u2028\u2029") || strings.HasPrefix(value, "\n") || strings.TrimSpace(value) == "" && strings.Contains(value, "\n") {
+		// Tabs at the start of a block's content also confuse YAML indentation
+		// discovery; escaped quoted scalars preserve them without invalid YAML.
+		if strings.ContainsAny(value, "\t\r\u0085\u2028\u2029") || strings.HasPrefix(value, "\n") || strings.TrimSpace(value) == "" && strings.Contains(value, "\n") {
 			node.Style = yaml.DoubleQuotedStyle
 		} else if strings.Contains(value, "\n") {
 			node.Style = yaml.LiteralStyle
