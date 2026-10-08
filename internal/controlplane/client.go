@@ -120,8 +120,13 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 		if strings.Contains(path, "/packages/") && jsoninput.Validate(b) == nil {
 			var envelope struct {
 				Data struct {
-					Version     string                    `json:"package_schema_version"`
-					Diagnostics []output.DomainDiagnostic `json:"diagnostics"`
+					Version     string `json:"package_schema_version"`
+					Diagnostics []struct {
+						Code    string `json:"code"`
+						File    string `json:"file"`
+						Path    string `json:"path"`
+						Message string `json:"message"`
+					} `json:"diagnostics"`
 				} `json:"data"`
 			}
 			if json.Unmarshal(b, &envelope) == nil && envelope.Data.Version == "1.0" && len(envelope.Data.Diagnostics) <= 32 {
@@ -137,7 +142,10 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 					if len(diagnostic.Path) > 1024 || !safePath.MatchString(diagnostic.Path) {
 						diagnostic.Path = ""
 					}
-					failure.Diagnostics = append(failure.Diagnostics, diagnostic)
+					failure.Diagnostics = append(failure.Diagnostics, output.DomainDiagnostic{Code: diagnostic.Code, File: diagnostic.File, Path: diagnostic.Path})
+					if message := packageExportIncompleteMessage(diagnostic.Code, diagnostic.Message); message != "" && failure.Message == "server rejected request" {
+						failure.Message = message
+					}
 				}
 				if len(failure.Diagnostics) != 0 {
 					failure.DomainCode = failure.Diagnostics[0].Code
