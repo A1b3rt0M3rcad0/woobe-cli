@@ -64,6 +64,7 @@ Check actual command/server compatibility before using a newer contract.
 ```sh
 woobe agent '@support' draft list
 woobe agent '@support' draft open hotfix --from production
+woobe agent '@support' draft select hotfix
 woobe agent '@support' draft show
 woobe agent '@support' draft push
 woobe agent '@support' revision create --message 'Correct citation instructions'
@@ -94,6 +95,14 @@ clears the pending write; an uncertain outcome blocks additional writes until
 `not_observed` is incomplete and does not authorize another mutation. Read-only
 listing/inspection remains available. A fresh clone can open a Draft through its
 matching durable origin; the server verifies authority and logical/native binding.
+Use `draft select NAME_OR_UUID` to recover an existing isolated Draft selection
+without opening a duplicate. It verifies the logical UID and native root and
+refreshes that Draft's observed generation. It writes only private selection
+state: author files and server resources remain unchanged. `--dry-run` performs
+these reads without saving the selection. An unresolved original write blocks
+selection until reconciled. Selection does not recover native push bindings or
+Provider credentials; keep/rebind those separately. A known origin cannot use
+`create` to duplicate its root merely because private bindings are absent.
 
 Isolated saves currently validate closed package schema/inventory. Output reports
 `semantic_validation: stage_required`; runtime candidate qualification and fenced
@@ -140,8 +149,10 @@ selected revision against their known common ancestor. It merges independent
 object fields, treats arrays and support files as atomic, validates the complete
 result in scratch space, and seals a new revision whose parent is `--onto`.
 Original revisions and origin remain unchanged. Surviving YAML field comments
-are carried forward when fields are recomposed; deleted fields have no place to
-retain their comments. JSON descriptors remain JSON. Private destination bindings
+are carried forward when fields are recomposed; a comment-only incoming change
+is also retained. Competing comment edits report `/author_comments`; deleting a
+component concurrently with an author-source edit reports `/author_source`.
+Deleted fields have no place to retain their comments. JSON descriptors remain JSON. Private destination bindings
 are unchanged. The result is local, not a remote push or deployment.
 
 Rebase requires clean checkpointed files. Conflicts report component/field paths

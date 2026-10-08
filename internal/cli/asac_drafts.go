@@ -37,17 +37,17 @@ func asacPrivatePath(c *devworkspace.Config, state *devworkspace.State, uid, suf
 func (a *App) asacDraftCommands() {
 	for _, kind := range []string{"agent", "network"} {
 		var name, from, version, operation string
-		cmd := &cobra.Command{Use: "draft REFERENCE ACTION [NAME]", Short: "Open, inspect or save an isolated remote Draft", Args: cobra.MinimumNArgs(2), Long: "Actions: list, show, open NAME, push, checkpoint REVISION_ID, reconcile. Opening captures an exact authorized snapshot and preserves the native default Draft. Push saves a closed object into the selected isolated Draft with its expected generation. Checkpoint registers an existing immutable local revision; it never silently saves changed YAML. Semantic lifecycle qualification happens separately at stage. Uncertain writes must be reconciled before another write.", RunE: func(cmd *cobra.Command, args []string) error {
+		cmd := &cobra.Command{Use: "draft REFERENCE ACTION [NAME]", Short: "Open, inspect or save an isolated remote Draft", Args: cobra.MinimumNArgs(2), Long: "Actions: list, show, select NAME_OR_UUID, open NAME, push, checkpoint REVISION_ID, reconcile. Opening captures an exact authorized snapshot and preserves the native default Draft. Push saves a closed object into the selected isolated Draft with its expected generation. Checkpoint registers an existing immutable local revision; it never silently saves changed YAML. Semantic lifecycle qualification happens separately at stage. Select recovers an existing name or UUID through matching durable origin, without changing YAML or server resources; it does not restore native bindings or credentials. Uncertain writes must be reconciled before another write or selection.", Example: "woobe agent '@support' draft list\nwoobe agent '@support' draft select hotfix\nwoobe network '@service' draft select DRAFT_UUID --dry-run", RunE: func(cmd *cobra.Command, args []string) error {
 			action := args[1]
 			switch action {
-			case "list", "show", "open", "push", "checkpoint", "reconcile":
+			case "list", "show", "select", "open", "push", "checkpoint", "reconcile":
 			default:
-				return output.New(2, "Use draft list, show, open, push, checkpoint or reconcile")
+				return output.New(2, "Use draft list, show, select, open, push, checkpoint or reconcile")
 			}
-			if (action == "open" || action == "checkpoint") && len(args) != 3 || action != "open" && action != "checkpoint" && len(args) != 2 {
+			if (action == "open" || action == "checkpoint" || action == "select") && len(args) != 3 || action != "open" && action != "checkpoint" && action != "select" && len(args) != 2 {
 				return output.New(2, "Unexpected Draft arguments")
 			}
-			if a.DryRun && action != "list" && action != "show" && action != "reconcile" {
+			if a.DryRun && action != "list" && action != "show" && action != "reconcile" && action != "select" {
 				return output.New(2, "Draft writes require explicit execution; use validate/diff to inspect local content")
 			}
 			if action != "open" && (cmd.Flags().Changed("from") || cmd.Flags().Changed("version")) {
@@ -129,6 +129,55 @@ func (a *App) asacDraftCommands() {
 				}
 				return a.emit(data)
 			}
+
+			if action == "select" {
+				if raw, readErr := c.ReadOperationalFile(pendingPath, 16<<20); readErr == nil {
+					var pending asacPending
+					if json.Unmarshal(raw, &pending) != nil || pending.OperationID != "" {
+						return output.New(9, "A Draft write is unresolved; reconcile its original operation before changing selection")
+					}
+				} else if !os.IsNotExist(readErr) {
+					return output.New(2, readErr.Error())
+				}
+				listing, err := request("GET", base+"/drafts", nil)
+				if err != nil {
+					return err
+				}
+				lines, ok := listing["drafts"].([]any)
+				if !ok || len(lines) > 200 || listing["complete"] != true {
+					return output.New(9, "Draft listing is incomplete or incompatible")
+				}
+				var selected map[string]any
+				for _, raw := range lines {
+					line := packagefmt.Object(raw)
+					if line["name"] == args[2] || line["draft_id"] == args[2] {
+						if selected != nil {
+							return output.New(9, "Draft selector is ambiguous")
+						}
+						selected = line
+					}
+				}
+				if selected == nil {
+					return output.New(2, "Draft not found; use draft list to select an existing name or UUID")
+				}
+				if selected["resource_id"] != id || selected["resource_uid"] != resource.UID || !uuidReference(packagefmt.Text(selected["draft_id"])) {
+					return output.New(9, "Draft belongs to another logical or native resource")
+				}
+				exact, err := request("GET", base+"/drafts/"+url.PathEscape(packagefmt.Text(selected["draft_id"])), nil)
+				if err != nil {
+					return err
+				}
+				if exact["draft_id"] != selected["draft_id"] || exact["resource_id"] != id || exact["resource_uid"] != resource.UID || exact["generation"] == nil {
+					return output.New(9, "Draft identity changed during selection")
+				}
+				if a.DryRun {
+					return a.emit(map[string]any{"draft": exact, "selected": false, "executed": false, "remote_changed": false, "local_files_changed": false})
+				}
+				if err = saveObservation(exact); err != nil {
+					return err
+				}
+				return a.emit(map[string]any{"draft": exact, "selected": true, "remote_changed": false, "local_files_changed": false})
+			}
 			if action == "reconcile" {
 				raw, err := c.ReadOperationalFile(pendingPath, 16<<20)
 				if err != nil {
@@ -175,7 +224,7 @@ func (a *App) asacDraftCommands() {
 			if action != "open" {
 				raw, err := c.ReadOperationalFile(observedPath, 1<<20)
 				if err != nil {
-					return output.New(2, "Select a Draft with draft open first")
+					return output.New(2, "Select a Draft with draft select NAME_OR_UUID or draft open first")
 				}
 				if json.Unmarshal(raw, &observed) != nil || observed.ResourceUID != resource.UID || observed.ResourceID != id || !uuidReference(observed.DraftID) {
 					return output.New(9, "Draft observation belongs to another identity")

@@ -152,6 +152,15 @@ func (a *App) developmentCommands() {
 				if action == "reconcile" {
 					return a.developmentReconcile(ctx, client, c, state, resource)
 				}
+				if action == "create" && bound.ResourceID == "" {
+					tracking, readErr := c.ReadTracking(*resource)
+					if readErr != nil && !os.IsNotExist(readErr) {
+						return output.New(9, readErr.Error())
+					}
+					if readErr == nil && tracking.Origin.Target == state.API && tracking.Origin.Workspace == state.Workspace && tracking.Origin.Project == state.Project && uuidReference(tracking.Origin.ResourceID) {
+						return output.New(9, "Tracking origin identifies an existing native resource in this destination; recover its binding or select its isolated Draft instead of creating a duplicate. Clone explicitly with a new UID to create another resource")
+					}
+				}
 				if action == "create" && bound.ResourceID != "" {
 					return output.New(2, "Resource is already bound; use push to edit or clone to create another root")
 				}

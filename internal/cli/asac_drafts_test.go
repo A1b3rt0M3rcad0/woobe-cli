@@ -151,3 +151,89 @@ func TestASaCDraftCheckpointRejectsYAMLChangedAfterSeal(t *testing.T) {
 		t.Fatal(code, value, writes)
 	}
 }
+
+func TestASaCDraftSelectRehydratesPrivateSelectionWithoutMutation(t *testing.T) {
+	root, _ := filepath.Abs("../..")
+	t.Setenv("WOOBE_TEST_REPOSITORY", root)
+	t.Setenv("WOOBE_CONTROL_KEY", "test-control")
+	var resource devworkspace.Resource
+	native := "01a0a033-5820-770c-854b-902864857273"
+	draft := "12345678-1234-4321-8321-123456789012"
+	wrongUID := false
+	writes := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			writes++
+			w.WriteHeader(500)
+			return
+		}
+		uid := resource.UID
+		if wrongUID {
+			uid = "11111111-1111-4111-8111-111111111111"
+		}
+		line := map[string]any{"draft_id": draft, "resource_id": native, "resource_uid": uid, "generation": 3, "name": "hotfix", "definition_digest": "sha256:" + strings.Repeat("a", 64)}
+		var data any = line
+		if strings.HasSuffix(r.URL.Path, "/drafts") {
+			data = map[string]any{"drafts": []any{line}, "complete": true}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": data})
+	}))
+	defer server.Close()
+	c, state, r := asacWorkspace(t, server.URL)
+	resource = r
+	if err := os.RemoveAll(filepath.Join(c.RootPath(), ".state")); err != nil {
+		t.Fatal(err)
+	}
+	flags := []string{"--api-url", server.URL, "--workspace", "workspace", "--project", "project", "--output", "json"}
+	observation := asacPrivatePath(c, state, resource.UID, "draft")
+	code, value := invoke(t, append([]string{"agent", "@support", "draft", "select", "hotfix", "--dry-run"}, flags...), "")
+	if code != 0 || value["data"].(map[string]any)["selected"] != false {
+		t.Fatal(value)
+	}
+	if _, err := os.Stat(observation); !os.IsNotExist(err) {
+		t.Fatal("dry selection wrote private observation", err)
+	}
+	wrongUID = true
+	code, value = invoke(t, append([]string{"agent", "@support", "draft", "select", "hotfix"}, flags...), "")
+	if code != 9 {
+		t.Fatal("foreign logical identity selected", value)
+	}
+	wrongUID = false
+	code, value = invoke(t, append([]string{"agent", "@support", "draft", "select", draft}, flags...), "")
+	if code != 0 || value["data"].(map[string]any)["selected"] != true {
+		t.Fatal(value)
+	}
+	raw, err := c.ReadOperationalFile(observation, 1<<20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved asacDraftObservation
+	if json.Unmarshal(raw, &saved) != nil || saved.DraftID != draft || saved.ResourceUID != resource.UID {
+		t.Fatal(string(raw))
+	}
+	pending := asacPrivatePath(c, state, resource.UID, "pending")
+	if err = c.WriteOperationalFile(pending, []byte(`{"operation_id":"12345678-1234-4321-8321-123456789013"}`)); err != nil {
+		t.Fatal(err)
+	}
+	code, value = invoke(t, append([]string{"agent", "@support", "draft", "select", "hotfix"}, flags...), "")
+	if code != 9 || writes != 0 {
+		t.Fatal("unknown operation abandoned or server mutated", value, writes)
+	}
+}
+
+func TestASaCFreshCloneCannotCreateAnotherRootForKnownOrigin(t *testing.T) {
+	root, _ := filepath.Abs("../..")
+	t.Setenv("WOOBE_TEST_REPOSITORY", root)
+	t.Setenv("WOOBE_CONTROL_KEY", "test-control")
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requests++; t.Error("duplicate guard reached backend") }))
+	defer server.Close()
+	c, _, _ := asacWorkspace(t, server.URL)
+	if err := os.RemoveAll(filepath.Join(c.RootPath(), ".state")); err != nil {
+		t.Fatal(err)
+	}
+	code, value := invoke(t, []string{"agent", "@support", "create", "--yes", "--api-url", server.URL, "--workspace", "workspace", "--project", "project", "--output", "json"}, "")
+	if code != 9 || requests != 0 || !strings.Contains(value["error"].(map[string]any)["message"].(string), "duplicate") {
+		t.Fatal(value, requests)
+	}
+}

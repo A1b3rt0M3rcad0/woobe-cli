@@ -137,7 +137,7 @@ In PowerShell, quote comma-separated field lists:
 woobe agent get AGENT_UUID --fields "id,name,provider,model,provider_credential_id" --output compact
 ```
 
-Isolated ASaC Drafts use explicit `draft open/show/push/checkpoint/reconcile`
+Isolated ASaC Drafts use explicit `draft open/select/show/push/checkpoint/reconcile`
 operations. They preserve the native singleton Draft and Production while storing
 a verified closed artifact. See [ASaC](ASAC.md#isolated-remote-drafts) for generation
 preconditions, checkpoint integrity, capability negotiation and uncertain writes.
@@ -153,3 +153,11 @@ performs a guarded local three-way merge. Concurrent field or support-file chang
 are reported for explicit resolution. `revision merge REV_A REV_B --message 'Resolved content'`
 then records already resolved files with both parents. Networks use the same flow;
 see [reconciliation details](ASAC.md#reconcile-sealed-local-branches).
+
+After a clone without private `.state`, select an existing isolated Draft with
+`woobe agent '@support' draft select NAME_OR_UUID` (or `woobe network`). This uses
+matching durable origin and authorized remote identity; it does not create a
+Draft, restore files, recover Provider secrets or enable ordinary native push.
+A pending write must be reconciled before changing selection. Known same-origin
+roots refuse `create` when their private binding is missing; use explicit clone
+with a new UID only when another resource is intended.

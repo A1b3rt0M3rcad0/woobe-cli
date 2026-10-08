@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Recover existing isolated Agent/Network Draft selection by name or UUID after a clone without private state; block unresolved writes and accidental same-origin root creation.
+- Preserve incoming comment-only rebase changes and report competing comments/deletion conflicts instead of silently dropping author source.
+- Exercise Agent and Network source checkpoint, exact checkout, rebase and resolved merge in the real distribution smoke on each native CI target.
+
 - Add guarded semantic local rebase and explicit resolved-content merge checkpoints; preserve old revisions and protect newly referenced local support files.
 
 - Add guarded local Agent/Network revision checkout with exact retained author YAML and support bytes; executable identity is checked before restore.

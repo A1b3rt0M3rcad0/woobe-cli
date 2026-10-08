@@ -728,3 +728,9 @@ branches, and `revision merge REV_A REV_B --message 'Resolved content'` to seal
 manually resolved files with both parents. These operations preserve old revisions
 and do not contact the backend; [conflict behavior](ASAC.md#reconcile-sealed-local-branches)
 is explicit and never bypassed by `--yes`.
+
+Recover an existing isolated Draft selection after a clone with
+`woobe agent '@support' draft select NAME_OR_UUID` or the Network equivalent.
+`--dry-run` reads its identity/generation without saving private selection state.
+This preserves author files and remote resources; it does not hydrate native
+bindings or secrets. See [ASaC recovery](ASAC.md#isolated-remote-drafts).
