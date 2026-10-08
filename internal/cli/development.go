@@ -234,7 +234,9 @@ func developmentReference(c *devworkspace.Config, state *devworkspace.State, kin
 		if state != nil {
 			for i := range c.Resources {
 				r := &c.Resources[i]
-				if strings.EqualFold(r.Kind, kind) && state.Bindings[r.UID].ResourceID == reference && !r.Frozen {
+				bound := state.Bindings[r.UID].ResourceID
+				matches := bound == reference || packageUUID.MatchString(reference) && strings.EqualFold(bound, reference)
+				if strings.EqualFold(r.Kind, kind) && matches && !r.Frozen {
 					return r, nil
 				}
 			}

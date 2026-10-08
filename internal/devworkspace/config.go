@@ -179,7 +179,7 @@ func (c *Config) Resolve(kind, reference string) (*Resource, error) {
 		if kind != "" && !strings.EqualFold(r.Kind, kind) {
 			continue
 		}
-		if r.UID == reference || r.Key == reference || "@"+r.Alias == reference || r.Path == reference {
+		if strings.EqualFold(r.UID, reference) || r.Key == reference || "@"+r.Alias == reference || r.Path == reference {
 			if result != nil {
 				return nil, fmt.Errorf("resource reference is ambiguous")
 			}

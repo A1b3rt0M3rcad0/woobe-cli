@@ -54,8 +54,9 @@ Inspect `surface list`, then reconcile explicitly with
 Surface author files.
 
 Author `target_ref` and other dependency references use stable registry **keys**,
-shown by `resources list`; terminal references use `@alias`, UUID or path. Changing
-an alias does not rewrite dependency identity. Provider bind also records its
+shown by `resources list`; terminal references use `@alias`, UUID or path.
+UUID letter case does not change identity; alias matching remains case-sensitive.
+Changing an alias does not rewrite dependency identity. Provider bind also records its
 native identity so a later target pull reuses that same Provider rather than
 creating another definition.
 
