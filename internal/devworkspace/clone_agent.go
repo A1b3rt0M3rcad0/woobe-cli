@@ -77,7 +77,7 @@ func (c *Config) cloneAgent(graph *Graph, source *Node, alias, destination strin
 		next.Resources = append(next.Resources, resource)
 		copyGraph.Nodes[key] = copied
 		writes[filepath.Join(c.RootPath(), descriptor(resource))] = data
-		supports, err := packagebundle.SupportPaths(node.Document, node.Descriptor)
+		supports, err := authorSupportPaths(node.Document, node.Descriptor)
 		if err != nil {
 			return Resource{}, err
 		}
@@ -100,7 +100,7 @@ func (c *Config) cloneAgent(graph *Graph, source *Node, alias, destination strin
 		return Resource{}, err
 	}
 	for path := range writes {
-		if err := c.validateWrite(path); err != nil {
+		if err := c.validateAuthorWrite(path); err != nil {
 			return Resource{}, err
 		}
 		if _, err := os.Lstat(path); !os.IsNotExist(err) {

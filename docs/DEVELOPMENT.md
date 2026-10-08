@@ -59,6 +59,26 @@ an alias does not rewrite dependency identity. Provider bind also records its
 native identity so a later target pull reuses that same Provider rather than
 creating another definition.
 
+### Create local artifacts with support files
+
+`resources create` copies the descriptor and its declared Skill/Knowledge files
+from the descriptor's folder. Missing files, links, paths outside that folder and
+paths through `.state`, `.woobe-config` or `.git` fail before author files or the
+registry change. Register existing artifacts when their files are already under
+the configured root.
+
+```sh
+woobe resources create skill procedure --file ./author/skill.yaml
+woobe resources clone skill '@procedure' --alias procedure-copy
+woobe resources move skill '@procedure' --path procedures/skill.yaml
+```
+
+Registered descriptors can be folders or individual YAML/JSON files. Pull keeps
+their paths and places declared support files beside the descriptor, including
+after a move. Paths must work on all supported platforms: Windows device names,
+trailing dots/spaces, alternate data streams and private metadata directories
+are rejected on every OS. Automatically generated aliases avoid device names.
+
 ### Diagnose a development connection
 
 `context use` selects the global default. A project's `.woobe-config` can pin a

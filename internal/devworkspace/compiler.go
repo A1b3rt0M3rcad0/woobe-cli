@@ -24,7 +24,7 @@ func (g *Graph) AcceptedBases(bundle *packagebundle.Bundle) (map[string]Binding,
 	for key := range bundle.Graph.Components {
 		node := g.Nodes[key]
 		binding := Binding{Base: node.Document, Supports: map[string]string{}}
-		sources, err := packagebundle.SupportPaths(node.Document, node.Descriptor)
+		sources, err := authorSupportPaths(node.Document, node.Descriptor)
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +49,7 @@ func (g *Graph) Changes(resource Resource, binding Binding) ([]Change, error) {
 		return nil, err
 	}
 	defer root.Close()
-	sources, err := packagebundle.SupportPaths(node.Document, node.Descriptor)
+	sources, err := authorSupportPaths(node.Document, node.Descriptor)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func (g *Graph) Compile(key string, requirements map[string]any, credentialIDs m
 			}
 			delete(spec, "tool_refs")
 		}
-		sourcePaths, err := packagebundle.SupportPaths(document, node.Descriptor)
+		sourcePaths, err := authorSupportPaths(document, node.Descriptor)
 		if err != nil {
 			return nil, nil, err
 		}

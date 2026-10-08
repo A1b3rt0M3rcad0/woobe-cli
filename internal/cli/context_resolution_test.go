@@ -91,3 +91,30 @@ func TestRuntimeCredentialAttachment(t *testing.T) {
 		t.Fatal(v, e)
 	}
 }
+
+func TestControlContextURLChangeDetachesRuntimeCredential(t *testing.T) {
+	a := contextApp(t)
+	c, err := config.Load(a.ConfigPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	v := c.Contexts["dev"]
+	v.RuntimeCredential = "runtime"
+	c.Contexts["dev"] = v
+	if err := config.Save(a.ConfigPath, c); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.store().Put("runtime", "test-runtime-key"); err != nil {
+		t.Fatal(err)
+	}
+	if code := a.Execute(context.Background(), []string{"context", "update", "dev", "--api-url", "http://other"}); code != 0 {
+		t.Fatal(code)
+	}
+	c, err = config.Load(a.ConfigPath)
+	if err != nil || c.Contexts["dev"].RuntimeCredential != "" {
+		t.Fatal("old runtime credential retained for new API", c, err)
+	}
+	if _, err := a.store().Get("runtime"); err != nil {
+		t.Fatal("detachment deleted a reusable credential", err)
+	}
+}

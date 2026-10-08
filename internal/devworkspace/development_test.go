@@ -1,6 +1,7 @@
 package devworkspace
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagebundle"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagecheckpoint"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 )
 
@@ -185,6 +187,10 @@ func TestLocalTransactionRecoversInterruptedWritesAndPreservesExternalEdits(t *t
 
 func TestDevelopmentLockSerializesProcesses(t *testing.T) {
 	c, _ := Create(t.TempDir(), ".woobe", "")
+	// Match the CLI initializer, including its protected Windows state directory.
+	if err := packagecheckpoint.EnsurePrivateDirectory(filepath.Join(c.RootPath(), ".state")); err != nil {
+		t.Fatal(err)
+	}
 	unlock, err := c.Lock()
 	if err != nil {
 		t.Fatal(err)
@@ -264,6 +270,87 @@ func TestManagedCaptureReusesRegistryAndConflictsWithoutWriting(t *testing.T) {
 	after, _ := os.ReadFile(file)
 	if !reflect.DeepEqual(original, after) {
 		t.Fatal("conflicting pull changed author files")
+	}
+}
+
+func TestCaptureSupportsRespectRegisteredFileDescriptor(t *testing.T) {
+	source, _ := completeGraph(t)
+	bundle, err := packagebundle.Load(source.RootPath(), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bundle.Close()
+	target, err := Create(t.TempDir(), ".woobe", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, err := target.ReadState("http://local", "workspace", "project")
+	if err != nil {
+		t.Fatal(err)
+	}
+	captured := map[string]CapturedBinding{}
+	for key := range bundle.Graph.Components {
+		id, err := NewID()
+		if err != nil {
+			t.Fatal(err)
+		}
+		captured[key] = CapturedBinding{ResourceID: id, Revision: json.Number("1"), SourceKind: "draft"}
+	}
+	credential, err := NewID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, conflicts, err := target.ImportCapture(bundle, state, captured, map[string]string{"primary": credential}, "support", ""); err != nil || len(conflicts) != 0 {
+		t.Fatal(conflicts, err)
+	}
+	var skill Resource
+	for _, resource := range target.Resources {
+		if resource.Kind == "Skill" {
+			skill = resource
+			break
+		}
+	}
+	if skill.UID == "" {
+		t.Fatal("fixture has no Skill")
+	}
+	if err := target.Move("Skill", "@"+skill.Alias, "descriptors/skill.yaml", false); err != nil {
+		t.Fatal(err)
+	}
+	var remoteKey string
+	for key, binding := range captured {
+		if binding.ResourceID == state.Bindings[skill.UID].ResourceID {
+			remoteKey = key
+			break
+		}
+	}
+	paths, err := packagebundle.SupportPaths(bundle.Graph.Components[remoteKey], bundle.Graph.Paths[remoteKey])
+	if err != nil || len(paths) == 0 {
+		t.Fatal(paths, err)
+	}
+	file := filepath.Join(source.RootPath(), filepath.FromSlash(paths[0]))
+	before, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated := append(before, []byte("\nUpdated portable author instructions.\n")...)
+	if err := os.WriteFile(file, updated, 0600); err != nil {
+		t.Fatal(err)
+	}
+	fresh, err := packagebundle.Load(source.RootPath(), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fresh.Close()
+	count := len(target.Resources)
+	if _, conflicts, err := target.ImportCapture(fresh, state, captured, map[string]string{"primary": credential}, "", ""); err != nil || len(conflicts) != 0 {
+		t.Fatal(conflicts, err)
+	}
+	if len(target.Resources) != count {
+		t.Fatal("capture duplicated registered resources")
+	}
+	after, err := os.ReadFile(filepath.Join(target.RootPath(), "descriptors", "files", "0", filepath.Base(paths[0])))
+	if err != nil || !bytes.Equal(after, updated) {
+		t.Fatal("support did not follow file descriptor's parent", err)
 	}
 }
 func TestPrivateStateRefusesLinkedParents(t *testing.T) {

@@ -87,6 +87,9 @@ func decodeNode(resource Resource, data []byte) (*Node, error) {
 	if document["kind"] != resource.Kind || metadata["key"] != resource.Key {
 		return nil, fmt.Errorf("resource descriptor identity differs from its registry entry")
 	}
+	if _, err := authorSupportPaths(document, descriptor(resource)); err != nil {
+		return nil, err
+	}
 	node := &Node{Resource: resource, Document: document, Descriptor: descriptor(resource)}
 	for _, ref := range packagefmt.References(document) {
 		node.Dependencies = append(node.Dependencies, ref.Key)

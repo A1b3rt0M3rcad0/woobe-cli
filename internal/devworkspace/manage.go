@@ -53,7 +53,7 @@ func (c *Config) Add(kind, alias, destination string, document map[string]any, s
 		return Resource{}, err
 	}
 	writes := map[string][]byte{filepath.Join(c.RootPath(), descriptor(resource)): data}
-	sources, err := packagebundle.SupportPaths(document, descriptor(resource))
+	sources, err := authorSupportPaths(document, descriptor(resource))
 	if err != nil {
 		return Resource{}, err
 	}
@@ -69,7 +69,7 @@ func (c *Config) Add(kind, alias, destination string, document map[string]any, s
 		writes[filepath.Join(c.RootPath(), filepath.FromSlash(source))] = content
 	}
 	for path := range writes {
-		if err := c.validateWrite(path); err != nil {
+		if err := c.validateAuthorWrite(path); err != nil {
 			return Resource{}, err
 		}
 		if _, err := os.Lstat(path); !os.IsNotExist(err) {
@@ -107,7 +107,7 @@ func (c *Config) CloneWithState(kind, reference, alias, destination string, stat
 	if kind == "Agent" {
 		return c.cloneAgent(graph, node, alias, destination, state, dryRun)
 	}
-	sources, err := packagebundle.SupportPaths(node.Document, node.Descriptor)
+	sources, err := authorSupportPaths(node.Document, node.Descriptor)
 	if err != nil {
 		return Resource{}, err
 	}
@@ -146,6 +146,9 @@ func (c *Config) Register(kind, alias, path string, dryRun bool) (Resource, erro
 		return Resource{}, err
 	}
 	resource := Resource{UID: uid, Kind: kind, Alias: alias, Path: path}
+	if _, err := c.ResourcePath(resource); err != nil {
+		return Resource{}, err
+	}
 	root, err := os.OpenRoot(c.RootPath())
 	if err != nil {
 		return Resource{}, err
@@ -246,11 +249,11 @@ func (c *Config) Move(kind, reference, destination string, dryRun bool) error {
 		return err
 	}
 	node := graph.Nodes[resource.Key]
-	sources, err := packagebundle.SupportPaths(node.Document, node.Descriptor)
+	sources, err := authorSupportPaths(node.Document, node.Descriptor)
 	if err != nil {
 		return err
 	}
-	targets, err := packagebundle.SupportPaths(node.Document, descriptor(moved))
+	targets, err := authorSupportPaths(node.Document, descriptor(moved))
 	if err != nil || len(targets) != len(sources) {
 		return fmt.Errorf("invalid destination support paths")
 	}
@@ -261,7 +264,7 @@ func (c *Config) Move(kind, reference, destination string, dryRun bool) error {
 		if other.Resource.UID == resource.UID {
 			continue
 		}
-		paths, err := packagebundle.SupportPaths(other.Document, other.Descriptor)
+		paths, err := authorSupportPaths(other.Document, other.Descriptor)
 		if err != nil {
 			return err
 		}
@@ -278,7 +281,7 @@ func (c *Config) Move(kind, reference, destination string, dryRun bool) error {
 	removals := []string{}
 	for i, source := range sources {
 		target := filepath.Join(c.RootPath(), filepath.FromSlash(targets[i]))
-		if err := c.validateWrite(target); err != nil {
+		if err := c.validateAuthorWrite(target); err != nil {
 			return err
 		}
 		if _, err := os.Lstat(target); !os.IsNotExist(err) {
