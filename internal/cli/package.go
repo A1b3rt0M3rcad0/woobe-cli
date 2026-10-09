@@ -59,7 +59,7 @@ func (a *App) packageCommands() {
 	var structureOnly bool
 	validate := &cobra.Command{
 		Use: "validate SOURCE", Short: "Validate a portable package locally without credentials or HTTP",
-		Long:    "Validate current schemas, references, paths and limits offline. By default a present captured lock is also verified; --locked requires that lock. Use --structure-only while editing to skip captured-lock verification explicitly. Structural success does not certify snapshot integrity, server semantics or import readiness. Validation never rewrites the source or its lock.",
+		Long:    "SOURCE accepts a package directory, its woobe.yaml, or a .tar.gz/.tgz archive. YAML uses one document without anchors, aliases or custom tags. Validate current schemas, references, paths and limits offline. By default a present captured lock is also verified; --locked requires that lock. Use --structure-only while editing to skip captured-lock verification explicitly. Structural success does not certify snapshot integrity, server semantics or import readiness. Validation never rewrites the source or its lock.",
 		Example: "woobe package validate ./edited --structure-only\nwoobe package validate ./captured --locked\nwoobe package edit ./captured --destination ./author",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

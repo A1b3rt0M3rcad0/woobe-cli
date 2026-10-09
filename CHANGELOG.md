@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Preserve the authoritative package validation help instead of replacing it with an older guide; show structural-only and locked examples together.
+
 - Separate edited package structure from capture integrity with offline `package validate --structure-only`; retain integrity gates on transfers and coordinate help/assistant references (CLI 0.32.3+).
 - Explain missing accepted Candidate bindings using bounded component diagnostics and recovery guidance.
 
