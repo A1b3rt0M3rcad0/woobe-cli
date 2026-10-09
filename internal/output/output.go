@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 )
 
 type DomainDiagnostic struct {
@@ -91,13 +92,38 @@ func WriteWithMeta(w io.Writer, mode string, data any, scope map[string]string, 
 	return enc.Encode(e)
 }
 
+// A fencing token is an integer concurrency counter, never an authentication
+// token. Keep this exception value-typed and exact-keyed; textual tokens remain
+// secret even when accidentally placed in the concurrency field.
+func fencingCounter(value any) bool {
+	switch v := value.(type) {
+	case json.Number:
+		n, err := v.Int64()
+		return err == nil && n > 0
+	case int:
+		return v > 0
+	case int64:
+		return v > 0
+	case int32:
+		return v > 0
+	case uint:
+		return v > 0 && uint64(v) <= math.MaxInt64
+	case uint64:
+		return v > 0 && v <= math.MaxInt64
+	case float64:
+		return v >= 1 && v <= 1<<53 && math.Trunc(v) == v
+	default:
+		return false
+	}
+}
+
 // Redact recursively protects secret-bearing fields even in generic responses.
 func Redact(v any) any {
 	switch x := v.(type) {
 	case map[string]any:
 		out := make(map[string]any, len(x))
 		for k, v := range x {
-			if Sensitive(k) {
+			if Sensitive(k) && !(k == "fencing_token" && fencingCounter(v)) {
 				out[k] = "[REDACTED]"
 			} else {
 				out[k] = Redact(v)

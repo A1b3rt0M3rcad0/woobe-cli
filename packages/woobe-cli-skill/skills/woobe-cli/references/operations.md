@@ -41,3 +41,5 @@ Manifest supports explicit multi-resource orchestration with typed dependencies:
 validate → compile/diff → plan/apply as applicable. Read only the needed schema,
 use exact references and keep checkpoints. A partial projection or GET observation
 does not prove acceptance of an earlier uncertain create.
+
+A positive integer `fencing_token` is a concurrency counter and remains visible. Treat workflow lease state as private operational state; access tokens/keys and textual token values remain redacted. Do not copy `.state` into Git.
