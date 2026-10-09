@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from current discovery: 342 executable entries, including 196 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
+Generated from current discovery: 349 executable entries, including 198 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
 
 Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. Assistant installation uses local `skills` commands, not HTTP operations. The optional npm `woobe-skill` executable uses the same payload and receipts.
 
@@ -58,6 +58,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `develop agent pull` | `development-http` | — | `server-dependent` | — | — |
 | `develop agent push` | `development-http` | — | `server-dependent` | — | — |
 | `develop agent rebase` | `development` | — | `local` | — | — |
+| `develop agent receipt` | `development` | — | `local` | — | — |
 | `develop agent reconcile` | `development` | — | `local` | — | — |
 | `develop agent revision` | `development` | — | `local` | — | — |
 | `develop agent rollback` | `development` | — | `local` | — | — |
@@ -83,6 +84,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `develop network pull` | `development-http` | — | `server-dependent` | — | — |
 | `develop network push` | `development-http` | — | `server-dependent` | — | — |
 | `develop network rebase` | `development` | — | `local` | — | — |
+| `develop network receipt` | `development` | — | `local` | — | — |
 | `develop network reconcile` | `development` | — | `local` | — | — |
 | `develop network revision` | `development` | — | `local` | — | — |
 | `develop network rollback` | `development` | — | `local` | — | — |
@@ -164,6 +166,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `project agent release run-test` | `http` | `POST /ai/agents/{agent_id}/release-tests/run` | `observed` | agent:write | — |
 | `project agent release test` | `http` | `POST /ai/agents/{agent_id}/release-tests` | `observed` | agent:version | — |
 | `project agent release tests` | `http` | `GET /ai/agents/{agent_id}/releases/{release_id}/tests` | `observed` | agent:read | — |
+| `project agent signed-receipt get` | `http` | `GET /projects/{project_id}/agents/{resource_id}/asac/signed-receipts/{category}/{receipt_id}` | `proposed` | agent:read | — |
 | `project agent tool list` | `http` | `GET /tools/agents/{agent_id}/tools` | `observed` | agent:read | — |
 | `project agent update` | `http` | `PATCH /ai/agents/{agent_id}` | `observed` | agent:write | — |
 | `project agent usage daily` | `http` | `GET /metering/agents/{agent_id}/daily` | `observed` | agent:read | — |
@@ -224,6 +227,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `project network session list` | `http` | `GET /network/{network_id}/sessions` | `observed` | network:read | — |
 | `project network session messages` | `http` | `GET /network/{network_id}/sessions/{session_id}/messages` | `observed` | network:read | — |
 | `project network session reset-context` | `http` | `POST /network/{network_id}/sessions/{session_id}/reset-context` | `observed` | network:write | — |
+| `project network signed-receipt get` | `http` | `GET /projects/{project_id}/networks/{resource_id}/asac/signed-receipts/{category}/{receipt_id}` | `proposed` | network:read | — |
 | `project network update` | `http` | `PATCH /network/projects/{project_id}/networks/{network_id}` | `observed` | network:write | — |
 | `project network version list` | `http` | `GET /network/{network_id}/versions` | `observed` | network:read | — |
 | `project overview` | `http` | `GET /core/projects/{project_id}/overview` | `observed` | — | — |
@@ -284,6 +288,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `project usage daily` | `http` | `GET /metering/projects/{project_id}/daily` | `observed` | usage:read | — |
 | `project usage summary` | `http` | `GET /metering/projects/{project_id}/usage` | `observed` | usage:read | — |
 | `provider` | `local` | — | `local` | — | — |
+| `receipt verify` | `local` | — | `local` | — | — |
 | `request` | `generic-http` | — | `server-dependent` | — | — |
 | `request-pages` | `generic-http` | — | `server-dependent` | — | — |
 | `resources alias` | `local` | — | `local` | — | — |
@@ -321,6 +326,8 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `skills uninstall` | `local` | — | `local` | — | — |
 | `surface` | `local` | — | `local` | — | — |
 | `tool` | `local` | — | `local` | — | — |
+| `trust pin` | `local` | — | `local` | — | — |
+| `trust refresh` | `local` | — | `local` | — | — |
 | `validate-input` | `diagnostic-http` | — | `server-dependent` | — | — |
 | `version` | `local` | — | `local` | — | — |
 | `workspace authority audit` | `http` | `GET /identity/workspaces/{workspace_id}/authority-audit` | `proposed` | — | cursor-complete |

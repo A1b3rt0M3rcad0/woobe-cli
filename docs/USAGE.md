@@ -829,3 +829,7 @@ a short environment lease and `deployment apply PLAN_UUID --yes`. Recover lost
 responses with `deployment reconcile`; see [ASaC](ASAC.md#exact-release-deployment-plans).
 
 Project lifecycle administration uses YAML and explicit generation CAS: see [Project lifecycle policy](PROJECT_LIFECYCLE.md). These commands work without a development registry and cannot grant resource permissions.
+
+Server-signed ASaC receipts can be exported and verified offline with an explicit
+operator-confirmed root. See [signed receipts](SIGNED_RECEIPTS.md) for trust pinning,
+rotation, revocation and limits on freshness and Git provenance.

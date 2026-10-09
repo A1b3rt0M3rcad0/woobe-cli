@@ -315,3 +315,7 @@ plan, acquire its environment lease, apply once and reconcile original acceptanc
 after an uncertain response. See [ASaC deployment plans](docs/ASAC.md#exact-release-deployment-plans).
 
 Project lifecycle authority: `woobe project lifecycle show`; audited YAML changes and original-operation recovery are documented in [Project lifecycle policy](docs/PROJECT_LIFECYCLE.md). The server gates legacy promotion in managed Projects.
+
+Server-signed ASaC receipts can be exported and verified offline with an explicit
+operator-confirmed root. See [signed receipts](docs/SIGNED_RECEIPTS.md) for trust pinning,
+rotation, revocation and limits on freshness and Git provenance.

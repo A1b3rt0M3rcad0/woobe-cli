@@ -301,3 +301,7 @@ woobe project lifecycle operation OPERATION_UUID
 The update example requires a reviewed policy file with an explicit operation
 UUID/current generation and administrative policy authority; it is not a
 ready-to-apply template. Preserve the original operation after uncertain writes.
+
+For server-signed export and offline verification with a separately pinned root,
+read [signatures](signatures.md). Unsigned history integrity checks do not
+establish offline server authority.

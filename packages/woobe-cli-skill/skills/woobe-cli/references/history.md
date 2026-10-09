@@ -67,3 +67,7 @@ Use an explicit known `--base` only when ancestry has multiple possible bases.
 After resolving content yourself, `woobe agent '@support' revision merge REV_A REV_B --message 'Resolved content'`
 seals the current files with both parents; it does not automatically merge them.
 Networks have the same commands. Neither operation is a push or deployment.
+
+For server-signed export and offline verification with a separately pinned root,
+read [signatures](signatures.md). Unsigned history integrity checks do not
+establish offline server authority.

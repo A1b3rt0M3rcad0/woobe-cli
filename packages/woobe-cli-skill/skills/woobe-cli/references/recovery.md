@@ -72,3 +72,7 @@ object (`{}`). This is a cleared marker and does not block `bindings recover`.
 A pending operation, partial record or malformed/unreadable checkpoint still
 blocks recovery. Reconcile the original operation; do not delete an uncertain
 checkpoint or manufacture a new operation ID to bypass it.
+
+For server-signed export and offline verification with a separately pinned root,
+read [signatures](signatures.md). Unsigned history integrity checks do not
+establish offline server authority.

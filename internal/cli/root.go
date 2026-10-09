@@ -130,6 +130,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.developmentConfigCommands()
 	a.developmentCommands()
 	a.asacCommands()
+	a.asacReceiptCommands()
 	a.developmentLifecycleCommands()
 	a.developmentNetworkLifecycleCommands()
 	a.developmentTestCommands()

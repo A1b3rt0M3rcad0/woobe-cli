@@ -20,6 +20,7 @@ documentation edits; explain that assessment in the PR's validation notes.
 | Tests, staging, immutable releases, Project lifecycle policy, Production or rollback | Usage/development guides, `docs/PROJECT_LIFECYCLE.md`, skill `references/lifecycle.md` |
 | Output fields, pagination or operational commands | `docs/OUTPUT.md`, `docs/PAGINATION.md`, skill `references/operations.md` |
 | Errors, conflicts, local state or uncertain writes | Relevant guide, actionable command help, skill `references/recovery.md` |
+| Signed ASaC receipts, cryptography or instance trust | `docs/SIGNED_RECEIPTS.md`, cross-language signature fixtures, trust lifecycle regressions and skill `references/signatures.md`; never imply hashes alone establish authority |
 | Assistant installation, receipts, presets or distribution | `docs/AGENT_SKILL.md`, `docs/INSTALLATION.md`, package READMEs, both installers and interoperability tests |
 | Toolchain, packaging, versioning or CI | `docs/CI.md`, `docs/VALIDATION.md`, installation/release guidance and affected scripts |
 

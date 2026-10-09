@@ -2,6 +2,8 @@ package cli
 
 func (a *App) projectCommands() {
 	for _, op := range []Operation{
+		{Command: "project agent signed-receipt get", Method: "GET", Path: "/projects/{project_id}/agents/{resource_id}/asac/signed-receipts/{category}/{receipt_id}", Scope: "project", Permission: "agent:read", Status: "proposed"},
+		{Command: "project network signed-receipt get", Method: "GET", Path: "/projects/{project_id}/networks/{resource_id}/asac/signed-receipts/{category}/{receipt_id}", Scope: "project", Permission: "network:read", Status: "proposed"},
 		{Command: "project lifecycle show", Method: "GET", Path: "/core/projects/{project_id}/lifecycle-policy", Scope: "project", Permission: "project:read", Status: "proposed"},
 		{Command: "project lifecycle update", Method: "PUT", Path: "/core/projects/{project_id}/lifecycle-policy", Scope: "project", Permission: "project:access:write", Status: "proposed", Body: true},
 		{Command: "project lifecycle operation", Method: "GET", Path: "/core/projects/{project_id}/lifecycle-policy/operations/{operation_id}", Scope: "project", Permission: "project:read", Status: "proposed"},

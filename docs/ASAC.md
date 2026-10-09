@@ -446,3 +446,7 @@ Project lifecycle policy governs legacy promotion and exact deployments. See [Pr
 A completed ASaC operation leaves an empty private checkpoint (`{}`). Binding
 recovery accepts this cleared marker. An unresolved operation, partial record
 or unreadable/malformed checkpoint still requires reconciliation before recovery.
+
+Server-signed ASaC receipts can be exported and verified offline with an explicit
+operator-confirmed root. See [signed receipts](SIGNED_RECEIPTS.md) for trust pinning,
+rotation, revocation and limits on freshness and Git provenance.
