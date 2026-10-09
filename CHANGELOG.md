@@ -84,3 +84,7 @@
 The existing CLI operations and functional limitations are described in
 [STATUS.md](docs/STATUS.md). This version does not claim completion of the full
 CLI design or live acceptance of every operation.
+
+### Exact Candidate evaluation
+
+- Agent and Network versioned YAML suites execute frozen ready Candidates with durable operation identities, native Run evidence and read-only reconciliation. No implicit publication or Production change.

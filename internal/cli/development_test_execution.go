@@ -18,8 +18,14 @@ type releaseTestFailure struct {
 func (f *releaseTestFailure) Error() string { return f.Cause.Error() }
 
 func (a *App) developmentTestCommands() {
-	var environment, version string
-	command := &cobra.Command{Use: "test REFERENCE", Short: "Execute a saved Agent snapshot and record its test result", Args: cobra.ExactArgs(1), Long: "Read a YAML/JSON testcase with message, optional expected_output and external_context. Select current Staging by default, Draft/Production with --env, or an immutable Release with --env release --version. Run the native Agent execution pipeline and store actual output, latency and validation errors. A failed assertion or execution exits with code 6; network uncertainty is never retried automatically.", RunE: func(cmd *cobra.Command, args []string) error {
+	var environment, version, candidate string
+	command := &cobra.Command{Use: "test REFERENCE", Short: "Execute a saved Agent snapshot and record its test result", Args: cobra.ExactArgs(1), Long: "Read a YAML/JSON testcase with message, optional expected_output and external_context. Select current Staging by default, Draft/Production with --env, or an immutable Release with --env release --version. Run the native Agent execution pipeline and store actual output, latency and validation errors. A failed assertion or execution exits with code 6; network uncertainty is never retried automatically." + candidateEvaluationHelp, Example: "woobe agent '@support' test --candidate CANDIDATE_UUID --file suite.yaml --yes\nwoobe agent '@support' evaluation EVALUATION_UUID", RunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("candidate") {
+			if cmd.Flags().Changed("env") || cmd.Flags().Changed("version") {
+				return output.New(2, "Candidate evaluation selects an exact frozen snapshot; omit --env and --version")
+			}
+			return a.evaluateASaCCandidate(cmd, "agent", args[0], candidate)
+		}
 		if !a.Yes && !a.DryRun {
 			return output.New(2, "Test execution requires --yes")
 		}
@@ -102,5 +108,6 @@ func (a *App) developmentTestCommands() {
 	}}
 	command.Flags().StringVar(&environment, "env", "staging", "Saved native environment to test")
 	command.Flags().StringVar(&version, "version", "", "Immutable Release version")
+	command.Flags().StringVar(&candidate, "candidate", "", "Evaluate this ready Candidate UUID using a versioned YAML suite")
 	a.group("develop agent").AddCommand(command)
 }

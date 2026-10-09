@@ -219,7 +219,17 @@ func (a *App) asacDraftCommands() {
 							return output.New(10, "Candidate accepted; its local receipt could not be saved")
 						}
 					}
-					if pending.Path != base+"/candidates" && result["draft_id"] != nil && result["resource_id"] != nil {
+					isEvaluation := pending.Path == base+"/candidates/"+url.PathEscape(packagefmt.Text(pending.Body["candidate_id"]))+"/evaluations"
+					if isEvaluation {
+						if err = validateEvaluationAcceptance(result, pending.OperationID, id, packagefmt.Text(pending.Body["candidate_id"]), pending.RecordDigest, packagefmt.Text(pending.Body["runtime_digest"])); err != nil {
+							return err
+						}
+						raw, _ := json.Marshal(result)
+						if err = c.WriteOperationalFile(asacPrivatePath(c, state, resource.UID, "evaluation"), raw); err != nil {
+							return output.New(10, "Evaluation accepted; its local receipt could not be saved")
+						}
+					}
+					if pending.Path != base+"/candidates" && !isEvaluation && result["draft_id"] != nil && result["resource_id"] != nil {
 						if err = saveObservation(result); err != nil {
 							return err
 						}

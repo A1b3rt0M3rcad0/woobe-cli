@@ -64,6 +64,8 @@ func (a *App) aliasCommands() {
 					}
 					if name != "surface" {
 						actions["candidate"] = "candidate"
+						actions["evaluation"] = "evaluation"
+						actions["test"] = "test"
 					}
 				}
 				if name == "agent" {
