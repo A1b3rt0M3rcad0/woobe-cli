@@ -1,5 +1,7 @@
 # Changelog
 
+- Publish exact evaluated Network Candidates without changing Production or standalone Agent environments. Resume/cancel durable partial preparations, reconcile original acceptance, and verify append-only publication/cancellation observations. Assistant guides require CLI 0.27+.
+
 - Retain and hydrate exact author YAML, comments and support files through Agent/Network revision custody, with canonical source integrity and compiler verification before local storage. Legacy executable-only hydration remains supported.
 
 

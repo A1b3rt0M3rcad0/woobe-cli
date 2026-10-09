@@ -298,5 +298,42 @@ retries the local mirror, without another publication request.
 an authenticated fetch observation from a signed offline attestation. Git claims
 remain declared; this flow does not claim verified pipeline provenance.
 Legacy publication without `--candidate` retains its native behavior; in
-particular, legacy Network publication activates Production. Exact Network
-publication is not advertised by this implementation.
+particular, legacy Network publication activates Production. Exact Network publication uses the explicit Candidate flow below.
+
+
+## Publish and recover an exact Network Candidate
+
+```sh
+woobe network '@support-network' publish --candidate CANDIDATE_UUID --evaluation EVALUATION_UUID --notes 'Validated Network update' --yes
+woobe network NETWORK_UUID publication PUBLICATION_UUID
+woobe network NETWORK_UUID publication PUBLICATION_UUID reconcile --yes
+woobe network NETWORK_UUID publication PUBLICATION_UUID cancel --notes 'Discard unfinished preparation' --yes
+woobe network '@support-network' draft reconcile
+woobe network '@support-network' history verify
+```
+
+Use CLI 0.27+ with a backend advertising Network Candidate publication. Prepare
+and evaluate a new Candidate with `network-execution-runtime@2`; historical
+Candidates retain their original runtime scope. Publication copies or reuses
+immutable constituent Agent Releases through their owning module and creates the
+Network Release from that exact tested composition. Production, current native
+Draft/Staging and standalone Agent environment selections remain unchanged.
+
+The server accepts the original publication before constituent copying. A failure
+can leave `state: preparing` with prepared/required counts. The CLI exits 9 and
+retains its pending operation, blocking a second publish. Inspect the returned
+Publication UUID, then explicitly resume with `publication ... reconcile --yes`.
+The server rechecks current permissions, original Evaluation and binding versions;
+resume reuses original child-operation receipts rather than copying twice.
+
+Alternatively, cancel an unfinished preparation with a reason. Cancellation seals
+it without publishing the Network; already copied immutable Agent Releases remain
+retained. Cancellation cannot undo a completed publication. These native UUID
+recovery operations do not require `.woobe-config`.
+
+After either terminal outcome, use `draft reconcile` for the original local
+operation. It only reads original acceptance/current phase, mirrors the publication
+or cancellation receipt, and clears pending state after the mirror succeeds.
+It never repeats publication, constituent copying or activation. Documentary
+failure exits 10 and remains recoverable; `history verify` checks both receipt
+collections. Offline verification proves content integrity, not server authenticity.

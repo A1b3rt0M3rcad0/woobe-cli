@@ -46,3 +46,5 @@ Do not delete private state to bypass this check or resend the accepted write.
 For an uncertain `test --candidate`, use `draft reconcile` to recover the original Evaluation UUID. Then inspect `evaluation UUID` or `evaluation UUID reconcile --yes`. These commands never execute another case; do not retry the test to infer its outcome.
 
 For exact Candidate publication, retain the original pending operation. An unknown acceptance or exit 10 after local receipt failure requires `woobe agent '@support' draft reconcile`; never repeat publish to repair its local mirror.
+
+Network Candidate publication can remain accepted with partial immutable constituent copies. Do not repeat publish. Inspect `woobe network NETWORK_UUID publication PUBLICATION_UUID`, explicitly resume with `reconcile --yes` or cancel with `cancel --notes REASON --yes`, then run the original local `draft reconcile` to mirror terminal evidence. Cancellation preserves unused immutable child Releases and cannot undo published Networks. See [lifecycle](lifecycle.md).

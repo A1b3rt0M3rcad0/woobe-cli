@@ -23,8 +23,14 @@ func developmentResponseData(response any) (map[string]any, error) {
 
 func (a *App) developmentNetworkLifecycleCommands() {
 	for _, action := range []string{"stage", "publish", "activate", "rollback"} {
-		var version, notes, revision string
-		command := &cobra.Command{Use: action + " REFERENCE", Short: action + " a saved Network composition", Args: cobra.ExactArgs(1), Long: "Stage --revision REVISION_ID prepares the exact checkpointed isolated Draft as a detached Candidate; it reads the retained executable object, preserves native Draft/Staging/Production selections and does not publish. Inspect with candidate REFERENCE CANDIDATE_UUID. Reconcile lost acceptance using draft reconcile before another Stage. Without --revision, legacy native lifecycle behavior applies. stage previews the current Draft and freezes its constituent snapshots. publish previews current Staging, creates/reuses the immutable Network Release and activates it in Production, following Woobe's native publication behavior. activate/rollback select an explicit immutable Release with --version and record --notes. --yes approves only the preview's action IDs; concurrent changes fail. Local author YAML is never uploaded implicitly.", RunE: func(cmd *cobra.Command, args []string) error {
+		var version, notes, revision, candidate, evaluation string
+		command := &cobra.Command{Use: action + " REFERENCE", Short: action + " a saved Network composition", Args: cobra.ExactArgs(1), Long: "Publish --candidate UUID --evaluation UUID --notes REASON --yes creates the exact qualified Network Release without changing Production or standalone Agent environments. Partial preparations remain durable; inspect publication, explicitly reconcile or cancel, then use draft reconcile to recover original acceptance without repeating publication. Stage --revision REVISION_ID prepares the exact checkpointed isolated Draft as a detached Candidate; it reads the retained executable object, preserves native Draft/Staging/Production selections and does not publish. Inspect with candidate REFERENCE CANDIDATE_UUID. Reconcile lost acceptance using draft reconcile before another Stage. Without --revision, legacy native lifecycle behavior applies. stage previews the current Draft and freezes its constituent snapshots. publish previews current Staging, creates/reuses the immutable Network Release and activates it in Production, following Woobe's native publication behavior. activate/rollback select an explicit immutable Release with --version and record --notes. --yes approves only the preview's action IDs; concurrent changes fail. Local author YAML is never uploaded implicitly.", RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().Changed("candidate") || cmd.Flags().Changed("evaluation") {
+				if action != "publish" || version != "" || revision != "" {
+					return output.New(2, "--candidate and --evaluation apply only to exact publication; omit --version and --revision")
+				}
+				return a.publishASaCCandidate(cmd, "network", args[0], candidate, evaluation, notes)
+			}
 			if cmd.Flags().Changed("revision") && strings.TrimSpace(revision) == "" {
 				return output.New(2, "--revision requires the exact sealed revision ID; refusing legacy Stage fallback")
 			}
@@ -156,6 +162,8 @@ func (a *App) developmentNetworkLifecycleCommands() {
 			}
 			return a.call(cmd, "POST", path, encoded, false)
 		}}
+		command.Flags().StringVar(&candidate, "candidate", "", "Publish the exact qualified Candidate without changing Production")
+		command.Flags().StringVar(&evaluation, "evaluation", "", "Passed Evaluation of the exact Candidate")
 		command.Flags().StringVar(&revision, "revision", "", "Prepare the exact sealed revision from the selected isolated Draft; does not publish or select native Staging")
 		command.Flags().StringVar(&version, "version", "", "Immutable Network Release version")
 		command.Flags().StringVar(&notes, "notes", "", "Activation or rollback audit reason")
