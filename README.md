@@ -319,3 +319,8 @@ Project lifecycle authority: `woobe project lifecycle show`; audited YAML change
 Server-signed ASaC receipts can be exported and verified offline with an explicit
 operator-confirmed root. See [signed receipts](docs/SIGNED_RECEIPTS.md) for trust pinning,
 rotation, revocation and limits on freshness and Git provenance.
+
+Trusted CI provenance is a separate, explicitly authorized workflow.
+`woobe agent REFERENCE git-proof` checks committed author bytes offline;
+`woobe agent UUID git-attest` attaches a trusted proof to an existing Publication.
+Neither publishes nor deploys. See [trusted Git provenance](docs/GIT_PROVENANCE.md).

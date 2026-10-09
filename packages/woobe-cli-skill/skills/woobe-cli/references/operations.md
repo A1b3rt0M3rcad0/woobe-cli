@@ -43,3 +43,11 @@ use exact references and keep checkpoints. A partial projection or GET observati
 does not prove acceptance of an earlier uncertain create.
 
 A positive integer `fencing_token` is a concurrency counter and remains visible. Treat workflow lease state as private operational state; access tokens/keys and textual token values remain redacted. Do not copy `.state` into Git.
+
+Runtime run/stream YAML supports `input`, optional `session_id`, and `options`
+(`session_id`, `tenant_id`, `user_id`, `metadata`, `external_context`). Omit session
+identity for a new Session; reuse the returned identity to continue. Unknown or
+conflicting fields are errors, never silently discarded. Legacy SDK field names
+remain compatible. Read `runtime_identity` from a compatible backend: Agent
+Sessions follow their environment between Runs, Network Sessions pin a version,
+and every accepted Run freezes its own execution snapshot.

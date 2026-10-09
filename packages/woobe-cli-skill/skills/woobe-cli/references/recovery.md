@@ -76,3 +76,5 @@ checkpoint or manufacture a new operation ID to bypass it.
 For server-signed export and offline verification with a separately pinned root,
 read [signatures](signatures.md). Unsigned history integrity checks do not
 establish offline server authority.
+
+For `git-attest` uncertainty, inspect `woobe project agent git-attestation get RESOURCE_UUID ORIGINAL_OPERATION_UUID` (Network equivalent). Correct trust/source issues before another operation; never repeat deployment to repair Git evidence.

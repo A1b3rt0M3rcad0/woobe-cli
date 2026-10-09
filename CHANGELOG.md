@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Accept simple runtime YAML session/options names and retain legacy SDK spellings; reject unknown/conflicting fields instead of silently opening a new Session.
+
+- Add offline exact-commit Git proofs and independently authorized Agent/Network Git attestation receipts, preserving original publication/deployment history. Coordinate help/docs/assistant references for CLI 0.32+.
+
 - Fresh Agent/Network captures reuse the owner's canonical ASaC identity; reject a conflicting local UID without changing author files.
 
 - Binding recovery accepts the empty checkpoint left by a completed ASaC write. Unresolved, malformed and partial checkpoints still block recovery before network access.

@@ -104,7 +104,23 @@ woobe runtime target active tutor SESSION --runtime-credential runtime
 woobe runtime target cancel tutor RUN --runtime-credential runtime --yes
 ```
 
-Run JSON: `{"input":"Explain this topic","options":{"SessionID":"..."}}`. Omit options to let the runtime establish a Session. Option names currently follow the pinned SDK's Go JSON field names. For Network targets select `--target-kind network` explicitly. Local interruption stops observation; it does not issue remote cancellation. Administrative Runs use the separate `runtime run` family. All five SDK handlers honor `--dry-run` without network execution.
+Run YAML (or equivalent JSON):
+
+```yaml
+input: Explain this topic
+session_id: EXISTING_SESSION_UUID
+options:
+  metadata:
+    source: cli
+```
+
+Omit `session_id` for a new Session; reuse the returned UUID to continue. Options
+accept `session_id`, `tenant_id`, `user_id`, `metadata`, `external_context`; the
+previous SDK spellings such as `SessionID` remain compatible. Unknown fields,
+null/empty supplied sessions and conflicting identities are rejected. Agent
+Sessions follow the selected environment between Runs; Network Sessions pin their
+version. Every accepted Run freezes its resolved snapshot and the compatible
+backend returns `runtime_identity`. For Network targets select `--target-kind network` explicitly. Local interruption stops observation; it does not issue remote cancellation. Administrative Runs use the separate `runtime run` family. All five SDK handlers honor `--dry-run` without network execution.
 
 ## Manifest validation, plan and checkpoint
 
@@ -833,3 +849,10 @@ Project lifecycle administration uses YAML and explicit generation CAS: see [Pro
 Server-signed ASaC receipts can be exported and verified offline with an explicit
 operator-confirmed root. See [signed receipts](SIGNED_RECEIPTS.md) for trust pinning,
 rotation, revocation and limits on freshness and Git provenance.
+
+## Trusted pipeline provenance
+
+For an existing publication, use offline `git-proof` and an independently
+authorized `git-attest` operation. See [the complete workflow](GIT_PROVENANCE.md).
+
+Synchronous Runtime JSON preserves exact integer identities and generations, including values above the floating-point integer limit. Responses are bounded to 16 MiB; SDK authentication and failure semantics remain in effect.
