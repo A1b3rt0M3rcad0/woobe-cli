@@ -180,6 +180,19 @@ func commandSchema(op Operation, kind string) map[string]any {
 			}
 		}
 		s["properties"] = map[string]any{"args": map[string]any{"type": "array", "items": map[string]any{"type": "string"}}, "flags": map[string]any{"type": "object", "properties": props, "required": required, "additionalProperties": false}, "body": map[string]any{"description": "Endpoint body; consult server-schema for authoritative domain fields"}}
+		if op.Command == "runtime target run" || op.Command == "runtime target stream" {
+			optionProperties := map[string]any{}
+			for _, key := range []string{"session_id", "tenant_id", "user_id", "SessionID", "TenantID", "UserID"} {
+				optionProperties[key] = map[string]any{"type": "string", "minLength": 1}
+			}
+			for _, key := range []string{"metadata", "external_context", "Metadata", "ExternalContext"} {
+				optionProperties[key] = map[string]any{"type": "object"}
+			}
+			s["properties"].(map[string]any)["body"] = map[string]any{"type": "object", "required": []string{"input"}, "additionalProperties": false,
+				"properties": map[string]any{"input": map[string]any{"type": "string", "minLength": 1},
+					"session_id": map[string]any{"type": "string", "minLength": 1},
+					"options":    map[string]any{"type": "object", "additionalProperties": false, "properties": optionProperties}}}
+		}
 		if op.Command == "auth login" {
 			flags := s["properties"].(map[string]any)["flags"].(map[string]any)
 			flags["anyOf"] = []any{

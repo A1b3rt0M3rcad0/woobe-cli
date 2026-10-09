@@ -1,19 +1,19 @@
 # Current implementation status
 
-Updated 2026-10-08. Published CLI: **0.13.7**, source
-`a0a1c1d147fdd167eb6fb742359dfa36eec00066`. Woobe PR #179 is merged at
-`a7fe483e772e879ee5318ed0e1d535ae29c8165d` (remote state checked on this date).
-Managed YAML development, environment-aware package transfer, compact output and
-safe stale-registry pruning are delivered. The new assistant skill package is
-implemented in a separate review PR; it is not yet a public npm publication.
+Updated 2026-10-09. Published CLI: **0.31.1**, master
+`6bc50a5690664de0eb165ec2a7cb316869c4608c`; release and npm publication were
+verified. The trusted Git attestation additions in this review branch are not yet
+published. Backend ASaC policy/signature/identity/Web changes remain in their
+review stack; installing a client release does not deploy those backend changes.
 
-The CLI now embeds the skill and installs it offline with `woobe skill install`,
-without Node/npm, login or development config. `woobe-cli-skill` remains the
-optional compatible standalone installer. Both ship portable task-focused
-references/templates, provenance-bound tarballs and independent OIDC publication.
-See [AGENT_SKILL.md](AGENT_SKILL.md), [CI.md](CI.md) and [VALIDATION.md](VALIDATION.md).
-Current user guides are listed in [INDEX.md](INDEX.md). No statement here grants
-merge approval or claims full acceptance of the original 101-item roadmap.
+The native CLI embeds the portable assistant skill and installs it offline with
+`woobe skill install`, without Node/npm, login or development config. The optional
+standalone npm skill package is prepared but is not claimed publicly published.
+Its payload and compatible installer tarball ship with validated release assets.
+The skill compatibility floor in this branch is 0.32 for its new provenance guide.
+
+Current guides are listed in [INDEX.md](INDEX.md). Historical roadmap records below
+retain their dated limits; they do not grant merge authority or certify production.
 
 ## Historical implementation checkpoints
 

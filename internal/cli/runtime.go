@@ -71,7 +71,7 @@ func (a *App) runtimeCommands() {
 		if action == "observe" || action == "active" || action == "cancel" {
 			n = 2
 		}
-		c := &cobra.Command{Use: action + " <alias> [run-or-session-id]", Args: cobra.ExactArgs(n), RunE: func(cmd *cobra.Command, args []string) error {
+		c := &cobra.Command{Use: action + " <alias> [run-or-session-id]", Short: action + " an authenticated runtime target", Long: "Run/stream read YAML or JSON with input, optional session_id, and options (session_id, tenant_id, user_id, metadata, external_context). Reuse the returned session_id explicitly to continue; omit it for a new Session. Unknown fields and conflicting session identities are rejected. Agent Sessions follow their environment between Runs; Network Sessions pin their native version. Each accepted Run freezes its resolved snapshot. Runtime credentials are separate from CLI Keys.", Args: cobra.ExactArgs(n), RunE: func(cmd *cobra.Command, args []string) error {
 			if (action == "stream" || action == "observe") && a.Mode != "jsonl" && !a.DryRun {
 				return output.New(2, "stream and observe require --output jsonl")
 			}
@@ -88,6 +88,9 @@ func (a *App) runtimeCommands() {
 					b, e := a.body(true)
 					if e != nil {
 						return e
+					}
+					if _, e = decodeRuntimeInput(b); e != nil {
+						return output.New(2, e.Error())
 					}
 					if e = json.Unmarshal(b, &body); e != nil {
 						return output.New(2, "invalid runtime input")
@@ -155,12 +158,9 @@ func (a *App) runtimeCommands() {
 				if e != nil {
 					return e
 				}
-				var input struct {
-					Input   string         `json:"input"`
-					Options sdk.RunOptions `json:"options"`
-				}
-				if e = json.Unmarshal(b, &input); e != nil || input.Input == "" {
-					return output.New(2, "input JSON requires nonempty input")
+				input, e := decodeRuntimeInput(b)
+				if e != nil {
+					return output.New(2, e.Error())
 				}
 				if action == "run" {
 					result, e := t.Run(ctx, input.Input, &input.Options)

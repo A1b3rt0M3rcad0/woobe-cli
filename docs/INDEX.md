@@ -13,6 +13,7 @@ that every original roadmap criterion is complete.
 | [Development](DEVELOPMENT.md) | Provider bindings, shared dependencies and Surfaces |
 | [Project lifecycle policy](PROJECT_LIFECYCLE.md) | Server-managed gates, CAS policy changes, stable Production actors and original-operation recovery |
 | [ASaC tracking/history](ASAC.md) | Immutable checkpoints, guarded source checkout/rebase, objects, origin locks, isolated Drafts, exact Candidate evaluation/publication and scoped remote observations |
+| [Trusted Git provenance](GIT_PROVENANCE.md) | Offline exact-commit source proof, explicitly scoped builder trust and independent append-only Git receipts |
 | [Signed receipts](SIGNED_RECEIPTS.md) | Offline instance signatures, explicit root pinning, key rotation/revocation and trust watermarks |
 | [Portable packages](PACKAGES.md) | Agent/Network export/import, environments, bindings and checkpoints |
 | [Command catalog](OPERATIONS.md) | Current discovery-derived executable commands and HTTP routes |

@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from current discovery: 349 executable entries, including 198 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
+Generated from current discovery: 357 executable entries, including 202 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
 
 Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. Assistant installation uses local `skills` commands, not HTTP operations. The optional npm `woobe-skill` executable uses the same payload and receipts.
 
@@ -50,6 +50,8 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `develop agent diff` | `development` | — | `local` | — | — |
 | `develop agent draft` | `development` | — | `local` | — | — |
 | `develop agent evaluation` | `development` | — | `local` | — | — |
+| `develop agent git-attest` | `development` | — | `local` | — | — |
+| `develop agent git-proof` | `development` | — | `local` | — | — |
 | `develop agent heads` | `development` | — | `local` | — | — |
 | `develop agent history` | `development` | — | `local_or_server-dependent` | — | — |
 | `develop agent lease` | `development` | — | `local` | — | — |
@@ -76,6 +78,8 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `develop network diff` | `development` | — | `local` | — | — |
 | `develop network draft` | `development` | — | `local` | — | — |
 | `develop network evaluation` | `development` | — | `local` | — | — |
+| `develop network git-attest` | `development` | — | `local` | — | — |
+| `develop network git-proof` | `development` | — | `local` | — | — |
 | `develop network heads` | `development` | — | `local` | — | — |
 | `develop network history` | `development` | — | `local_or_server-dependent` | — | — |
 | `develop network lease` | `development` | — | `local` | — | — |
@@ -144,6 +148,8 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `project agent environment update` | `http` | `PATCH /ai/agents/{agent_id}/runtime-environments/{environment}` | `observed` | agent:write | — |
 | `project agent export` | `http-projection` | — | `observed` | — | — |
 | `project agent get` | `http` | `GET /ai/agents/{agent_id}` | `observed` | agent:read | — |
+| `project agent git-attestation create` | `http` | `POST /projects/{project_id}/agents/{resource_id}/asac/git-attestations` | `proposed` | agent:version | — |
+| `project agent git-attestation get` | `http` | `GET /projects/{project_id}/agents/{resource_id}/asac/git-attestations/{attestation_id}` | `proposed` | agent:read | — |
 | `project agent knowledge bind` | `http` | `POST /knowledge/agent-collections` | `observed` | agent:write | — |
 | `project agent knowledge list` | `http` | `GET /knowledge/agent-collections` | `observed` | agent:read | — |
 | `project agent knowledge unbind` | `http` | `DELETE /knowledge/agent-collections/{link_id}` | `observed` | agent:delete | — |
@@ -217,6 +223,8 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `project network execution events` | `http` | `GET /network/executions/{execution_id}/events` | `observed` | network:read | — |
 | `project network execution snapshot` | `http` | `GET /network/executions/{execution_id}/snapshot` | `observed` | network:read | — |
 | `project network get` | `http` | `GET /network/projects/{project_id}/networks/{network_id}` | `observed` | network:read | — |
+| `project network git-attestation create` | `http` | `POST /projects/{project_id}/networks/{resource_id}/asac/git-attestations` | `proposed` | network:version | — |
+| `project network git-attestation get` | `http` | `GET /projects/{project_id}/networks/{resource_id}/asac/git-attestations/{attestation_id}` | `proposed` | network:read | — |
 | `project network list` | `http` | `GET /network/projects/{project_id}/networks` | `observed` | network:read | — |
 | `project network management external-context` | `http` | `GET /network/{network_id}/management/external-context-contract` | `observed` | network:read | — |
 | `project network management versions` | `http` | `GET /network/{network_id}/management/versions` | `observed` | network:read | — |

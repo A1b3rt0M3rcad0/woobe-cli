@@ -450,3 +450,9 @@ or unreadable/malformed checkpoint still requires reconciliation before recovery
 Server-signed ASaC receipts can be exported and verified offline with an explicit
 operator-confirmed root. See [signed receipts](SIGNED_RECEIPTS.md) for trust pinning,
 rotation, revocation and limits on freshness and Git provenance.
+
+## Independent Git provenance
+
+An exact commit proof and trusted pipeline receipt are separate from revision,
+publication and deployment identities. See [Git provenance](GIT_PROVENANCE.md).
+A failed Git/documentary step never repeats activation.
