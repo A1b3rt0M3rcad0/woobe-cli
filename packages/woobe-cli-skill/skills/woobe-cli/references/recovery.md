@@ -54,3 +54,8 @@ reconcile` or `draft reconcile`; never repeat acquire after an uncertain respons
 Expired/superseded proofs are intentionally retained and fenced by the server.
 Explicit release or a deliberate new acquisition is required to change workflow
 ownership; `lease show` never adopts a reservation.
+
+For an unresolved exact Release selection, use `woobe agent '@support' deployment
+reconcile` (or Network). It reads the recorded original operation and mirrors the
+receipt before clearing pending state. Do not repeat apply. Native UUID recovery
+requires the original `--operation UUID`; no project configuration is needed.

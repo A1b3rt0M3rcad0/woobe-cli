@@ -195,6 +195,10 @@ var relevantFields = []string{
 }
 
 func summarize(command string, value any) any {
+	if command == "develop agent deployment" || command == "develop network deployment" {
+		return project(value, []string{"kind", "state", "environment", "release_id", "publication_id", "plan_id", "deployment_id", "operation_id", "expected_generation", "generation_before", "generation_after", "selection_changed", "action", "reason", "expires_at", "executed", "method", "path", "body", "complete", "write_outcome"}, false)
+	}
+
 	if strings.HasPrefix(command, "develop ") && (strings.HasSuffix(command, " status") || strings.HasSuffix(command, " current") || strings.HasSuffix(command, " history") || strings.HasSuffix(command, " heads") || strings.HasSuffix(command, " revision")) {
 		return value
 	}

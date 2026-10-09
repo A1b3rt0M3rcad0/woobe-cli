@@ -174,3 +174,16 @@ func TestConciseDryRunsAndNestedOperationalDataStayComplete(t *testing.T) {
 		}
 	}
 }
+
+func TestDeploymentSummaryKeepsRecoveryAndCASWithoutBindingPayload(t *testing.T) {
+	value := map[string]any{"deployment_id": "deployment", "operation_id": "original", "plan_id": "plan", "release_id": "release", "environment": "production", "generation_before": 4, "generation_after": 5, "state": "committed", "runtime_fingerprints": map[string]any{"credentials": map[string]any{"large": "payload"}}}
+	summary := summarize("develop agent deployment", value).(map[string]any)
+	for _, field := range []string{"deployment_id", "operation_id", "plan_id", "release_id", "environment", "generation_before", "generation_after", "state"} {
+		if summary[field] != value[field] {
+			t.Fatal("lost recovery or selection evidence", field)
+		}
+	}
+	if _, ok := summary["runtime_fingerprints"]; ok {
+		t.Fatal("unrequested binding payload in concise output")
+	}
+}
