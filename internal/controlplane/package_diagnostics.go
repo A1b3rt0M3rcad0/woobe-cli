@@ -4,6 +4,8 @@ package controlplane
 // messages, input snapshots, Provider failures or protected values to output.
 func packageExportIncompleteMessage(code, message string) string {
 	switch code {
+	case "ASAC_CANDIDATE_BINDING_UNAVAILABLE":
+		return "Stage blocked: the reported component has no accepted native identity in this registry; inspect bindings recover --dry-run, establish the closure with a managed push, then update/checkpoint the isolated Draft before staging"
 	case "PACKAGE_EXPORT_NETWORK_BINDING":
 		return "Network export blocked: an Agent or pinned snapshot is unavailable; inspect the reported node binding"
 	case "PACKAGE_EXPORT_NETWORK_CONSTITUENT":

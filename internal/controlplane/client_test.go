@@ -189,3 +189,17 @@ func TestManagedLifecycleCodesOnReviewedLegacyAndPolicyRoutes(t *testing.T) {
 		})
 	}
 }
+
+func TestCandidateBindingDiagnosticsLocateComponentAndGiveSafeRecovery(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(422)
+		_, _ = w.Write([]byte(`{"data":{"asac_schema_version":"1.0","diagnostics":[{"code":"ASAC_CANDIDATE_BINDING_UNAVAILABLE","file":"agents/support.yaml","path":"/metadata/key","message":"private-provider-secret"}]}}`))
+	}))
+	defer server.Close()
+	client, _ := New(server.URL, "fixture", time.Second)
+	_, _, err := client.Request(context.Background(), "POST", "/projects/project/networks/network/asac/candidates", nil, nil)
+	failure := output.Normalize(err)
+	if failure.DomainCode != "ASAC_CANDIDATE_BINDING_UNAVAILABLE" || len(failure.Diagnostics) != 1 || failure.Diagnostics[0].File != "agents/support.yaml" || !strings.Contains(failure.Message, "managed push") || strings.Contains(failure.Message, "private-provider") {
+		t.Fatal(err)
+	}
+}

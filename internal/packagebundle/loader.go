@@ -28,6 +28,7 @@ type Bundle struct {
 	Graph          *packagefmt.Graph
 	Inventory      []InventoryFile
 	ArtifactDigest string
+	LockIntegrity  string
 }
 
 func (b *Bundle) Close() error { return os.RemoveAll(b.Root) }
@@ -71,6 +72,16 @@ func confinedOpen(root *os.Root, path string) (*os.File, error) {
 }
 
 func Load(input string, locked bool) (bundle *Bundle, err error) {
+	return load(input, locked, true)
+}
+
+// LoadStructure validates current author bytes without evaluating a captured
+// lock. It is for read-only validation, never import, planning or publication.
+func LoadStructure(input string) (*Bundle, error) {
+	return load(input, false, false)
+}
+
+func load(input string, locked, verifyLock bool) (bundle *Bundle, err error) {
 	absolute, err := filepath.Abs(input)
 	if err != nil {
 		return nil, err
@@ -231,6 +242,11 @@ func Load(input string, locked bool) (bundle *Bundle, err error) {
 	}
 	sort.Slice(bundle.Inventory, func(i, j int) bool { return bundle.Inventory[i].Path < bundle.Inventory[j].Path })
 	bundle.ArtifactDigest = InventoryDigest(bundle.Inventory)
+	bundle.LockIntegrity = "not_evaluated"
+	if !verifyLock {
+		return bundle, nil
+	}
+	bundle.LockIntegrity = "absent"
 	lockInfo, lockErr := source.Lstat("woobe.lock.json")
 	if lockErr == nil {
 		if !lockInfo.Mode().IsRegular() {
@@ -261,8 +277,9 @@ func Load(input string, locked bool) (bundle *Bundle, err error) {
 			return nil, e
 		}
 		if !reflect.DeepEqual(document.Value, parsed.Value) {
-			return nil, failure("PACKAGE_INTEGRITY_MISMATCH", "Lock differs from captured files", "")
+			return nil, failure("PACKAGE_INTEGRITY_MISMATCH", "Lock differs from captured files; use package validate --structure-only to check edited author structure without certifying capture integrity", "")
 		}
+		bundle.LockIntegrity = "verified"
 	} else if !os.IsNotExist(lockErr) {
 		return nil, lockErr
 	} else if locked {

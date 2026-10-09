@@ -239,6 +239,8 @@ woobe package export agent "Support Agent"
 woobe package export agent AGENT_UUID --env production
 woobe package export agent AGENT_UUID --env release --version v1.0.20261007.01
 woobe package validate ./support-agent --locked
+# During local author editing (does not certify capture integrity):
+woobe package validate ./support-agent --structure-only
 woobe package bindings ./support-agent --destination ./destination.yaml
 woobe package import ./support-agent --bindings ./destination.yaml --wait
 ```
