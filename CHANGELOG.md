@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Binding recovery accepts the empty checkpoint left by a completed ASaC write. Unresolved, malformed and partial checkpoints still block recovery before network access.
+
 - Preserve positive integer fencing counters in terminal/JSON output for workflow recovery; keep textual tokens and all other credential fields redacted.
 
 - Publish exact evaluated Network Candidates without changing Production or standalone Agent environments. Resume/cancel durable partial preparations, reconcile original acceptance, and verify append-only publication/cancellation observations. Assistant guides require CLI 0.27+.

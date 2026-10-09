@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -124,7 +125,14 @@ func (a *App) developmentBindingRecoveryCommands() {
 				return err
 			}
 			for _, node := range nodes {
-				if _, err := c.ReadOperationalFile(asacPrivatePath(c, state, node.Resource.UID, "pending"), 16<<20); !os.IsNotExist(err) {
+				raw, readErr := c.ReadOperationalFile(asacPrivatePath(c, state, node.Resource.UID, "pending"), 16<<20)
+				if os.IsNotExist(readErr) {
+					continue
+				}
+				// Every reconciled ASaC writer seals its private checkpoint as
+				// an empty object. Presence alone is not an uncertain write.
+				var checkpoint map[string]json.RawMessage
+				if readErr != nil || json.Unmarshal(raw, &checkpoint) != nil || checkpoint == nil || len(checkpoint) != 0 {
 					return output.New(9, "Reconcile uncertain Draft operations before binding recovery")
 				}
 			}

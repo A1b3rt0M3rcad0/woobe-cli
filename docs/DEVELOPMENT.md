@@ -326,3 +326,7 @@ a short environment lease and `deployment apply PLAN_UUID --yes`. Recover lost
 responses with `deployment reconcile`; see [ASaC](ASAC.md#exact-release-deployment-plans).
 
 Managed Project gates apply to development and legacy promotion at the server. Inspect policy with `woobe project lifecycle show`; local registry, author locks and `--yes` do not bypass it. Administrative changes are documented in [Project lifecycle policy](PROJECT_LIFECYCLE.md).
+
+Binding recovery accepts the empty private pending marker left by a completed
+ASaC operation. Unresolved or malformed checkpoints still block recovery;
+reconcile the original operation before trying again.

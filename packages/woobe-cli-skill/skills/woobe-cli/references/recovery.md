@@ -66,3 +66,9 @@ ASaC Candidate/evaluation/publication/deployment path. Do not change policy or
 repeat legacy writes automatically. A confirmed stale policy generation needs
 a fresh `woobe project lifecycle show` and an intentional new policy operation;
 an uncertain policy write needs `woobe project lifecycle operation OPERATION_UUID`.
+
+A completed ASaC operation seals its private pending checkpoint as an empty
+object (`{}`). This is a cleared marker and does not block `bindings recover`.
+A pending operation, partial record or malformed/unreadable checkpoint still
+blocks recovery. Reconcile the original operation; do not delete an uncertain
+checkpoint or manufacture a new operation ID to bypass it.
