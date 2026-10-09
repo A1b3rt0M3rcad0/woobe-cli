@@ -14,7 +14,7 @@ from version import semver_key, validate
 REGISTRY = 'https://registry.npmjs.org/'
 
 
-def wait_for_integrity(spec, expected, timeout=300):
+def wait_for_integrity(spec, expected, timeout=900):
     deadline = time.monotonic() + timeout
     while True:
         observed = view(spec, 'dist.integrity')

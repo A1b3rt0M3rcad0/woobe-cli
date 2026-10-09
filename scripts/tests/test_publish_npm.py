@@ -18,6 +18,12 @@ class NpmPublicationTests(unittest.TestCase):
             publish_npm.wait_for_integrity('woobe-cli@1.2.3', 'expected')
             self.assertEqual(sleep.call_count, 2)
 
+    def test_registry_processing_over_five_minutes_keeps_polling_without_mutation(self):
+        with patch.object(publish_npm, 'view', side_effect=[None, None, 'expected']), patch.object(publish_npm.time, 'monotonic', side_effect=[0, 301, 601]), patch.object(publish_npm.time, 'sleep') as sleep, patch.object(publish_npm.subprocess, 'run') as run:
+            publish_npm.wait_for_integrity('woobe-cli@1.2.3', 'expected')
+            self.assertEqual(sleep.call_count, 2)
+            run.assert_not_called()
+
     def test_visible_integrity_conflict_fails_immediately(self):
         with patch.object(publish_npm, 'view', return_value='different'), patch.object(publish_npm.time, 'sleep') as sleep:
             with self.assertRaisesRegex(ValueError, 'bytes differ'):
@@ -27,7 +33,7 @@ class NpmPublicationTests(unittest.TestCase):
     def test_processing_timeout_is_reported_without_republishing(self):
         with patch.object(publish_npm, 'view', return_value=None), patch.object(publish_npm.time, 'monotonic', side_effect=[0, 301]), patch.object(publish_npm.subprocess, 'run') as run:
             with self.assertRaisesRegex(TimeoutError, 'still processing'):
-                publish_npm.wait_for_integrity('woobe-cli@1.2.3', 'expected')
+                publish_npm.wait_for_integrity('woobe-cli@1.2.3', 'expected', timeout=300)
             run.assert_not_called()
 
     def setUp(self):
