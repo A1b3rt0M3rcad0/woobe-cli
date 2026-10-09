@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const candidateEvaluationHelp = " With --candidate UUID, read a versioned YAML suite containing schema_version: '1.0', suite_id, suite_version, dataset_version and 1–16 cases with id, message, optional external_context and expected_output. Evaluate that exact ready Candidate, independently of current YAML or environments. Do not combine --candidate with --env or --version. Acceptance is not qualification: inspect evaluation UUID. A lost acceptance must use draft reconcile before another write; evaluation UUID reconcile --yes reads original Runs without executing another case. Neither testing nor reconciliation publishes or changes Production."
+
 func validateEvaluationAcceptance(data map[string]any, operation, resource, candidate, record, runtime string) error {
 	if data["schema_version"] != "1.0" || data["operation_id"] != operation || data["resource_id"] != resource || data["candidate_id"] != candidate || data["record_digest"] != record || data["runtime_digest"] != runtime || data["write_outcome"] != "committed" || data["state"] != "accepted" || !uuidReference(packagefmt.Text(data["evaluation_id"])) || data["published"] != false || data["production_changed"] != false {
 		return output.New(9, "Evaluation acceptance is uncertain; run draft reconcile for the original operation")
@@ -73,7 +75,7 @@ func (a *App) asacEvaluationCommands() {
 		a.group("develop " + kind).AddCommand(command)
 	}
 	var candidate string
-	command := &cobra.Command{Use: "test REFERENCE --candidate UUID --file SUITE.yaml", Short: "Evaluate a ready Network Candidate with a versioned YAML suite", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+	command := &cobra.Command{Use: "test REFERENCE --candidate UUID --file SUITE.yaml", Short: "Evaluate a ready Network Candidate with a versioned YAML suite", Long: candidateEvaluationHelp, Example: "woobe network '@helpdesk' test --candidate CANDIDATE_UUID --file suite.yaml --yes\nwoobe network '@helpdesk' evaluation EVALUATION_UUID", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		return a.evaluateASaCCandidate(cmd, "network", args[0], candidate)
 	}}
 	command.Flags().StringVar(&candidate, "candidate", "", "Ready Candidate UUID (required)")
