@@ -168,6 +168,12 @@ A pending write must be reconciled before changing selection. Known same-origin
 roots refuse `create` when their private binding is missing; use explicit clone
 with a new UID only when another resource is intended.
 
+A fresh `pull` of an Agent or Network with existing ASaC history reuses the
+logical UID captured by its authorized owner. Changing the local alias does not
+change that identity. A conflicting existing local UID is rejected before any
+author files are written; recover the original history rather than rewriting
+its UID. Frozen Network constituents retain distinct local snapshot artifacts.
+
 Provider connection defaults and Model overrides remain distinct during compilation.
 A Provider's `base_url` stays in its public credential requirement metadata; it
 is not injected into, or allowed to replace, the Model's explicit `base_url`.

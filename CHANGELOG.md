@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fresh Agent/Network captures reuse the owner's canonical ASaC identity; reject a conflicting local UID without changing author files.
+
 - Binding recovery accepts the empty checkpoint left by a completed ASaC write. Unresolved, malformed and partial checkpoints still block recovery before network access.
 
 - Export authorized server-signed Agent/Network receipts, pin operator-confirmed instance roots and verify offline against explicit key rotation/revocation manifests.

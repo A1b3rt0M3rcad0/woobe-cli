@@ -124,6 +124,7 @@ func (c *Client) downloadArchive(ctx context.Context, path string, receipt Expor
 }
 
 type CapturedBinding struct {
+	ResourceUID  string            `json:"resource_uid,omitempty"`
 	Identifiers  map[string]string `json:"identifiers,omitempty"`
 	OwnerAgentID string            `json:"owner_agent_id"`
 	Frozen       bool              `json:"frozen"`

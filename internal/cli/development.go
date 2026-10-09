@@ -132,7 +132,7 @@ func (a *App) developmentCommands() {
 					defer bundle.Close()
 					captured := map[string]devworkspace.CapturedBinding{}
 					for key, b := range receipt.ResourceBindings {
-						captured[key] = devworkspace.CapturedBinding{Identifiers: b.Identifiers, OwnerAgentID: b.OwnerAgentID, Frozen: b.Frozen, ExportID: receipt.ExportID, ResourceID: b.ResourceID, Revision: b.Revision, SourceKind: b.SourceKind, SnapshotID: b.SnapshotID}
+						captured[key] = devworkspace.CapturedBinding{ResourceUID: b.ResourceUID, Identifiers: b.Identifiers, OwnerAgentID: b.OwnerAgentID, Frozen: b.Frozen, ExportID: receipt.ExportID, ResourceID: b.ResourceID, Revision: b.Revision, SourceKind: b.SourceKind, SnapshotID: b.SnapshotID}
 					}
 					if a.DryRun {
 						return a.emit(map[string]any{"executed": false, "target_id": targetID, "environment": env, "resources": len(bundle.Graph.Components), "destination": localPath})
