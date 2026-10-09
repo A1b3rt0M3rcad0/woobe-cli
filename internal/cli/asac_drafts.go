@@ -229,7 +229,16 @@ func (a *App) asacDraftCommands() {
 							return output.New(10, "Evaluation accepted; its local receipt could not be saved")
 						}
 					}
-					if pending.Path != base+"/candidates" && !isEvaluation && result["draft_id"] != nil && result["resource_id"] != nil {
+					isPublication := pending.Path == base+"/publications"
+					if isPublication {
+						if err = validatePublicationAcceptance(result, pending.OperationID, id, resource.UID, packagefmt.Text(pending.Body["candidate_id"]), packagefmt.Text(pending.Body["evaluation_id"]), pending.RecordDigest, packagefmt.Text(pending.Body["runtime_digest"])); err != nil {
+							return err
+						}
+						if err = c.StorePublicationReceipt(*resource, strings.TrimRight(control.Base, "/"), a.Workspace, a.Project, result); err != nil {
+							return output.New(10, "Published; documentary receipt is still pending: "+err.Error())
+						}
+					}
+					if pending.Path != base+"/candidates" && !isEvaluation && !isPublication && result["draft_id"] != nil && result["resource_id"] != nil {
 						if err = saveObservation(result); err != nil {
 							return err
 						}
