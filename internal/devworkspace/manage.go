@@ -135,7 +135,9 @@ func (c *Config) CloneWithState(kind, reference, alias, destination string, stat
 			return Resource{}, err
 		}
 	}
-	packagefmt.Object(document["metadata"])["name"] = alias
+	if kind == "Skill" {
+		packagefmt.Object(document["metadata"])["name"] = alias
+	}
 	return c.Add(resource.Kind, alias, destination, document, supports, dryRun)
 }
 

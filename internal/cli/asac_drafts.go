@@ -133,8 +133,7 @@ func (a *App) asacDraftCommands() {
 
 			if action == "select" {
 				if raw, readErr := c.ReadOperationalFile(pendingPath, 16<<20); readErr == nil {
-					var pending asacPending
-					if decodeASaCPending(raw, &pending) != nil || pending.OperationID != "" {
+					if !clearedASaCPending(raw) {
 						return output.New(9, "A Draft write is unresolved; reconcile its original operation before changing selection")
 					}
 				} else if !os.IsNotExist(readErr) {
@@ -182,10 +181,16 @@ func (a *App) asacDraftCommands() {
 			if action == "reconcile" {
 				raw, err := c.ReadOperationalFile(pendingPath, 16<<20)
 				if err != nil {
+					if os.IsNotExist(err) && operation == "" {
+						return a.emit(map[string]any{"pending": false, "resource_id": id})
+					}
 					return output.New(2, "No recorded Draft operation to reconcile")
 				}
+				if clearedASaCPending(raw) && operation == "" {
+					return a.emit(map[string]any{"pending": false, "resource_id": id})
+				}
 				var pending asacPending
-				if decodeASaCPending(raw, &pending) != nil || !uuidReference(pending.OperationID) {
+				if decodeASaCPending(raw, &pending) != nil || !uuidReference(pending.OperationID) || pending.Body == nil || pending.Body["operation_id"] != pending.OperationID || !strings.HasPrefix(pending.Path, base+"/") || (pending.Method != "POST" && pending.Method != "PUT") {
 					return output.New(9, "Invalid Draft operation checkpoint")
 				}
 				if operation != "" && operation != pending.OperationID {
@@ -303,8 +308,7 @@ func (a *App) asacDraftCommands() {
 				}
 			}
 			if raw, err := c.ReadOperationalFile(pendingPath, 16<<20); err == nil {
-				var previous asacPending
-				if json.Unmarshal(raw, &previous) != nil || previous.OperationID != "" {
+				if !clearedASaCPending(raw) {
 					return output.New(9, "A Draft write is unresolved; run draft reconcile before another write")
 				}
 			} else if !os.IsNotExist(err) {

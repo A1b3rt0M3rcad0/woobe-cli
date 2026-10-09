@@ -173,7 +173,7 @@ def main():
     destination.mkdir(parents=True, exist_ok=True)
     fields = list(rows[0])
     with (destination / "OUTPUT_AUDIT.csv").open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fields)
+        writer = csv.DictWriter(f, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     measured = sum(r["previous_bytes"] != "" for r in rows)

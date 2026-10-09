@@ -23,9 +23,21 @@ destination native identities/private references. Omit `--bindings` when there
 are no requirements. Keep bindings/plans outside the portable directory and
 never put raw credentials in them. SOURCE also accepts `woobe.yaml` or tar.gz.
 
-An unchanged package can validate with `--locked`; editing author YAML changes
-its inventory and invalidates the old lock. Use ordinary validation while
-editing, never rewrite a lock to conceal a mismatch.
+A present lock is always verified, even without `--locked`. That flag additionally
+requires a lock. Do not edit the captured copy or remove its lock to hide drift.
+Create a separate editable author, edit it, then produce a new sealed copy:
+
+```sh
+woobe package edit ./captured --destination ./author
+woobe package validate ./author
+woobe package seal ./author --destination ./sealed
+woobe package validate ./sealed --locked
+```
+
+`edit` verifies the sealed source before copying and omits the old lock only in
+the new author directory. `seal` validates the current author and writes a new
+inventory lock in another directory. Neither overwrites a destination or mutates
+the source; server semantics and destination permissions still require a plan.
 
 Import creates Draft resources even when exported from Production; it is not the
 managed update flow. Editing an existing resource uses pull/push. Repeating an

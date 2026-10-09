@@ -50,8 +50,12 @@ method, scope, effect and availability rather than all inherited flags per row.
 
 Use `--fields` to select a comma-separated set of paths from the redacted response
 data **before** the default summary is applied. Dot-separated paths refer to nested
-objects; output keys retain those dotted names. A missing field becomes JSON `null`
-or `-` in text. Field names are case-sensitive. `--fields` takes precedence over
+objects; output keys retain those dotted names. Absent fields are omitted; an
+explicit null is retained as JSON `null` or `-` in text. Field names are case-sensitive.
+For read-only inspections, `--strict-fields` rejects a path absent from any returned
+row with exit 2 and lists the missing paths. Empty collections have no rows to
+validate. Inspect `--wide` or full JSON to discover fields. Strict projection is
+refused before writes: a presentation error must not obscure an accepted mutation. `--fields` takes precedence over
 `--wide`, and works with `text`, `table` and `compact`, not the complete JSON/JSONL
 contracts. The choice is local presentation; it does not filter the API query.
 
@@ -121,3 +125,18 @@ Deployment commands show the exact Release/Plan/Deployment and original operatio
 IDs, environment, generation and outcome by default. Binding fingerprints and
 full proof material remain available with `--wide` or `--output json`. Presentation
 never changes a saved receipt or request.
+
+## Acceptance identities and command errors
+
+Compact ASaC acceptances retain `operation_id`, `candidate_id`,
+`preparation_operation_id`, `evaluation_id`, `publication_id`, `release_id`,
+`draft_id`, `revision_id` and recovery identities whenever returned. The Stage
+acceptance operation is distinct from the Package preparation operation. Observe
+`candidate CANDIDATE_UUID` or `package status PREPARATION_OPERATION_UUID`; do not
+pass the acceptance operation to Package status. Compact preserves state,
+completion and write outcome without replacing full JSON as the protocol.
+
+Unknown subcommands and extra arguments return exit 2, including in nested
+groups. Explicit `--help` and a bare group are discovery requests and return
+readable help with exit 0. JSON/compact usage errors remain parseable; human text
+is not a successful operation result.

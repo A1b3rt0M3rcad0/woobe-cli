@@ -36,6 +36,9 @@ func TestCloneAgentOwnsIndependentPromptAndContractAndOwnedTool(t *testing.T) {
 		t.Fatal(err)
 	}
 	refs := packagefmt.References(graph.Nodes[cloned.Key].Document)
+	if packagefmt.Object(graph.Nodes[cloned.Key].Document["metadata"])["name"] != "Support" || cloned.Alias != "copy" || cloned.UID == a.UID {
+		t.Fatal("local alias replaced presentation name or logical identity", cloned)
+	}
 	for _, ref := range refs {
 		if !strings.HasPrefix(ref.Key, "copy-") {
 			t.Fatal("owned artifact shared", ref)

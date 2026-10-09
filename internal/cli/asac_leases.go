@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/devworkspace"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/jsoninput"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/spf13/cobra"
@@ -23,9 +24,20 @@ type asacLeaseObservations struct {
 }
 
 func decodeASaCPending(raw []byte, pending *asacPending) error {
+	if err := jsoninput.Validate(raw); err != nil {
+		return err
+	}
 	decoder := json.NewDecoder(strings.NewReader(string(raw)))
 	decoder.UseNumber()
 	return decoder.Decode(pending)
+}
+
+func clearedASaCPending(raw []byte) bool {
+	if jsoninput.Validate(raw) != nil {
+		return false
+	}
+	var marker map[string]any
+	return json.Unmarshal(raw, &marker) == nil && marker != nil && len(marker) == 0
 }
 
 func asacCounter(value any) (int64, bool) {
@@ -285,8 +297,7 @@ func (a *App) asacLeaseCommands() {
 				if c != nil {
 					raw, readErr := c.ReadOperationalFile(pendingPath, 16<<20)
 					if readErr == nil {
-						var prior asacPending
-						if json.Unmarshal(raw, &prior) != nil || prior.OperationID != "" {
+						if !clearedASaCPending(raw) {
 							return output.New(9, "An ASaC write is unresolved; reconcile its original operation first")
 						}
 					} else if !os.IsNotExist(readErr) {

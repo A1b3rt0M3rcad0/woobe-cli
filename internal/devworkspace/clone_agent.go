@@ -62,7 +62,6 @@ func (c *Config) cloneAgent(graph *Graph, source *Node, alias, destination strin
 		metadata := packagefmt.Object(document["metadata"])
 		metadata["key"] = key
 		if oldKey == source.Resource.Key {
-			metadata["name"] = alias
 			result = resource
 		}
 		rewriteCloneRefs(document, keys)

@@ -51,3 +51,11 @@ conflicting fields are errors, never silently discarded. Legacy SDK field names
 remain compatible. Read `runtime_identity` from a compatible backend: Agent
 Sessions follow their environment between Runs, Network Sessions pin a version,
 and every accepted Run freezes its own execution snapshot.
+
+Use `--fields "id,name" --strict-fields --output compact` for read-only scripts
+that require those fields. Absent fields are omitted in permissive mode, while
+explicit null remains present. Strict mode fails on absent paths in any row,
+and is rejected before writes. Bare groups/`--help` are discovery; unknown
+subcommands are exit-2 machine errors, never successful help results.
+Compact ASaC responses preserve Candidate/preparation/evaluation/publication IDs
+needed for the next step. The Stage operation is not the Package preparation ID.

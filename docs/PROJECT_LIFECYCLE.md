@@ -53,3 +53,9 @@ requiring `.woobe-config`. They are available only when the backend advertises
 the reviewed API; incompatible backends fail before a policy write. JSON and
 YAML bodies share the same server validation. Git provenance, offline receipt
 signatures and Web editing are separate lifecycle features.
+
+Agent tests by Staging/Production environment resolve the authoritative ASaC
+selection and accept its exact immutable Release. Preparation checks the selected
+identity while locking the environment observation; stale selected UUIDs are
+rejected. Legacy Staging-kind snapshots remain compatible where ASaC has no
+selection. This does not relabel, copy or publish a Release.

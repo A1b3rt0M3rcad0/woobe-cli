@@ -145,8 +145,7 @@ func (a *App) evaluateASaCCandidate(cmd *cobra.Command, kind, reference, candida
 	}
 	pendingPath := asacPrivatePath(c, state, resource.UID, "pending")
 	if raw, readErr := c.ReadOperationalFile(pendingPath, 16<<20); readErr == nil {
-		var previous asacPending
-		if json.Unmarshal(raw, &previous) != nil || previous.OperationID != "" {
+		if !clearedASaCPending(raw) {
 			return output.New(9, "An ASaC write is unresolved; run draft reconcile before another evaluation")
 		}
 	} else if !os.IsNotExist(readErr) {

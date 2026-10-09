@@ -12,6 +12,16 @@ import (
 // Publish exposes a new directory only after every captured byte and lock has
 // been verified. Native exclusive rename is required; ordinary rename is unsafe.
 func (b *Bundle) Publish(destination string) error {
+	return b.publish(destination, true)
+}
+
+// PublishAuthor creates a separate editable copy. The verified captured source
+// stays sealed; the new directory deliberately has no captured inventory lock.
+func (b *Bundle) PublishAuthor(destination string) error {
+	return b.publish(destination, false)
+}
+
+func (b *Bundle) publish(destination string, sealed bool) error {
 	absolute, err := filepath.Abs(destination)
 	if err != nil {
 		return err
@@ -68,14 +78,16 @@ func (b *Bundle) Publish(destination string) error {
 			return failure("PACKAGE_INTEGRITY_MISMATCH", "Captured artifact changed before publication", item.Path)
 		}
 	}
-	lock, err := json.Marshal(b.Lock())
-	if err != nil {
-		return err
+	if sealed {
+		lock, err := json.Marshal(b.Lock())
+		if err != nil {
+			return err
+		}
+		if err = os.WriteFile(filepath.Join(stage, "woobe.lock.json"), lock, 0600); err != nil {
+			return err
+		}
 	}
-	if err = os.WriteFile(filepath.Join(stage, "woobe.lock.json"), lock, 0600); err != nil {
-		return err
-	}
-	verified, err := Load(stage, true)
+	verified, err := Load(stage, sealed)
 	if err != nil {
 		return err
 	}

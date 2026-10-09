@@ -78,3 +78,14 @@ read [signatures](signatures.md). Unsigned history integrity checks do not
 establish offline server authority.
 
 For `git-attest` uncertainty, inspect `woobe project agent git-attestation get RESOURCE_UUID ORIGINAL_OPERATION_UUID` (Network equivalent). Correct trust/source issues before another operation; never repeat deployment to repair Git evidence.
+
+A missing Draft pending file or the exact cleared object `{}` means no pending
+operation: `draft reconcile` succeeds with `pending=false` and no backend request.
+An explicit `--operation` still requires a recorded matching write. Partial,
+malformed, duplicate-key, wrong-target or trailing-data checkpoints remain errors;
+never erase them to manufacture a clean state.
+
+Network export/pull conflicts expose a `PACKAGE_EXPORT_NETWORK_*` diagnostic
+and a bounded `/spec/nodes/...` or `/spec` path. Preserve the request ID. A
+missing/invalid pinned constituent or corrupt snapshot cannot be repaired by
+silently selecting the latest Agent or editing the captured hash.

@@ -44,6 +44,7 @@ type App struct {
 	Registry                                                                                 []Operation
 	OutputFields                                                                             []string
 	OutputWide                                                                               bool
+	StrictFields                                                                             bool
 	outputCommand                                                                            string
 }
 
@@ -71,6 +72,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.StringVar(&a.Mode, "output", defaultOutput, "auto (text in terminals, JSON in pipes), text, table, compact, json or jsonl")
 	f.StringSliceVar(&a.OutputFields, "fields", nil, "Response fields to display, comma-separated; dotted paths supported (text/table/compact)")
 	f.BoolVar(&a.OutputWide, "wide", false, "Show all response fields in text/table/compact output")
+	f.BoolVar(&a.StrictFields, "strict-fields", false, "Reject absent --fields paths (explicit null values remain valid)")
 	f.DurationVar(&a.Timeout, "timeout", 30*time.Second, "HTTP deadline")
 	f.BoolVar(&a.Yes, "yes", false, "Accept the specified destructive operation")
 	f.BoolVar(&a.NoInput, "no-input", false, "Disable interactive authentication and project prompts")
@@ -84,7 +86,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.StringVar(&a.IfMatch, "if-match", "", "Expected server ETag")
 	f.StringVar(&a.IdempotencyKey, "idempotency-key", "", "Key, only when supported by server")
 	f.StringVar(&a.SecretFile, "secret-file", "", "Exclusive private destination for issued secret")
-	r.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+	r.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		path := strings.TrimPrefix(cmd.CommandPath(), "woobe ")
 		a.outputCommand = path
 		if !output.ValidMode(a.Mode) {
@@ -96,6 +98,12 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 		}
 		if len(a.OutputFields) > 0 && (a.Mode == "json" || a.Mode == "jsonl") {
 			return output.New(2, "--fields requires --output text, table or compact; full JSON output is unchanged")
+		}
+		if a.StrictFields && len(a.OutputFields) == 0 {
+			return output.New(2, "--strict-fields requires --fields")
+		}
+		if a.StrictFields && !cmd.DisableFlagParsing && !a.strictFieldRead(path, args) {
+			return output.New(2, "--strict-fields is for read-only inspections; inspect a write receipt separately to avoid confusing an accepted write with a presentation error")
 		}
 		if a.SchemaSHA != "" {
 			if len(a.SchemaSHA) != 64 || strings.Trim(a.SchemaSHA, "0123456789abcdef") != "" {
@@ -163,7 +171,54 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.discoveryCommands()
 	a.installCommandGuides()
 	a.completeDiscovery()
+	a.validateCommandGroups(r)
 	return a
+}
+
+func (a *App) strictFieldRead(path string, args []string) bool {
+	if op, ok := a.operation(path); ok && op.Method != "" {
+		return op.Method == "GET" || op.Method == "HEAD"
+	}
+	if path == "request" {
+		return len(args) > 0 && (args[0] == "GET" || args[0] == "HEAD")
+	}
+	if strings.HasPrefix(path, "develop ") {
+		if len(strings.Fields(path)) < 3 {
+			return false
+		}
+		action := strings.Fields(path)[2]
+		switch action {
+		case "current", "status", "diff", "candidate", "heads":
+			return true
+		case "draft":
+			return len(args) > 1 && (args[1] == "list" || args[1] == "show")
+		case "history":
+			return len(args) == 1 || len(args) > 1 && (args[1] == "list" || args[1] == "show" || args[1] == "verify")
+		}
+		return false
+	}
+	// Local reads with no remote/local mutation; unknown commands fail closed.
+	switch path {
+	case "version", "context list", "context show", "config show", "config check", "resources list", "resources used-by", "resources validate", "auth status", "auth key inspect", "doctor", "package doctor", "package status", "package validate", "server-schema", "schema", "help":
+		return true
+	}
+	return false
+}
+
+// Cobra otherwise renders help successfully when an unresolved argument reaches
+// a non-runnable group. Keep bare groups discoverable, but never accept a typo.
+func (a *App) validateCommandGroups(cmd *cobra.Command) {
+	if cmd != a.Root && cmd.Run == nil && cmd.RunE == nil {
+		cmd.Args = cobra.NoArgs
+		cmd.RunE = func(cmd *cobra.Command, _ []string) error { return cmd.Help() }
+		if cmd.Annotations == nil {
+			cmd.Annotations = map[string]string{}
+		}
+		cmd.Annotations["command_group"] = "true"
+	}
+	for _, child := range cmd.Commands() {
+		a.validateCommandGroups(child)
+	}
 }
 func (a *App) emit(v any) error {
 	return a.writeOutput(a.Out, output.Redact(v), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, nil, nil)
@@ -185,7 +240,7 @@ func (a *App) writeOutput(w io.Writer, data any, scope map[string]string, err er
 	if !output.ValidMode(mode) {
 		mode = "json"
 	}
-	return output.WriteView(w, output.Options{Mode: mode, Command: a.outputCommand, Fields: a.OutputFields, Wide: a.OutputWide}, data, scope, err, meta)
+	return output.WriteView(w, output.Options{Mode: mode, Command: a.outputCommand, Fields: a.OutputFields, Wide: a.OutputWide, StrictFields: a.StrictFields}, data, scope, err, meta)
 }
 func (a *App) store() credentials.Store {
 	return credentials.Store{Dir: filepath.Join(filepath.Dir(a.ConfigPath), "credentials")}

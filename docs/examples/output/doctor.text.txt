@@ -4,6 +4,6 @@ authorization: not_evaluated
 checks.identity.success: true
 checks.instance.success: true
 checks.openapi.success: true
-client_version: dev
-reviewed_routes: 191
+client_version: 0.1.0
+reviewed_routes: 202
 Details: --wide | --fields FIELD,... | --output json

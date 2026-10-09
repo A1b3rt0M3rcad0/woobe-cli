@@ -1,5 +1,24 @@
 # Validation
 
+## Functional audit regressions — 2026-10-09
+
+`make check` includes recovery of absent/cleared Draft checkpoints, refusal to
+overwrite malformed/uncertain checkpoints, nested command error exits, compact
+continuation IDs, absent versus null field projections, strict read-only
+projections, clone presentation names, verified author copies and new sealing.
+Fixtures for Network export errors verify bounded codes/paths without exposing
+arbitrary backend messages. Package copy tests verify that tampered sources and
+existing destinations are refused and captured source bytes remain intact.
+
+Paired backend regressions exercise exact ASaC Staging/Production test selection,
+Network capture failures and unknown Agent PATCH fields. Live CLI and managed
+authoring tests run through the pinned binary, API, workers, PostgreSQL and a
+deterministic provider, including edited names across clone/create/move/push.
+The backend [acceptance matrix](https://github.com/A1b3rt0M3rcad0/woobe/blob/master/docs/testing/ASAC_ACCEPTANCE.md)
+maps the audit items to their regressions. This coverage does not identify the
+stored defects of the report's four unavailable Networks or certify every
+production graph; the new scoped diagnostics identify the failing capture step.
+
 ## Assistant skill delivery — 2026-10-08
 
 Current validation for the new skill is separate from historical backend evidence.

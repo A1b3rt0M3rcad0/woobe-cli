@@ -9,7 +9,7 @@ Windows binaries contain the same reviewed skill files as the optional npm packa
 `woobe-cli-skill` remains a separate npm package with the `woobe-skill` installer
 for assistants that want instructions independently of a native CLI installation.
 That optional installer requires Node.js 22+. Documented Woobe workflows require
-CLI 0.32.0+ for the current ASaC command references; the new built-in installer is available in CLI releases containing
+CLI 0.32.2+ for the current ASaC command references; the new built-in installer is available in CLI releases containing
 this PR. Neither installer logs in, asks for keys or calls Woobe.
 
 ## Install directly from Woobe CLI
@@ -220,8 +220,9 @@ installer/npx. `scripts/validate_skill_commands.py` checks every fenced CLI
 example against the packaged binary's help, without server requests.
 See the [repository documentation index](https://github.com/A1b3rt0M3rcad0/woobe-cli/blob/master/docs/INDEX.md) for broader CLI workflows and limitations.
 
-The assistant payload now requires CLI 0.32.0 or newer because its ASaC guides
-include revision catalog fetch and retained executable hydration. These commands
+The assistant payload now requires CLI 0.32.2 or newer because its ASaC guides
+include strict read projection and verified editable package copies, in addition
+to revision catalog fetch and retained executable hydration. These commands
 negotiate the backend's revision catalog and hydration capabilities. CLI 0.19.1
 introduced support for versioned
 compiler recipes in retained author objects. Upgrade the CLI before installing
@@ -229,6 +230,6 @@ or updating this payload (`npm install -g woobe-cli@latest` or the latest
 verified native release). This compatibility floor is independent of the
 calculated release version; older payloads are not rewritten.
 
-The current payload includes exact isolated Candidate preparation with Stage `--revision`, status inspection and original-acceptance reconciliation. These require CLI 0.32.0+ and an explicitly advertised backend capability; a ready Candidate is not Evaluation or publication evidence.
+The current payload includes exact isolated Candidate preparation with Stage `--revision`, status inspection and original-acceptance reconciliation. These require CLI 0.24+ and an explicitly advertised backend capability; a ready Candidate is not Evaluation or publication evidence.
 
 The current payload also includes versioned YAML Candidate evaluations for Agents and Networks, original write reconciliation and native Run evidence inspection (CLI 0.25+ and an advertised compatible backend). Evaluation does not publish or activate.
