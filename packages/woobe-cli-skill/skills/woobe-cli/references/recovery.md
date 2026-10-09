@@ -44,3 +44,5 @@ leaves the checkpoint pending; preserve it and investigate with `reconcile`.
 Do not delete private state to bypass this check or resend the accepted write.
 
 For an uncertain `test --candidate`, use `draft reconcile` to recover the original Evaluation UUID. Then inspect `evaluation UUID` or `evaluation UUID reconcile --yes`. These commands never execute another case; do not retry the test to infer its outcome.
+
+For exact Candidate publication, retain the original pending operation. An unknown acceptance or exit 10 after local receipt failure requires `woobe agent '@support' draft reconcile`; never repeat publish to repair its local mirror.

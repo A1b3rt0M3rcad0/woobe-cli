@@ -5,6 +5,8 @@
 
 ## Unreleased
 
+- Publish an exact evaluated Agent Candidate, preserve original-operation reconciliation and append-only destination-scoped receipts without changing Production. Coordinate the assistant guides with CLI 0.26+.
+
 - Prepare exact isolated Agent/Network revisions as detached immutable Candidates, inspect their state and reconcile lost acceptance without repeating writes. Native lifecycle defaults remain explicit legacy behavior.
 
 - Recover accepted Agent/Network native bindings after cloning without private state, preserving stale generations and exact frozen constituent identities without inventing a synchronized author base or restoring credentials.

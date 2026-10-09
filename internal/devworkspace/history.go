@@ -597,7 +597,11 @@ func (c *Config) VerifyHistory(resource Resource) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"receipts": receipts, "records": len(records), "heads": heads, "missing_history": missing, "missing_objects": missingObjects, "missing_author_objects": missingAuthors, "revisions_without_author_source": legacyAuthors, "author_sources_available": len(missingAuthors) == 0 && len(legacyAuthors) == 0, "metadata_complete": len(missing) == 0, "objects_available": len(missingObjects) == 0, "runtime_executable": "not_evaluated", "scope": "local", "remote_status": "unverified"}, nil
+	publications, err := c.VerifyPublicationReceipts(resource)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"publication_receipts": publications, "publication_authenticity": "integrity_checked_connection_unverified", "receipts": receipts, "records": len(records), "heads": heads, "missing_history": missing, "missing_objects": missingObjects, "missing_author_objects": missingAuthors, "revisions_without_author_source": legacyAuthors, "author_sources_available": len(missingAuthors) == 0 && len(legacyAuthors) == 0, "metadata_complete": len(missing) == 0, "objects_available": len(missingObjects) == 0, "runtime_executable": "not_evaluated", "scope": "local", "remote_status": "unverified"}, nil
 }
 
 // StoreHistoryReceipt verifies the server record and stores it under a destination

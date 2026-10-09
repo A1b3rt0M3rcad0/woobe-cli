@@ -245,3 +245,34 @@ available; Network testing requires an exact Candidate. Inspection by native UUI
 works without `.woobe-config`; accepting an evaluation uses private project state
 to preserve its write identity. Exact Candidate evaluation requires CLI 0.25+
 and a backend advertising `asac.candidate_evaluation`.
+
+## Publish an exact evaluated Agent Candidate
+
+```sh
+woobe agent '@support' publish --candidate CANDIDATE_UUID --evaluation EVALUATION_UUID --notes 'Validated support update' --yes
+woobe agent AGENT_UUID publication PUBLICATION_UUID
+woobe agent '@support' history verify
+```
+
+This explicit flow requires CLI 0.26+ and a backend advertising Agent in
+`asac.candidate_publication_kinds`. It requires a ready Candidate and a passed
+Evaluation for the same retained revision, runtime and bindings. The server
+rechecks those bindings and publishes the frozen Candidate, even if current
+Staging subsequently changed. It never pushes local YAML or activates Production.
+Native Release reuse still produces a separate publication provenance receipt.
+
+Acceptance requires the registered development resource and its private state;
+inspection by native UUID does not require `.woobe-config`. The CLI persists the
+original operation before POST and mirrors its immutable receipt after acceptance.
+An unknown remote outcome blocks another write. A local documentary failure after
+remote commit exits with code 10 and retains the pending operation. In both cases,
+use `woobe agent '@support' draft reconcile`: it reads the original operation and
+retries the local mirror, without another publication request.
+
+`history verify` checks receipt integrity and destination identity. Its
+`publication_authenticity: integrity_checked_connection_unverified` distinguishes
+an authenticated fetch observation from a signed offline attestation. Git claims
+remain declared; this flow does not claim verified pipeline provenance.
+Legacy publication without `--candidate` retains its native behavior; in
+particular, legacy Network publication activates Production. Exact Network
+publication is not advertised by this implementation.

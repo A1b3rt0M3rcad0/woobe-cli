@@ -305,3 +305,5 @@ retained executable object after catalog fetch. Author source and credentials
 remain separate; hydration preserves local working files. When source custody is retained on the server, hydration also verifies the original YAML, comments and support files through the recorded compiler recipe. Use guarded checkout to restore them.
 
 Evaluate an isolated ready Candidate with `woobe agent UUID test --candidate CANDIDATE_UUID --file suite.yaml --yes` (also supported for Networks). See the [versioned YAML suite and reconciliation workflow](docs/DEVELOPMENT.md#exact-candidate-evaluation).
+
+Publish an exact evaluated Agent with `woobe agent '@support' publish --candidate CANDIDATE_UUID --evaluation EVALUATION_UUID --notes 'Validated update' --yes`. This does not activate Production; see [exact publication and recovery](docs/ASAC.md#publish-an-exact-evaluated-agent-candidate).
