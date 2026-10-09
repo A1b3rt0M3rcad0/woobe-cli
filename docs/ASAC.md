@@ -433,3 +433,8 @@ Native UUID commands work without `.woobe-config`. Writes require a stable
 --workflow UUID --fencing-token NUMBER`. Save the operation UUID for
 `deployment reconcile --operation UUID`. `plan-show PLAN_UUID` and
 `show DEPLOYMENT_UUID` are reads and never select an environment.
+
+A registered lease/deployment target can resolve its native identity from the
+durable lock after private state is lost. The origin must match the selected API,
+workspace and project; this does not restore author bindings, credentials or a
+synchronized base. Environment leases still require a new owned workflow.

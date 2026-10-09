@@ -368,3 +368,23 @@ func (a *App) asacFetch(cmd *cobra.Command, kind string, c *devworkspace.Config,
 	}
 	return a.emit(map[string]any{"resource_uid": resource.UID, "resource_id": id, "fetched": total, "watermarks": watermarks, "metadata_complete": true, "coverage": "authorized_resource_metadata", "objects_available": "not_evaluated", "author_files_changed": false, "production_changed": false, "executed": !a.DryRun, "remote_status": "observed_at_fetch"})
 }
+
+// Resolving an authenticated operation target does not recreate native author
+// bindings or claim a synchronized base after a fresh clone.
+func asacRegisteredResourceID(c *devworkspace.Config, state *devworkspace.State, resource *devworkspace.Resource) (string, error) {
+	id := state.Bindings[resource.UID].ResourceID
+	if id == "" {
+		tracking, err := c.ReadTracking(*resource)
+		if err != nil {
+			return "", output.New(2, "Operation requires a native binding or durable tracking origin")
+		}
+		if tracking.Origin.Target != state.API || tracking.Origin.Workspace != state.Workspace || tracking.Origin.Project != state.Project {
+			return "", output.New(9, "Tracking origin belongs to another destination")
+		}
+		id = tracking.Origin.ResourceID
+	}
+	if !uuidReference(id) {
+		return "", output.New(2, "Recover the original native resource identity first")
+	}
+	return id, nil
+}

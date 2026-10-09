@@ -230,7 +230,10 @@ func (a *App) asacLeaseCommands() {
 				if err != nil {
 					return err
 				}
-				id = state.Bindings[resource.UID].ResourceID
+				id, err = asacRegisteredResourceID(c, state, resource)
+				if err != nil {
+					return err
+				}
 				if !uuidReference(id) {
 					return output.New(2, "Recover the native binding before acquiring a workflow lease")
 				}

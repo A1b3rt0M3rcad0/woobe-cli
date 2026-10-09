@@ -100,7 +100,10 @@ func (a *App) asacDeploymentCommands() {
 				if err != nil {
 					return err
 				}
-				id = state.Bindings[resource.UID].ResourceID
+				id, err = asacRegisteredResourceID(c, state, resource)
+				if err != nil {
+					return err
+				}
 			}
 			if err := resourceID(id); err != nil {
 				return err

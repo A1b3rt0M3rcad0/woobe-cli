@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/asac"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/devworkspace"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 )
 
 func deploymentTestPlan(body map[string]any, project, id string) map[string]any {
@@ -137,8 +139,46 @@ func TestRegisteredDeploymentLostResponseMirrorsOriginalPlanBeforeClearing(t *te
 	defer server.Close()
 	c, state, resource := asacWorkspace(t, server.URL)
 	state.Project = project
+	tracking, err := c.ReadTracking(resource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tracking.Origin.Project = project
+	trackingPath, err := c.TrackingPath(resource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	trackingJSON, err := json.Marshal(tracking)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var trackingObject map[string]any
+	if err = json.Unmarshal(trackingJSON, &trackingObject); err != nil {
+		t.Fatal(err)
+	}
+	trackingBytes, err := devworkspace.Encode(trackingObject)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(trackingPath, trackingBytes, 0600); err != nil {
+		t.Fatal(err)
+	}
+	rootBinding := state.Bindings[resource.UID]
+	rootBinding.ResourceID = ""
+	state.Bindings[resource.UID] = rootBinding
 	if err := c.WriteState(state); err != nil {
 		t.Fatal(err)
+	}
+	if resolved, err := asacRegisteredResourceID(c, state, &resource); err != nil || resolved != native {
+		t.Fatal("durable origin not resolved", resolved, err)
+	}
+	state.API = server.URL + "/another-destination"
+	if _, err := asacRegisteredResourceID(c, state, &resource); err == nil || output.Normalize(err).Code != 9 {
+		t.Fatal("foreign origin adopted", err)
+	}
+	state.API = server.URL
+	if state.Bindings[resource.UID].ResourceID != "" {
+		t.Fatal("operation resolution invented an author binding")
 	}
 	flags := []string{"--api-url", server.URL, "--workspace", "workspace", "--project", project, "--output", "json"}
 	plan := append([]string{"agent", "@support", "deployment", "plan", "--release", native, "--expected-generation", "7", "--notes", "Activate qualified revision"}, flags...)
