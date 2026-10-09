@@ -442,3 +442,7 @@ synchronized base. Environment leases still require a new owned workflow.
 ## Project authority
 
 Project lifecycle policy governs legacy promotion and exact deployments. See [Project lifecycle policy](PROJECT_LIFECYCLE.md) for managed gates, stable Production actors, generation CAS and read-only recovery. Local locks and `--yes` do not weaken this authority.
+
+A completed ASaC operation leaves an empty private checkpoint (`{}`). Binding
+recovery accepts this cleared marker. An unresolved operation, partial record
+or unreadable/malformed checkpoint still requires reconciliation before recovery.

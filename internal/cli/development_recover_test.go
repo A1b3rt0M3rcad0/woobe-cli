@@ -118,8 +118,16 @@ func TestBindingRecoveryCommandFreshStateIsReadOnlyAndRejectsUncertainWrites(t *
 	if err := c.WriteOperationalFile(asacPrivatePath(c, recovered, resource.UID, "pending"), []byte("{}")); err != nil {
 		t.Fatal(err)
 	}
-	before := requests
-	if code, result := run(); code != 9 || requests != before {
-		t.Fatal("uncertain write did not block recovery", code, result, requests, before)
+	if code, result := run(); code != 0 || result["data"].(map[string]any)["bindings_recovered"] != true {
+		t.Fatal("cleared checkpoint blocked recovery", code, result)
+	}
+	for _, checkpoint := range []string{`{"operation_id":"01a00d46-1ed7-71f7-99a4-aaa2cf81637c"}`, `{"action":"save"}`, `null`, `{`, `{} {}`} {
+		if err := c.WriteOperationalFile(asacPrivatePath(c, recovered, resource.UID, "pending"), []byte(checkpoint)); err != nil {
+			t.Fatal(err)
+		}
+		before := requests
+		if code, result := run(); code != 9 || requests != before {
+			t.Fatal("uncertain write did not block recovery", code, result, requests, before)
+		}
 	}
 }
