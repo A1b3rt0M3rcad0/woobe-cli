@@ -55,6 +55,13 @@ func TestGitProofRequiresExactCommittedRetainedAuthorClosure(t *testing.T) {
 	if err = graph.VerifyGitRevision(resource, record, commit); err != nil {
 		t.Fatal("original sealed commit should remain verifiable", err)
 	}
+	// A local replacement ref must not make another commit appear to contain
+	// the sealed source under a forged immutable identity.
+	git("replace", divergent, commit)
+	if err = graph.VerifyGitRevision(resource, record, divergent); err == nil {
+		t.Fatal("Git replacement ref forged the committed author closure")
+	}
+	git("replace", "-d", divergent)
 	if err = graph.VerifyGitRevision(resource, record, "HEAD"); err == nil {
 		t.Fatal("moving Git reference accepted")
 	}

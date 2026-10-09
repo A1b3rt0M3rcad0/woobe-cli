@@ -61,3 +61,5 @@ prevents new attestations but does not rewrite the historical accepted receipt.
 These receipts are separate from offline instance receipt-signature exports.
 
 Git proof verification resolves the physical worktree and source paths before checking containment, including macOS temporary-directory aliases and Windows native path separators. Exact committed bytes remain required; configure `.gitattributes` explicitly when cross-platform line endings must stay unchanged.
+
+Proof verification disables local Git replacement refs and checks object integrity. A mutable local substitution cannot make a different commit appear to contain the retained source.

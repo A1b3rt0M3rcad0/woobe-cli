@@ -37,7 +37,7 @@ func (g *Graph) VerifyGitRevision(resource Resource, record *Revision, commit st
 	git := func(arguments ...string) ([]byte, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
-		command := exec.CommandContext(ctx, "git", append([]string{"--no-pager", "--literal-pathspecs", "-C", directory}, arguments...)...)
+		command := exec.CommandContext(ctx, "git", append([]string{"--no-pager", "--no-replace-objects", "--literal-pathspecs", "-C", directory}, arguments...)...)
 		// stderr can contain remote URLs, user paths or hooks. Never echo it.
 		raw, err := command.Output()
 		if err != nil {
@@ -57,6 +57,10 @@ func (g *Graph) VerifyGitRevision(resource Resource, record *Revision, commit st
 	resolved, err := git("rev-parse", "--verify", commit+"^{commit}")
 	if err != nil || strings.TrimSpace(string(resolved)) != commit {
 		return fmt.Errorf("Git commit identity differs")
+	}
+	// Validate Git object integrity without replacement refs or reflog origins.
+	if _, err = git("fsck", "--strict", "--no-reflogs", "--no-dangling", commit); err != nil {
+		return fmt.Errorf("Git object integrity is unavailable")
 	}
 	writes, err := c.sourceWrites(object)
 	if err != nil {
