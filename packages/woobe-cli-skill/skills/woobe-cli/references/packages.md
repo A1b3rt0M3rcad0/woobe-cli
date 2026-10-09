@@ -23,8 +23,12 @@ destination native identities/private references. Omit `--bindings` when there
 are no requirements. Keep bindings/plans outside the portable directory and
 never put raw credentials in them. SOURCE also accepts `woobe.yaml` or tar.gz.
 
-A present lock is always verified, even without `--locked`. That flag additionally
-requires a lock. Do not edit the captured copy or remove its lock to hide drift.
+By default a present lock is verified, even without `--locked`; that flag
+additionally requires a lock. For an already edited copy, use
+`woobe package validate ./edited --structure-only`: it checks current schemas,
+references and path/size limits, reports `capture_integrity: not_evaluated`, and
+never certifies the old capture. It cannot be combined with `--locked` or used
+to bypass integrity in planning/import. Neither mode rewrites a lock. Do not edit the captured copy or remove its lock to hide drift.
 Create a separate editable author, edit it, then produce a new sealed copy:
 
 ```sh

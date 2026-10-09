@@ -60,6 +60,10 @@ func (b *Bundle) Archive(writer io.Writer, includeLock bool) error {
 }
 
 func ReceiveArchive(reader io.Reader, locked bool) (*Bundle, error) {
+	return receiveArchive(reader, locked, true)
+}
+
+func receiveArchive(reader io.Reader, locked, verifyLock bool) (*Bundle, error) {
 	temporary, err := os.MkdirTemp("", "woobe-package-archive-")
 	if err != nil {
 		return nil, err
@@ -162,7 +166,7 @@ func ReceiveArchive(reader io.Reader, locked bool) (*Bundle, error) {
 	if bounded.N <= 0 {
 		return nil, failure("PACKAGE_LIMIT_EXCEEDED", "Decompressed transport exceeds limits", "")
 	}
-	bundle, err := Load(root, locked)
+	bundle, err := load(root, locked, verifyLock)
 	if err != nil {
 		return nil, err
 	}
@@ -181,6 +185,16 @@ func ReceiveArchive(reader io.Reader, locked bool) (*Bundle, error) {
 
 // LoadArchive captures an already checked regular transport file through its parent handle.
 func LoadArchive(path string, locked bool) (*Bundle, error) {
+	return loadArchive(path, locked, true)
+}
+
+// LoadArchiveStructure retains transport/path safety while checking only the
+// author structure. The embedded lock is not evidence in this validation mode.
+func LoadArchiveStructure(path string) (*Bundle, error) {
+	return loadArchive(path, false, false)
+}
+
+func loadArchive(path string, locked, verifyLock bool) (*Bundle, error) {
 	root, err := os.OpenRoot(filepath.Dir(path))
 	if err != nil {
 		return nil, failure("PACKAGE_PATH_INVALID", "Archive parent is unavailable", "")
@@ -195,5 +209,5 @@ func LoadArchive(path string, locked bool) (*Bundle, error) {
 	if err != nil || info.Size() > MaxArchiveBytes {
 		return nil, failure("PACKAGE_LIMIT_EXCEEDED", "Archive exceeds transport limit", "")
 	}
-	return ReceiveArchive(input, locked)
+	return receiveArchive(input, locked, verifyLock)
 }

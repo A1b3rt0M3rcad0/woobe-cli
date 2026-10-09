@@ -252,7 +252,7 @@ func summarize(command string, value any) any {
 	}
 	if command == "package validate" {
 		if obj, ok := value.(map[string]any); ok && obj["valid"] == true {
-			summary := project(obj, []string{"valid", "entrypoint", "artifact_digest", "authorization", "semantic_validation", "executed", "diagnostics"}, false).(map[string]any)
+			summary := project(obj, []string{"valid", "validation_mode", "capture_integrity", "entrypoint", "artifact_digest", "authorization", "semantic_validation", "executed", "diagnostics"}, false).(map[string]any)
 			if inventory, ok := obj["inventory"].([]any); ok {
 				summary["files"] = len(inventory)
 			}

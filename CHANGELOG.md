@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Separate edited package structure from capture integrity with offline `package validate --structure-only`; retain integrity gates on transfers and coordinate help/assistant references (CLI 0.32.3+).
+- Explain missing accepted Candidate bindings using bounded component diagnostics and recovery guidance.
+
 - Correct completed Draft reconciliation, nested command errors and compact ASaC continuation identities.
 - Distinguish absent/null fields, add read-only strict field projection, and preserve cloned display names independently of aliases.
 - Add verified offline `package edit`/`seal` copies and align documentation and the bundled assistant skill (CLI 0.32.2+).

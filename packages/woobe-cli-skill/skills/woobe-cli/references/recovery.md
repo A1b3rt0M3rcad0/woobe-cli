@@ -89,3 +89,16 @@ Network export/pull conflicts expose a `PACKAGE_EXPORT_NETWORK_*` diagnostic
 and a bounded `/spec/nodes/...` or `/spec` path. Preserve the request ID. A
 missing/invalid pinned constituent or corrupt snapshot cannot be repaired by
 silently selecting the latest Agent or editing the captured hash.
+
+
+For `ASAC_CANDIDATE_BINDING_UNAVAILABLE`, inspect the reported descriptor's
+`metadata.key`. `network '@alias' bindings recover --dry-run` checks accepted
+closure; a canonical create/pull alone need not establish it. Bind Providers and
+use managed push, then refresh/checkpoint the isolated Draft and stage the exact
+revision. Reconcile uncertain operations before another write.
+
+For `PACKAGE_EXPORT_NETWORK_CONSTITUENT`, inspect the reported node's selected
+Agent snapshot. A `/spec/model/primary` or `/fallback` suffix means missing
+ModelSpec evidence. Recover mutable Draft configuration explicitly, or create a
+new complete Draft/Candidate/Release for incomplete immutable history. Never
+replace a pinned snapshot with latest or rewrite historical hashes.

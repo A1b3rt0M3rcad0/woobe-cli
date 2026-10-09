@@ -38,7 +38,7 @@ UUID. Paths are safe on Linux, macOS and Windows and existing paths are never re
 `--name` optionally overrides package metadata and its default directory name.
 Exported `woobe.yaml` and component descriptors are readable YAML, with multiline
 prompts. YAML and JSON descriptors are accepted. Operational plans/checkpoints/locks
-remain JSON. A present lock is always verified, including without `--locked`.
+remain JSON. By default a present lock is verified, including without `--locked`.
 That flag additionally requires a lock; omitting it never authorizes changing
 sealed bytes. Use the separate editable-copy workflow below.
 
@@ -78,6 +78,8 @@ Validate a declared closure locally, without loading config, credentials or HTTP
 ```sh
 woobe package validate ./support
 woobe package validate ./support --locked
+# Check an edited copy without claiming the captured bytes still match:
+woobe package validate ./support --structure-only
 ```
 
 Plan with an existing credential binding:
@@ -215,3 +217,52 @@ a copy. The original is preserved, and a corrupted sealed source is rejected.
 Author validation is structural: semantic checks and destination bindings remain
 the backend plan's responsibility. For updating an existing Agent/Network, prefer
 managed pull/edit/push rather than importing a new resource.
+
+## Structural validation versus capture integrity
+
+`package validate --structure-only` checks the current descriptors, reference
+closure, support files, path confinement and limits without reading or comparing
+`woobe.lock.json`. It accepts directories, `woobe.yaml` and tar.gz. Transport
+checksum, archive traversal/link/duplicate protections remain enforced.
+The result includes `validation_mode: structure_only` and
+`capture_integrity: not_evaluated`, in text, compact and full JSON. `valid: true`
+therefore means structurally valid current author data, not an intact capture.
+Server semantic validation and destination authorization still require a plan.
+
+Default validation verifies a present lock and reports `capture_integrity:
+verified` or `absent`. `--locked` additionally requires a lock. `--structure-only`
+and `--locked` are mutually exclusive. Planning, import, edit and seal do not
+accept the structural-only flag and keep their existing integrity checks.
+Validation never updates, removes or repairs a lock. Use the verified `edit` →
+edit author → `seal` flow for a new portable artifact; keep the captured original.
+
+The retest's comment edit with an old lock remains an integrity error under
+`--locked` or default validation; the explicit structural mode succeeds if the
+current package is otherwise valid. Invalid schemas/references still fail.
+An installed assistant reference is a versioned local copy: after upgrading the
+CLI, inspect `woobe skill status --agent codex-legacy` and update it with
+`woobe skill install --agent codex-legacy` from the intended project directory.
+The installer preserves local edits; review reported drift rather than forcing
+an overwrite. Codex's current preset is `codex` (`.agents/skills`); use the legacy
+preset only for a skill under `.codex/skills`.
+
+## Missing Network bindings and legacy snapshots
+
+`ASAC_CANDIDATE_BINDING_UNAVAILABLE` identifies the component descriptor and
+`/metadata/key`. A canonical Network create plus pull captures source but does
+not establish every accepted registry identity. Inspect
+`woobe network '@network' bindings recover --dry-run`, verify destination
+Provider bindings, and establish the accepted closure with managed `push`.
+Update the isolated Draft, create/checkpoint its revision and stage that exact
+revision. Do not repeat an uncertain accepted write; reconcile its operation.
+
+A `PACKAGE_EXPORT_NETWORK_CONSTITUENT` node path identifies an incomplete exact
+Agent capture. A suffix such as `/spec/model/primary` identifies the missing
+ModelSpec; inspect that node's selected Agent/snapshot. A mutable Draft can be
+reconfigured and saved through native Agent authoring, then explicitly rebound
+in a new Network Draft. An immutable historical snapshot with missing evidence
+cannot be certified by substituting the latest Model/Agent or rewriting its
+hashes. Keep the original, prepare/evaluate a complete new Candidate and publish
+a new Release. Export again from the explicitly repaired Draft/new Release.
+The CLI cannot reconstruct missing historical facts or repair an operator's
+stored snapshots without access to those resources.

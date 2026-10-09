@@ -15,7 +15,7 @@ that every original roadmap criterion is complete.
 | [ASaC tracking/history](ASAC.md) | Immutable checkpoints, guarded source checkout/rebase, objects, origin locks, isolated Drafts, exact Candidate evaluation/publication and scoped remote observations |
 | [Trusted Git provenance](GIT_PROVENANCE.md) | Offline exact-commit source proof, explicitly scoped builder trust and independent append-only Git receipts |
 | [Signed receipts](SIGNED_RECEIPTS.md) | Offline instance signatures, explicit root pinning, key rotation/revocation and trust watermarks |
-| [Portable packages](PACKAGES.md) | Agent/Network export/import, verified author copies, sealing, environments, bindings and checkpoints |
+| [Portable packages](PACKAGES.md) | Agent/Network export/import, structural versus integrity validation, verified author copies, sealing, environments, bindings and checkpoints |
 | [Command catalog](OPERATIONS.md) | Current discovery-derived executable commands and HTTP routes |
 | [Output](OUTPUT.md) | Text/compact/JSON, continuation IDs, absent/null fields, strict read projections and collection evidence |
 | [Output examples](OUTPUT_EXAMPLES.md) | Measured illustrative before/after output |

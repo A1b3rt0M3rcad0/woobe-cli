@@ -56,14 +56,35 @@ func (a *App) packageCommands() {
 	group := a.group("package")
 	a.packageDoctorCommand(group)
 	var locked bool
+	var structureOnly bool
 	validate := &cobra.Command{
 		Use: "validate SOURCE", Short: "Validate a portable package locally without credentials or HTTP",
-		Args: cobra.ExactArgs(1),
+		Long:    "Validate current schemas, references, paths and limits offline. By default a present captured lock is also verified; --locked requires that lock. Use --structure-only while editing to skip captured-lock verification explicitly. Structural success does not certify snapshot integrity, server semantics or import readiness. Validation never rewrites the source or its lock.",
+		Example: "woobe package validate ./edited --structure-only\nwoobe package validate ./captured --locked\nwoobe package edit ./captured --destination ./author",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := packageFlags(cmd, "yes"); err != nil {
 				return err
 			}
-			bundle, err := loadPackage(args[0], locked)
+			if locked && structureOnly {
+				return output.New(2, "--structure-only and --locked are mutually exclusive")
+			}
+			var bundle *packagebundle.Bundle
+			var err error
+			mode := "structure_and_present_lock"
+			if structureOnly {
+				mode = "structure_only"
+				if strings.HasSuffix(args[0], ".tar.gz") || strings.HasSuffix(args[0], ".tgz") {
+					bundle, err = packagebundle.LoadArchiveStructure(args[0])
+				} else {
+					bundle, err = packagebundle.LoadStructure(args[0])
+				}
+				if err != nil {
+					err = packageError(err)
+				}
+			} else {
+				bundle, err = loadPackage(args[0], locked)
+			}
 			if err != nil {
 				return err
 			}
@@ -71,6 +92,7 @@ func (a *App) packageCommands() {
 			return a.emit(map[string]any{
 				"package_schema_version": "1.0", "schema_catalog_sha256": packagefmt.CatalogDigest(),
 				"valid": true, "artifact_digest": bundle.ArtifactDigest,
+				"validation_mode": mode, "capture_integrity": bundle.LockIntegrity,
 				"inventory": bundle.Inventory, "entrypoint": packagefmt.Object(bundle.Graph.Manifest["spec"])["entrypoint"],
 				"materialization_order": bundle.Graph.Order, "diagnostics": []any{},
 				"authorization": "not_evaluated", "semantic_validation": "server_required", "executed": false,
@@ -78,6 +100,7 @@ func (a *App) packageCommands() {
 		},
 	}
 	validate.Flags().BoolVar(&locked, "locked", false, "Require and verify woobe.lock.json without rewriting it")
+	validate.Flags().BoolVar(&structureOnly, "structure-only", false, "Check edited schemas/references without evaluating the captured lock (read-only)")
 	group.AddCommand(validate)
 	for _, action := range []string{"edit", "seal"} {
 		var destination string
