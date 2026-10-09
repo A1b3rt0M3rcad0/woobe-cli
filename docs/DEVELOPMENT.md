@@ -324,3 +324,5 @@ Exact Release selections use `agent|network REFERENCE deployment plan` with an
 explicit Release, expected environment generation and audit reason, followed by
 a short environment lease and `deployment apply PLAN_UUID --yes`. Recover lost
 responses with `deployment reconcile`; see [ASaC](ASAC.md#exact-release-deployment-plans).
+
+Managed Project gates apply to development and legacy promotion at the server. Inspect policy with `woobe project lifecycle show`; local registry, author locks and `--yes` do not bypass it. Administrative changes are documented in [Project lifecycle policy](PROJECT_LIFECYCLE.md).

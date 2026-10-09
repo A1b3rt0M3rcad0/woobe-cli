@@ -117,7 +117,7 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 		failure := &output.Error{Code: code, Message: "server rejected request", Status: resp.StatusCode, RequestID: resp.Header.Get("X-Request-ID"), Outcome: outcome}
 		// Package owns stable diagnostics. Preserve only bounded machine fields;
 		// provider messages, input snapshots and protected values are omitted.
-		if (strings.Contains(path, "/packages/") || strings.Contains(path, "/asac/")) && jsoninput.Validate(b) == nil {
+		if (strings.Contains(path, "/packages/") || asacDiagnosticPath(path)) && jsoninput.Validate(b) == nil {
 			var envelope struct {
 				Data struct {
 					Version     string `json:"package_schema_version"`
@@ -130,9 +130,9 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 					} `json:"diagnostics"`
 				} `json:"data"`
 			}
-			if json.Unmarshal(b, &envelope) == nil && (envelope.Data.Version == "1.0" && strings.Contains(path, "/packages/") || envelope.Data.ASaCVersion == "1.0" && strings.Contains(path, "/asac/")) && len(envelope.Data.Diagnostics) <= 32 {
+			if json.Unmarshal(b, &envelope) == nil && (envelope.Data.Version == "1.0" && strings.Contains(path, "/packages/") || envelope.Data.ASaCVersion == "1.0" && asacDiagnosticPath(path)) && len(envelope.Data.Diagnostics) <= 32 {
 				prefix := "PACKAGE_"
-				if strings.Contains(path, "/asac/") {
+				if asacDiagnosticPath(path) {
 					prefix = "ASAC_"
 				}
 				machineCode := regexp.MustCompile(`^` + prefix + `[A-Z0-9_]{1,80}$`)
@@ -213,4 +213,24 @@ func ValidatePath(path string) error {
 		}
 	}
 	return nil
+}
+
+// Legacy lifecycle endpoints expose the same bounded ASaC gate diagnostics.
+// Preserve codes, never arbitrary server messages, bodies or protected values.
+func asacDiagnosticPath(path string) bool {
+	if strings.Contains(path, "/asac/") {
+		return true
+	}
+	uuid := `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`
+	routes := []string{
+		`^/core/projects/` + uuid + `/lifecycle-policy(?:/operations/` + uuid + `)?$`,
+		`^/ai/agents/` + uuid + `/releases(?:/` + uuid + `(?:/(?:promote|rollback))?)?$`,
+		`^/network/` + uuid + `/(?:promotions(?:/preview)?|production/activations|rollback)$`,
+	}
+	for _, route := range routes {
+		if regexp.MustCompile(route).MatchString(path) {
+			return true
+		}
+	}
+	return false
 }

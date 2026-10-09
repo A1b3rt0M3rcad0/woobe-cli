@@ -272,3 +272,32 @@ A registered lease/deployment target can resolve its native identity from the
 durable lock after private state is lost. The origin must match the selected API,
 workspace and project; this does not restore author bindings, credentials or a
 synchronized base. Environment leases still require a new owned workflow.
+
+
+## Project lifecycle authority
+
+`woobe project lifecycle show` reads managed mode and policy generation without
+local development config. Policy changes require `project:access:write` and
+YAML/JSON fields `operation_id`, `expected_generation`, `managed`,
+`production_actors`, `reason`. `woobe project lifecycle update --file policy.yaml`
+requires an advertised backend. Read the exact original change with
+`woobe project lifecycle operation OPERATION_UUID` after uncertain acceptance;
+never issue a replacement operation UUID while an earlier write is uncertain.
+
+An empty actor list preserves ordinary Production grants. Stable `user:UUID`
+or `control:credential-UUID` entries narrow them without granting authority.
+Managed Projects reject legacy promotion; use exact Candidate evaluation,
+publication and leased deployment instead. Policy changes invalidate older
+plans. Existing admitted Runs remain pinned. Do not automatically disable a
+managed policy to make a promotion work.
+
+
+```sh
+woobe project lifecycle show
+woobe project lifecycle update --file ./lifecycle-policy.yaml --validate-body
+woobe project lifecycle operation OPERATION_UUID
+```
+
+The update example requires a reviewed policy file with an explicit operation
+UUID/current generation and administrative policy authority; it is not a
+ready-to-apply template. Preserve the original operation after uncertain writes.
