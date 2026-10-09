@@ -114,3 +114,5 @@ python3 scripts/output_audit.py --binary bin/woobe
 Resource IDs do not shadow global configuration/credential flags. For example,
 `project agent model-config get` accepts a positional configuration ID or
 `--config-id`; `--config` continues to select the local CLI configuration file.
+
+Concurrency fencing uses a positive integer `fencing_token`, which remains visible for workflow recovery. This exact numeric field is not an authentication token; textual values in it are still redacted, along with access tokens, keys and secrets.
