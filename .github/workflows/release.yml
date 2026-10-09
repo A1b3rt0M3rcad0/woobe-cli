@@ -180,7 +180,7 @@ jobs:
     needs: [identity, validate, publish]
     if: needs.identity.outputs.skip != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
       id-token: write
@@ -221,7 +221,7 @@ jobs:
     needs: [identity, validate, publish]
     if: needs.identity.outputs.skip != 'true' && vars.WOOBE_SKILL_NPM_PUBLISH == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
       id-token: write

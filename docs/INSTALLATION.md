@@ -289,3 +289,12 @@ release builds pin Node 24 and npm 11.5.1.
 The current assistant skill's ASaC examples require CLI 0.27.0 or newer.
 Use the latest verified CLI release before updating the skill; historical
 installation examples above remain available for pinned older versions.
+
+## Registry processing after CI publication
+
+npm can accept a package before exposing its public version. The release job
+polls its exact integrity for up to fifteen minutes; the twenty-minute job budget
+includes setup and upload. Processing is not reported as published. The polling
+step never republishes a package. After a processing timeout, wait for the version
+to appear, then retry the failed npm job: matching bytes are verified without a
+second publication. Native GitHub assets remain available independently.

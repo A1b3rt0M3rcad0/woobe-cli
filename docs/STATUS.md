@@ -1,16 +1,28 @@
 # Current implementation status
 
-Updated 2026-10-09. Published CLI: **0.31.1**, master
-`6bc50a5690664de0eb165ec2a7cb316869c4608c`; release and npm publication were
-verified. The trusted Git attestation additions in this review branch are not yet
-published. Backend ASaC policy/signature/identity/Web changes remain in their
-review stack; installing a client release does not deploy those backend changes.
+Updated 2026-10-09. ASaC history, workflow leases, isolated Drafts, exact
+Candidate evaluation/publication, fenced deployment and trusted Git proof
+commands are implemented. The final Git/runtime client delivery is
+[PR #58](https://github.com/A1b3rt0M3rcad0/woobe-cli/pull/58); its latest reviewed
+commit passed all six native platforms, race checks and paired live integration.
+
+Use [GitHub Releases](https://github.com/A1b3rt0M3rcad0/woobe-cli/releases) and the
+permanent release manifest for the current published version and exact source
+commit; a PR build is not a published package. The automatic release workflow
+validates the merged source before publishing native assets, the image and npm.
+
+The complete server delivery is tracked in
+[Woobe #199](https://github.com/A1b3rt0M3rcad0/woobe/pull/199), including the
+H01–H35 acceptance matrix. Installing a client does not deploy or migrate the
+backend, enable managed Project policy or configure instance/builder trust.
+Use capability discovery and the current lifecycle/signature guides for the
+required server protocol and operator configuration. Lipo is outside this scope.
 
 The native CLI embeds the portable assistant skill and installs it offline with
 `woobe skill install`, without Node/npm, login or development config. The optional
 standalone npm skill package is prepared but is not claimed publicly published.
 Its payload and compatible installer tarball ship with validated release assets.
-The skill compatibility floor in this branch is 0.32 for its new provenance guide.
+The bundled skill compatibility floor is 0.32 for the provenance guide.
 
 Current guides are listed in [INDEX.md](INDEX.md). Historical roadmap records below
 retain their dated limits; they do not grant merge authority or certify production.
