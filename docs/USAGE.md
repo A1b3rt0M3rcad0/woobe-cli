@@ -770,3 +770,47 @@ not uploaded. Acceptance is asynchronous preparation, without publication or
 environment selection. Lost responses use `draft reconcile`, preserving the
 original operation. See [ASaC](ASAC.md#prepare-an-exact-immutable-candidate) for
 checkpoint prerequisites, status, bindings and recovery.
+
+## Exact Candidate evaluation
+
+After an isolated `stage --revision`, inspect the Candidate until its state is
+`ready`. Evaluate its UUID with a versioned YAML suite; current local YAML and
+native environment selections cannot replace this frozen snapshot.
+
+```yaml
+schema_version: '1.0'
+suite_id: support-smoke
+suite_version: '1'
+dataset_version: '1'
+policy_version: all-cases-pass@1
+cases:
+  - id: greeting
+    message: Hello
+    # Optional: expected_output is compared to actual structured output,
+    # or {answer: ...} for unstructured text. Omit it for execution/schema checks.
+```
+
+```sh
+woobe agent '@support' test --candidate CANDIDATE_UUID --file suite.yaml --yes
+woobe network '@helpdesk' test --candidate CANDIDATE_UUID --file suite.yaml --yes
+woobe agent '@support' evaluation EVALUATION_UUID
+woobe network '@helpdesk' evaluation EVALUATION_UUID reconcile --yes
+```
+
+The suite accepts 1–16 uniquely named cases. Suite, dataset and policy versions
+are declared identities; the backend separately verifies content digests. Every
+case gets its original native Run identity before execution. Qualification uses
+actual terminal Run evidence, exact snapshot identity, output validation and
+current binding fingerprints. Missing evidence stays incomplete. Failed cases
+exit with code 6; `accepted` and `running` do not mean passed.
+
+The immutable acceptance receipt identifies the evaluation. Inspect its ledger
+for the current result. If acceptance is uncertain, use `draft reconcile` before
+another write: it recovers the original receipt and never executes a case again.
+The evaluation's own `reconcile` reads original Run evidence without provider
+calls. Neither command publishes nor changes Production. Do not combine
+`test --candidate` with `--env` or `--version`. Native Agent `test --env` remains
+available; Network testing requires an exact Candidate. Inspection by native UUID
+works without `.woobe-config`; accepting an evaluation uses private project state
+to preserve its write identity. Exact Candidate evaluation requires CLI 0.25+
+and a backend advertising `asac.candidate_evaluation`.
