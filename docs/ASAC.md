@@ -383,3 +383,58 @@ Administrative `break` needs exact lease/fence, `--yes`, a meaningful `--reason`
 and server `project:access:write`. It cannot break a newer replacement lease.
 Fencing counters are positive integers, not authentication tokens. CAS and current
 authority remain mandatory; a reservation is not evidence of a correct base.
+
+## Exact Release deployment plans
+
+Publication and selection are separate. With CLI 0.29+ and a backend advertising
+`asac.fenced_deployment`, plan an exact evaluated published Release and apply that
+plan with an owned environment lease. Agent and Network use the same commands.
+
+```sh
+woobe agent '@support' current --env production
+woobe agent '@support' deployment plan --release RELEASE_UUID --expected-generation 4 --notes 'Deploy the qualified revision'
+woobe agent '@support' lease acquire --scope production
+woobe agent '@support' deployment apply PLAN_UUID --yes
+woobe agent '@support' deployment show DEPLOYMENT_UUID
+woobe agent '@support' lease release --scope production
+```
+
+Replace `4` with the observed environment generation. Add `--env staging` to
+plan/apply/show and reserve `--scope staging` to select Staging. Add
+`--action rollback` when planning an exact prior qualified Release; rollback
+still requires current generation, bindings, authorization and a new short lease.
+`--publication PUBLICATION_UUID` selects exact retained provenance; when omitted,
+the server selects matching evidence once and freezes its identity in the plan.
+No Release is rebuilt, no Draft is overwritten, and planning does not activate.
+
+Plans have a server database deadline. Changed selections (including A → B → A),
+bindings, policy, runtime content or authority invalidate application. The server
+updates the pointer, immutable deployment receipt and outbox atomically, checks
+lease expiry again at commit and fences old workflows. A resource-authoring lease
+is independent and cannot authorize an environment selection. Once an environment
+uses ASaC selection authority, legacy selection writes are rejected; use a new
+exact plan instead.
+
+Registered aliases retain the operation before submission and mirror its
+immutable receipt before clearing pending state. After a lost response, use:
+
+```sh
+woobe agent '@support' deployment reconcile
+```
+
+This reads original acceptance only; never repeat apply to guess whether it
+committed. `draft reconcile` also recovers deployment operations. Exit 9 means
+acceptance is unproven; exit 10 means the documentary mirror still needs repair.
+Local mirrors establish integrity and an authenticated connection observation,
+not offline server authenticity.
+
+Native UUID commands work without `.woobe-config`. Writes require a stable
+`--operation UUID`; apply additionally requires the original `--lease UUID
+--workflow UUID --fencing-token NUMBER`. Save the operation UUID for
+`deployment reconcile --operation UUID`. `plan-show PLAN_UUID` and
+`show DEPLOYMENT_UUID` are reads and never select an environment.
+
+A registered lease/deployment target can resolve its native identity from the
+durable lock after private state is lost. The origin must match the selected API,
+workspace and project; this does not restore author bindings, credentials or a
+synchronized base. Environment leases still require a new owned workflow.

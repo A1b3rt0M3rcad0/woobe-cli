@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+- Plan and apply exact evaluated Agent/Network Release selections with expected environment generation, short environment leases, immutable documentary receipts and original-operation recovery. Assistant references require CLI 0.29+.
+
 - Add bounded Agent/Network workflow lease commands, private exact proofs on isolated Draft writes, and original-operation recovery without assuming credential reentrancy. Assistant references require CLI 0.28+.
 
 - Publish an exact evaluated Agent Candidate, preserve original-operation reconciliation and append-only destination-scoped receipts without changing Production. Coordinate the assistant guides with CLI 0.26+.

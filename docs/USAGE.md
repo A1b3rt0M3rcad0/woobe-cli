@@ -822,3 +822,8 @@ Workflow reservations use `woobe agent '@support' lease acquire --scope draft`
 proofs; `lease reconcile` recovers original acceptance without another mutation.
 See [ASaC workflow reservations](ASAC.md#bounded-workflow-reservations) for scope,
 expiry, native UUID flags and administrative break.
+
+Exact Release selections use `agent|network REFERENCE deployment plan` with an
+explicit Release, expected environment generation and audit reason, followed by
+a short environment lease and `deployment apply PLAN_UUID --yes`. Recover lost
+responses with `deployment reconcile`; see [ASaC](ASAC.md#exact-release-deployment-plans).

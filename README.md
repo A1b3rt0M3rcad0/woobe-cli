@@ -309,3 +309,7 @@ Evaluate an isolated ready Candidate with `woobe agent UUID test --candidate CAN
 Publish an exact evaluated Agent with `woobe agent '@support' publish --candidate CANDIDATE_UUID --evaluation EVALUATION_UUID --notes 'Validated update' --yes`. This does not activate Production; see [exact publication and recovery](docs/ASAC.md#publish-an-exact-evaluated-agent-candidate).
 
 Exact Network Candidate publication and recovery use `woobe network REFERENCE publish --candidate UUID --evaluation UUID --notes REASON --yes`; this preserves Production and standalone Agent selections. See [Network publication and recovery](docs/ASAC.md#publish-and-recover-an-exact-network-candidate).
+
+Exact evaluated Release selection is a separate workflow: create a deployment
+plan, acquire its environment lease, apply once and reconcile original acceptance
+after an uncertain response. See [ASaC deployment plans](docs/ASAC.md#exact-release-deployment-plans).

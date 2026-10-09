@@ -229,6 +229,16 @@ func (a *App) asacDraftCommands() {
 							return output.New(10, "Evaluation accepted; its local receipt could not be saved")
 						}
 					}
+					isDeployment := pending.Path == base+"/deployment-plans" || pending.Path == base+"/deployments"
+					if isDeployment {
+						isPlan := pending.Path == base+"/deployment-plans"
+						if err = validateDeploymentAcceptance(result, a.Project, id, pending.OperationID, packagefmt.Text(pending.Body["environment"]), pending.Body, isPlan); err != nil {
+							return err
+						}
+						if err = c.StoreDeploymentReceipt(*resource, strings.TrimRight(control.Base, "/"), a.Workspace, a.Project, result, isPlan); err != nil {
+							return output.New(10, "Deployment accepted; documentary receipt remains pending")
+						}
+					}
 					isPublication := pending.Path == base+"/publications"
 					isLease := strings.HasPrefix(pending.Path, base+"/leases/")
 					if isLease {
