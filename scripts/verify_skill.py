@@ -32,7 +32,7 @@ def verify(root, record, version, commit):
         assert not data.get('scripts') and not data.get('dependencies') and not data.get('optionalDependencies')
         assert data['bin'] == {'woobe-skill': 'bin/woobe-skill.cjs'}
         assert data['woobeSkill']['sourceCommit'] == commit
-        assert data['woobeSkill']['minimumCliVersion'] == '0.26.0'
+        assert data['woobeSkill']['minimumCliVersion'] == '0.27.0'
         assert archive.getmember('package/bin/woobe-skill.cjs').mode & 0o111
         for file in source.rglob('*.cjs'):
             assert archive.extractfile('package/' + file.relative_to(source).as_posix()).read() == file.read_bytes()

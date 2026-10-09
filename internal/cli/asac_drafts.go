@@ -231,12 +231,19 @@ func (a *App) asacDraftCommands() {
 					}
 					isPublication := pending.Path == base+"/publications"
 					if isPublication {
-						if err = validatePublicationAcceptance(result, pending.OperationID, id, resource.UID, packagefmt.Text(pending.Body["candidate_id"]), packagefmt.Text(pending.Body["evaluation_id"]), pending.RecordDigest, packagefmt.Text(pending.Body["runtime_digest"])); err != nil {
+						result, err = resolvePublicationAcceptance(request, base, result, pending.OperationID, id, resource.UID, packagefmt.Text(pending.Body["candidate_id"]), packagefmt.Text(pending.Body["evaluation_id"]), pending.RecordDigest, packagefmt.Text(pending.Body["runtime_digest"]), a.Project, resource.Kind)
+						if err != nil {
 							return err
 						}
-						if err = c.StorePublicationReceipt(*resource, strings.TrimRight(control.Base, "/"), a.Workspace, a.Project, result); err != nil {
-							return output.New(10, "Published; documentary receipt is still pending: "+err.Error())
+						if result["state"] == "cancelled" {
+							err = c.StorePublicationCancellation(*resource, strings.TrimRight(control.Base, "/"), a.Workspace, a.Project, result)
+						} else {
+							err = c.StorePublicationReceipt(*resource, strings.TrimRight(control.Base, "/"), a.Workspace, a.Project, result)
 						}
+						if err != nil {
+							return output.New(10, "Terminal publication documentary receipt is still pending: "+err.Error())
+						}
+						data["result"] = result
 					}
 					if pending.Path != base+"/candidates" && !isEvaluation && !isPublication && result["draft_id"] != nil && result["resource_id"] != nil {
 						if err = saveObservation(result); err != nil {

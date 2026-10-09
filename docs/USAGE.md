@@ -814,3 +814,5 @@ available; Network testing requires an exact Candidate. Inspection by native UUI
 works without `.woobe-config`; accepting an evaluation uses private project state
 to preserve its write identity. Exact Candidate evaluation requires CLI 0.25+
 and a backend advertising `asac.candidate_evaluation`.
+
+Exact Network publication uses `--candidate UUID --evaluation UUID --notes REASON --yes` and preserves Production. Inspect or explicitly resume/cancel with `network UUID publication PUBLICATION_UUID [reconcile|cancel]`. See [the complete recovery flow](ASAC.md#publish-and-recover-an-exact-network-candidate); legacy publication without `--candidate` retains its activation behavior.
