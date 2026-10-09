@@ -56,3 +56,21 @@ func TestRuntimeTargetForwardsYamlSessionIdentityForAgentAndNetwork(t *testing.T
 		}
 	}
 }
+
+func TestRuntimeResponsePreservesExactAdmissionGeneration(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"success":true,"data":{"runtime_identity":{"selection_generation":9007199254740993}}}`))
+	}))
+	defer server.Close()
+	capture := &runtimeResponseCapture{base: http.DefaultTransport}
+	client := &http.Client{Transport: capture}
+	response, err := client.Post(server.URL+"/v1/run", "application/json", strings.NewReader(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	result, err := capture.preciseResult(nil)
+	if err != nil || result.Data["runtime_identity"].(map[string]any)["selection_generation"].(json.Number).String() != "9007199254740993" {
+		t.Fatal(result, err)
+	}
+}

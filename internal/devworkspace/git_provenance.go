@@ -49,7 +49,11 @@ func (g *Graph) VerifyGitRevision(resource Resource, record *Revision, commit st
 	if err != nil {
 		return err
 	}
-	root := strings.TrimSpace(string(rootRaw))
+	root := filepath.FromSlash(strings.TrimSpace(string(rootRaw)))
+	root, err = filepath.EvalSymlinks(root)
+	if err != nil {
+		return fmt.Errorf("Git worktree identity is unavailable")
+	}
 	resolved, err := git("rev-parse", "--verify", commit+"^{commit}")
 	if err != nil || strings.TrimSpace(string(resolved)) != commit {
 		return fmt.Errorf("Git commit identity differs")
@@ -65,7 +69,11 @@ func (g *Graph) VerifyGitRevision(resource Resource, record *Revision, commit st
 		return err
 	}
 	for file, wanted := range writes {
-		relative, err := filepath.Rel(root, file)
+		physicalFile, err := filepath.EvalSymlinks(file)
+		if err != nil {
+			return fmt.Errorf("Git author file identity is unavailable")
+		}
+		relative, err := filepath.Rel(root, physicalFile)
 		if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
 			return fmt.Errorf("author closure is outside the Git worktree")
 		}

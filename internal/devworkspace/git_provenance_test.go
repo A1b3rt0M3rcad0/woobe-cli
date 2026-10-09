@@ -29,6 +29,7 @@ func TestGitProofRequiresExactCommittedRetainedAuthorClosure(t *testing.T) {
 		return strings.TrimSpace(string(raw))
 	}
 	git("init", "-q")
+	git("config", "core.autocrlf", "false")
 	git("config", "user.name", "ASaC test fixture")
 	git("config", "user.email", "fixture@example.invalid")
 	git("add", "--", ".")

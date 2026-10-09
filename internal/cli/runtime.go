@@ -115,6 +115,8 @@ func (a *App) runtimeCommands() {
 			if e != nil {
 				return e
 			}
+			capture := &runtimeResponseCapture{base: cp.HTTP.Transport}
+			cp.HTTP.Transport = capture
 			client, e := sdk.New(sdk.WithBaseURL(v.APIURL), sdk.WithHTTPClient(cp.HTTP), sdk.WithReconnect(0, 0))
 			if e != nil {
 				return runtimeError(e)
@@ -164,6 +166,10 @@ func (a *App) runtimeCommands() {
 				}
 				if action == "run" {
 					result, e := t.Run(ctx, input.Input, &input.Options)
+					if e != nil {
+						return runtimeError(e)
+					}
+					result, e = capture.preciseResult(result)
 					if e != nil {
 						return runtimeError(e)
 					}

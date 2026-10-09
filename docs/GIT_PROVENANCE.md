@@ -59,3 +59,5 @@ The operator's scoped builder is responsible for repository checkout identity; t
 CLI does not infer hosting identity from an untrusted remote URL. Revoking a builder
 prevents new attestations but does not rewrite the historical accepted receipt.
 These receipts are separate from offline instance receipt-signature exports.
+
+Git proof verification resolves the physical worktree and source paths before checking containment, including macOS temporary-directory aliases and Windows native path separators. Exact committed bytes remain required; configure `.gitattributes` explicitly when cross-platform line endings must stay unchanged.

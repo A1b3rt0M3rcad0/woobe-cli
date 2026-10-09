@@ -62,3 +62,5 @@ trusted-pipeline validation at acceptance. Neither command publishes or deploys
 or rewrites the original Publication. On timeout inspect the original operation,
 never repeat activation or create a replacement operation without knowing its
 outcome. Builder revocation blocks new proofs, not immutable historical receipts.
+
+Exact Git proofs resolve physical worktree paths on Windows/macOS and compare committed bytes. A line-ending conversion is a content change; preserve authored files with explicit Git attributes. Synchronous runtime output preserves integer identity and generation values without floating-point rounding.

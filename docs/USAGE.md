@@ -854,3 +854,5 @@ rotation, revocation and limits on freshness and Git provenance.
 
 For an existing publication, use offline `git-proof` and an independently
 authorized `git-attest` operation. See [the complete workflow](GIT_PROVENANCE.md).
+
+Synchronous Runtime JSON preserves exact integer identities and generations, including values above the floating-point integer limit. Responses are bounded to 16 MiB; SDK authentication and failure semantics remain in effect.
