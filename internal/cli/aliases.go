@@ -66,6 +66,7 @@ func (a *App) aliasCommands() {
 						actions["candidate"] = "candidate"
 						actions["evaluation"] = "evaluation"
 						actions["publication"] = "publication"
+						actions["receipt"] = "receipt"
 						actions["lease"] = "lease"
 						actions["deployment"] = "deployment"
 						actions["test"] = "test"

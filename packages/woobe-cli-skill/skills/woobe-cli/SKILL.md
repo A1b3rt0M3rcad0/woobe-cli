@@ -1,7 +1,7 @@
 ---
 name: woobe-cli
 description: 'Use Woobe CLI to inspect, create and edit Agents and Networks through local YAML, manage shared Providers, Models, Tools, Skills and Knowledge, import/export packages, run tests and operate staging, releases and production. Use when the user mentions Woobe, woobe-cli, .woobe-config, or Woobe Agent/Network development.'
-compatibility: 'Requires woobe CLI 0.30.0 or newer. Remote operations require a compatible Woobe backend and a CLI Key saved in the selected connection.'
+compatibility: 'Requires woobe CLI 0.31.0 or newer. Remote operations require a compatible Woobe backend and a CLI Key saved in the selected connection.'
 ---
 
 # Woobe CLI
@@ -31,6 +31,7 @@ policy. Existing authorization does not require repeated confirmation.
 | Tests, staging, release, production, rollback or archive | [lifecycle](references/lifecycle.md) |
 | Runtime, administration, schemas, pagination or output | [operations](references/operations.md) |
 | Missing files, incompatible backend, conflicts or uncertain writes | [recovery](references/recovery.md) |
+| Offline signed receipts, pinned trust or key rotation/revocation | [signatures](references/signatures.md) |
 | Origin locks, immutable local revisions and scoped history | [history](references/history.md) |
 
 Prefer **pull → edit local YAML → validate/diff → push Draft** for an existing
