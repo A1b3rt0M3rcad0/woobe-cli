@@ -215,8 +215,11 @@ func TestManagedCaptureReusesRegistryAndConflictsWithoutWriting(t *testing.T) {
 	captured := map[string]CapturedBinding{}
 	for key, d := range bundle.Graph.Components {
 		id, _ := NewID()
-		captured[key] = CapturedBinding{ResourceID: id, Revision: json.Number("1"), SourceKind: "draft"}
-		_ = d
+		uid := ""
+		if d["kind"] == "Agent" || d["kind"] == "Network" {
+			uid, _ = NewID()
+		}
+		captured[key] = CapturedBinding{ResourceUID: uid, ResourceID: id, Revision: json.Number("1"), SourceKind: "draft"}
 	}
 	credential, _ := NewID()
 	publicSpec := clone(packagefmt.Object(packagefmt.Object(packagefmt.List(packagefmt.Object(packagefmt.Object(bundle.Graph.Manifest["spec"])["requires"])["credentials"])[0])["metadata"]))
@@ -235,6 +238,15 @@ func TestManagedCaptureReusesRegistryAndConflictsWithoutWriting(t *testing.T) {
 	if err != nil || len(conflicts) > 0 {
 		t.Fatal(resource, conflicts, err)
 	}
+	if resource.UID != captured["support-network"].ResourceUID {
+		t.Fatal("owner's canonical logical UID was replaced during capture")
+	}
+	fresh, _ := Create(t.TempDir(), ".woobe", "")
+	freshState, _ := fresh.ReadState("http://local", "workspace", "project")
+	freshRoot, freshConflicts, freshErr := fresh.ImportCapture(bundle, freshState, captured, map[string]string{"primary": credential}, "other-alias", "")
+	if freshErr != nil || len(freshConflicts) != 0 || freshRoot.UID != resource.UID {
+		t.Fatal("fresh registry changed the same native root's logical identity", freshErr, freshConflicts)
+	}
 	count := len(target.Resources)
 	providers := 0
 	for _, item := range target.Resources {
@@ -252,6 +264,14 @@ func TestManagedCaptureReusesRegistryAndConflictsWithoutWriting(t *testing.T) {
 	if _, conflicts, err = target.ImportCapture(bundle, state, captured, map[string]string{"primary": credential}, "", ""); err != nil || len(conflicts) > 0 || len(target.Resources) != count {
 		t.Fatal("duplicated capture", conflicts, err, len(target.Resources), count)
 	}
+	originalIdentity := captured["support-network"]
+	changedIdentity := originalIdentity
+	changedIdentity.ResourceUID, _ = NewID()
+	captured["support-network"] = changedIdentity
+	if _, _, err = target.ImportCapture(bundle, state, captured, map[string]string{"primary": credential}, "", ""); err == nil || !strings.Contains(err.Error(), "canonical identity") {
+		t.Fatal("capture rewrote an established logical identity", err)
+	}
+	captured["support-network"] = originalIdentity
 	graph, err := LoadGraph(target)
 	if err != nil {
 		t.Fatal(err)

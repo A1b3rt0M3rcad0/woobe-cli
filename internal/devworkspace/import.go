@@ -16,6 +16,7 @@ import (
 )
 
 type CapturedBinding struct {
+	ResourceUID  string            `json:"resource_uid,omitempty"`
 	Identifiers  map[string]string `json:"identifiers,omitempty"`
 	OwnerAgentID string            `json:"owner_agent_id"`
 	Frozen       bool              `json:"frozen"`
@@ -95,6 +96,9 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 		document := bundle.Graph.Components[oldKey]
 		kind := packagefmt.Text(document["kind"])
 		native := captured[oldKey]
+		if native.ResourceUID != "" && !uuidPattern.MatchString(native.ResourceUID) {
+			return nil, nil, fmt.Errorf("server returned an invalid logical resource UID")
+		}
 		if kind != "Prompt" && kind != "Contract" && !uuidPattern.MatchString(native.ResourceID) {
 			return nil, nil, fmt.Errorf("server omitted development identity for %s; upgrade Woobe", kind)
 		}
@@ -119,6 +123,14 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 			uid, err := NewID()
 			if err != nil {
 				return nil, nil, err
+			}
+			if native.ResourceUID != "" && !native.Frozen {
+				uid = native.ResourceUID
+				for _, registered := range staged.Resources {
+					if registered.UID == uid {
+						return nil, nil, fmt.Errorf("logical UID is already registered with another native binding; recover bindings before pull")
+					}
+				}
 			}
 			key := strings.ToLower(kind) + "-" + strings.ReplaceAll(uid, "-", "")[:12]
 			name := localAlias(packagefmt.Text(packagefmt.Object(document["metadata"])["name"]))
@@ -153,6 +165,9 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 				existing.SnapshotID = native.SnapshotID
 			}
 			staged.Resources = append(staged.Resources, *existing)
+		}
+		if native.ResourceUID != "" && !native.Frozen && existing.UID != native.ResourceUID {
+			return nil, nil, fmt.Errorf("local resource UID differs from the owner's canonical identity; recover the original history instead of rewriting identity")
 		}
 		keys[oldKey] = existing.Key
 		resources[oldKey] = *existing

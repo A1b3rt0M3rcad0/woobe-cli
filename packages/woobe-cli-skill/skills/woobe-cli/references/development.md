@@ -52,6 +52,11 @@ new UID; `woobe resources clone agent '@support' --alias support-copy` intention
 creates another local identity while sharing appropriate dependencies. Do not
 use clone/create for an update. `resources move` and `resources alias` preserve UID.
 
+An Agent/Network pull into a fresh registry preserves its owner's existing ASaC
+UID. A mismatching established local UID stops the capture before writing files;
+recover original history instead of rewriting identity or creating a duplicate.
+Frozen Network constituent snapshots remain distinct local artifacts.
+
 Use `--path` only for a path within the configured registry root. Inspect
 `resources list` rather than guessing file names or adding duplicate entries.
 
