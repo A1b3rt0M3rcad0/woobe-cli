@@ -313,3 +313,9 @@ or cancellation receipt, and clears pending state after the mirror succeeds.
 It never repeats publication, constituent copying or activation. Documentary
 failure exits 10 and remains recoverable; `history verify` checks both receipt
 collections. Offline verification proves content integrity, not server authenticity.
+
+Workflow reservations use `woobe agent '@support' lease acquire --scope draft`
+(and Network equivalents). Renew/release present privately retained workflow
+proofs; `lease reconcile` recovers original acceptance without another mutation.
+See [ASaC workflow reservations](ASAC.md#bounded-workflow-reservations) for scope,
+expiry, native UUID flags and administrative break.

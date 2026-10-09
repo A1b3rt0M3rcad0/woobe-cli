@@ -134,7 +134,7 @@ func (a *App) asacDraftCommands() {
 			if action == "select" {
 				if raw, readErr := c.ReadOperationalFile(pendingPath, 16<<20); readErr == nil {
 					var pending asacPending
-					if json.Unmarshal(raw, &pending) != nil || pending.OperationID != "" {
+					if decodeASaCPending(raw, &pending) != nil || pending.OperationID != "" {
 						return output.New(9, "A Draft write is unresolved; reconcile its original operation before changing selection")
 					}
 				} else if !os.IsNotExist(readErr) {
@@ -185,7 +185,7 @@ func (a *App) asacDraftCommands() {
 					return output.New(2, "No recorded Draft operation to reconcile")
 				}
 				var pending asacPending
-				if json.Unmarshal(raw, &pending) != nil || !uuidReference(pending.OperationID) {
+				if decodeASaCPending(raw, &pending) != nil || !uuidReference(pending.OperationID) {
 					return output.New(9, "Invalid Draft operation checkpoint")
 				}
 				if operation != "" && operation != pending.OperationID {
@@ -230,6 +230,22 @@ func (a *App) asacDraftCommands() {
 						}
 					}
 					isPublication := pending.Path == base+"/publications"
+					isLease := strings.HasPrefix(pending.Path, base+"/leases/")
+					if isLease {
+						scope, scopeErr := asacLeaseScope(packagefmt.Text(pending.Body["scope"]), packagefmt.Text(pending.Body["draft_id"]))
+						if scopeErr != nil {
+							return scopeErr
+						}
+						if err = validateLeaseReceipt(result, a.Project, id, pending.OperationID, scope, pending.Body); err != nil {
+							return err
+						}
+						if err = validateLeaseAction(result, strings.TrimPrefix(pending.Path, base+"/leases/")); err != nil {
+							return err
+						}
+						if err = storeLeaseObservation(c, state, resource.UID, id, result); err != nil {
+							return output.New(10, "Lease accepted; its private workflow proof remains pending")
+						}
+					}
 					if isPublication {
 						result, err = resolvePublicationAcceptance(request, base, result, pending.OperationID, id, resource.UID, packagefmt.Text(pending.Body["candidate_id"]), packagefmt.Text(pending.Body["evaluation_id"]), pending.RecordDigest, packagefmt.Text(pending.Body["runtime_digest"]), a.Project, resource.Kind)
 						if err != nil {
@@ -403,6 +419,17 @@ func (a *App) asacDraftCommands() {
 				}
 				path = base + "/revisions"
 				payload["draft_id"], payload["expected_generation"], payload["record"], payload["component_uids"], payload["provider_uids"] = observed.DraftID, observed.Generation, record, uids, providerUIDs
+			}
+			proofDraft := observed.DraftID
+			if action == "open" {
+				proofDraft = ""
+			}
+			proofs, err := authoringLeaseProofs(c, state, resource.UID, id, proofDraft)
+			if err != nil {
+				return err
+			}
+			if len(proofs) > 0 {
+				payload["leases"] = proofs
 			}
 			pending := asacPending{OperationID: op, Method: method, Path: path, Body: payload}
 			raw, _ := json.Marshal(pending)

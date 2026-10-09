@@ -16,6 +16,7 @@ func (a *App) asacCommands() {
 	a.asacCandidateCommands()
 	a.asacEvaluationCommands()
 	a.asacPublicationCommands()
+	a.asacLeaseCommands()
 	for _, kind := range []string{"agent", "network"} {
 		parent := a.group("develop " + kind)
 		var environment string
