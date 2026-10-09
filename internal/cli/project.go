@@ -2,6 +2,9 @@ package cli
 
 func (a *App) projectCommands() {
 	for _, op := range []Operation{
+		{Command: "project lifecycle show", Method: "GET", Path: "/core/projects/{project_id}/lifecycle-policy", Scope: "project", Permission: "project:read", Status: "proposed"},
+		{Command: "project lifecycle update", Method: "PUT", Path: "/core/projects/{project_id}/lifecycle-policy", Scope: "project", Permission: "project:access:write", Status: "proposed", Body: true},
+		{Command: "project lifecycle operation", Method: "GET", Path: "/core/projects/{project_id}/lifecycle-policy/operations/{operation_id}", Scope: "project", Permission: "project:read", Status: "proposed"},
 		{Command: "project list", Method: "GET", Path: "/core/projects", Scope: "project", Body: false, QueryScope: "workspace_id"},
 		{Command: "project create", Method: "POST", Path: "/core/projects", Scope: "project", Body: true},
 		{Command: "project get", Method: "GET", Path: "/core/projects/{resource_id}", Scope: "project", Body: false},

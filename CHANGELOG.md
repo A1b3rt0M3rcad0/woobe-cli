@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+- Inspect/change Project lifecycle policy with YAML, explicit generation CAS and original-operation recovery. Preserve bounded ASaC gate codes on reviewed legacy promotion routes. Assistant guides require CLI 0.30+.
+
 - Plan and apply exact evaluated Agent/Network Release selections with expected environment generation, short environment leases, immutable documentary receipts and original-operation recovery. Assistant references require CLI 0.29+.
 
 - Add bounded Agent/Network workflow lease commands, private exact proofs on isolated Draft writes, and original-operation recovery without assuming credential reentrancy. Assistant references require CLI 0.28+.

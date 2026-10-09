@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from current discovery: 339 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
+Generated from current discovery: 342 executable entries, including 196 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
 
 Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. Assistant installation uses local `skills` commands, not HTTP operations. The optional npm `woobe-skill` executable uses the same payload and receipts.
 
@@ -196,6 +196,9 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `project knowledge snapshot create` | `http` | `POST /agent/knowledge/collections/{collection_id}/vector-snapshots` | `observed` | knowledge:write | — |
 | `project knowledge snapshot get` | `http` | `GET /agent/knowledge/vector-snapshots/{snapshot_id}` | `observed` | knowledge:read | — |
 | `project knowledge snapshot list` | `http` | `GET /agent/knowledge/collections/{collection_id}/vector-snapshots` | `observed` | knowledge:read | — |
+| `project lifecycle operation` | `http` | `GET /core/projects/{project_id}/lifecycle-policy/operations/{operation_id}` | `proposed` | project:read | — |
+| `project lifecycle show` | `http` | `GET /core/projects/{project_id}/lifecycle-policy` | `proposed` | project:read | — |
+| `project lifecycle update` | `http` | `PUT /core/projects/{project_id}/lifecycle-policy` | `proposed` | project:access:write | — |
 | `project list` | `http` | `GET /core/projects` | `observed` | — | — |
 | `project member grant` | `http` | `POST /core/projects/{project_id}/members` | `observed` | — | — |
 | `project member list` | `http` | `GET /core/projects/{project_id}/members` | `observed` | — | — |

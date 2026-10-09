@@ -4,7 +4,7 @@ The native CLI already provides offline `woobe skill install/status/uninstall`.
 This optional separate npm package provides the same payload and compatible receipts.
 
 Separate npm package `woobe-cli-skill`, executable `woobe-skill`. Node.js 22+;
-Woobe CLI 0.29.0+. No dependencies, lifecycle scripts, keys or API requests.
+Woobe CLI 0.30.0+. No dependencies, lifecycle scripts, keys or API requests.
 
 ```sh
 npx --yes --package=woobe-cli-skill woobe-skill install --agent codex

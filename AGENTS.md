@@ -17,7 +17,7 @@ documentation edits; explain that assessment in the PR's validation notes.
 | Connection, authentication or Project selection | `docs/INSTALLATION.md`, CLI package README, skill `references/connection.md` |
 | YAML authoring, identity, shared dependencies or synchronization | `docs/DEVELOPMENT.md`, `docs/USAGE.md`, skill `references/development.md`, `references/dependencies.md` and YAML assets |
 | Agent/Network export, import, environments or bindings | `docs/PACKAGES.md`, skill `references/packages.md` |
-| Tests, staging, immutable releases, Production or rollback | Usage/development guides, skill `references/lifecycle.md` |
+| Tests, staging, immutable releases, Project lifecycle policy, Production or rollback | Usage/development guides, `docs/PROJECT_LIFECYCLE.md`, skill `references/lifecycle.md` |
 | Output fields, pagination or operational commands | `docs/OUTPUT.md`, `docs/PAGINATION.md`, skill `references/operations.md` |
 | Errors, conflicts, local state or uncertain writes | Relevant guide, actionable command help, skill `references/recovery.md` |
 | Assistant installation, receipts, presets or distribution | `docs/AGENT_SKILL.md`, `docs/INSTALLATION.md`, package READMEs, both installers and interoperability tests |

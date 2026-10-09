@@ -438,3 +438,7 @@ A registered lease/deployment target can resolve its native identity from the
 durable lock after private state is lost. The origin must match the selected API,
 workspace and project; this does not restore author bindings, credentials or a
 synchronized base. Environment leases still require a new owned workflow.
+
+## Project authority
+
+Project lifecycle policy governs legacy promotion and exact deployments. See [Project lifecycle policy](PROJECT_LIFECYCLE.md) for managed gates, stable Production actors, generation CAS and read-only recovery. Local locks and `--yes` do not weaken this authority.

@@ -59,3 +59,10 @@ For an unresolved exact Release selection, use `woobe agent '@support' deploymen
 reconcile` (or Network). It reads the recorded original operation and mirrors the
 receipt before clearing pending state. Do not repeat apply. Native UUID recovery
 requires the original `--operation UUID`; no project configuration is needed.
+
+
+Managed lifecycle rejection on legacy Agent/Network promotion requires the
+ASaC Candidate/evaluation/publication/deployment path. Do not change policy or
+repeat legacy writes automatically. A confirmed stale policy generation needs
+a fresh `woobe project lifecycle show` and an intentional new policy operation;
+an uncertain policy write needs `woobe project lifecycle operation OPERATION_UUID`.

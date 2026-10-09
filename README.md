@@ -313,3 +313,5 @@ Exact Network Candidate publication and recovery use `woobe network REFERENCE pu
 Exact evaluated Release selection is a separate workflow: create a deployment
 plan, acquire its environment lease, apply once and reconcile original acceptance
 after an uncertain response. See [ASaC deployment plans](docs/ASAC.md#exact-release-deployment-plans).
+
+Project lifecycle authority: `woobe project lifecycle show`; audited YAML changes and original-operation recovery are documented in [Project lifecycle policy](docs/PROJECT_LIFECYCLE.md). The server gates legacy promotion in managed Projects.

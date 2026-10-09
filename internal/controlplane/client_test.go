@@ -155,3 +155,37 @@ func TestASaCDiagnosticsKeepCodesWithoutProtectedMessages(t *testing.T) {
 		t.Fatal(failure)
 	}
 }
+
+func TestManagedLifecycleCodesOnReviewedLegacyAndPolicyRoutes(t *testing.T) {
+	id := "550e8400-e29b-41d4-a716-446655440000"
+	for _, path := range []string{
+		"/ai/agents/" + id + "/releases/" + id + "/promote",
+		"/ai/agents/" + id + "/releases/" + id + "/rollback",
+		"/network/" + id + "/promotions",
+		"/network/" + id + "/production/activations",
+		"/core/projects/" + id + "/lifecycle-policy",
+		"/core/projects/" + id + "/lifecycle-policy/operations/" + id,
+		"/unreviewed/lifecycle-policy",
+	} {
+		t.Run(path, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(409)
+				_, _ = w.Write([]byte(`{"data":{"asac_schema_version":"1.0","diagnostics":[{"code":"ASAC_PROJECT_MANAGED_LIFECYCLE_REQUIRED","message":"protected-input","input":"protected-input"}]}}`))
+			}))
+			defer server.Close()
+			client, _ := New(server.URL, "fixture", time.Second)
+			_, _, err := client.Request(context.Background(), "POST", path, nil, []byte("{}"))
+			failure := output.Normalize(err)
+			if failure.Code != 6 || failure.Outcome != "rejected" || strings.Contains(failure.Message, "protected-input") {
+				t.Fatal(failure)
+			}
+			if strings.HasPrefix(path, "/unreviewed/") {
+				if failure.DomainCode != "" || len(failure.Diagnostics) != 0 {
+					t.Fatal("unreviewed route claimed ASaC diagnostics")
+				}
+			} else if failure.DomainCode != "ASAC_PROJECT_MANAGED_LIFECYCLE_REQUIRED" || len(failure.Diagnostics) != 1 {
+				t.Fatal("missing bounded managed lifecycle code", failure)
+			}
+		})
+	}
+}
