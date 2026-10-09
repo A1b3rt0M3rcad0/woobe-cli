@@ -337,3 +337,49 @@ or cancellation receipt, and clears pending state after the mirror succeeds.
 It never repeats publication, constituent copying or activation. Documentary
 failure exits 10 and remains recoverable; `history verify` checks both receipt
 collections. Offline verification proves content integrity, not server authenticity.
+
+## Bounded workflow reservations
+
+Use CLI 0.28+ with a backend advertising `asac.operation_leases`. Reserve only
+the short authoring workflow that needs exclusivity; frozen Candidate evaluation
+does not need a long global lock. Agent and Network share the protocol.
+
+```sh
+woobe agent '@support' lease acquire --scope draft --ttl 60
+woobe agent '@support' draft push
+woobe agent '@support' lease renew --scope draft --ttl 120
+woobe agent '@support' lease show --scope draft
+woobe agent '@support' lease release --scope draft
+woobe agent '@support' lease reconcile
+```
+
+`--scope resource` (default) reserves authoring across Draft lines. `--scope draft`
+uses the selected isolated Draft; `--draft DRAFT_UUID` selects an explicit one.
+A native UUID with draft scope and no Draft ID deliberately reserves the legacy
+native default Draft, whose old write schema cannot carry workflow proofs.
+Staging/Production scopes reserve selection workflows; lease storage alone does
+not make a legacy activation fenced. Reads, tracing and Runs remain available.
+
+Registered aliases store distinct workflow/operation identities before submitting
+and keep accepted proofs privately under `.state`. Isolated Draft open/save/
+checkpoint attach the relevant exact proofs. Do not commit or copy this state.
+The same CLI Key does not make another workflow the owner. Server database time
+and bounded maximum duration decide expiry; expired/superseded proofs remain
+attached so the server can fence a stale writer instead of silently treating it
+as unreserved. Explicit owned release permits subsequent unreserved authoring.
+
+A lost response or failed private receipt leaves the original operation pending.
+`lease reconcile` or `draft reconcile` reads that original acceptance, verifies
+its scope, destination and workflow, saves the proof, then clears pending state.
+It never submits acquire/renew/release again. A historical accepted lease receipt
+does not promise the reservation is still valid. `show` observes current state
+without adopting another workflow or refreshing local ownership.
+
+Native UUID operations need no `.woobe-config`. Supply stable `--operation UUID`,
+`--workflow UUID` for acquire, and the exact `--lease UUID --fencing-token NUMBER`
+plus workflow for renew/release. Retain the original operation for `lease reconcile
+--operation UUID`; this is a read and never implicitly repeats a mutation.
+Administrative `break` needs exact lease/fence, `--yes`, a meaningful `--reason`
+and server `project:access:write`. It cannot break a newer replacement lease.
+Fencing counters are positive integers, not authentication tokens. CAS and current
+authority remain mandatory; a reservation is not evidence of a correct base.

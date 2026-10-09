@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+- Add bounded Agent/Network workflow lease commands, private exact proofs on isolated Draft writes, and original-operation recovery without assuming credential reentrancy. Assistant references require CLI 0.28+.
+
 - Publish an exact evaluated Agent Candidate, preserve original-operation reconciliation and append-only destination-scoped receipts without changing Production. Coordinate the assistant guides with CLI 0.26+.
 
 - Prepare exact isolated Agent/Network revisions as detached immutable Candidates, inspect their state and reconcile lost acceptance without repeating writes. Native lifecycle defaults remain explicit legacy behavior.

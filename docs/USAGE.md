@@ -816,3 +816,9 @@ to preserve its write identity. Exact Candidate evaluation requires CLI 0.25+
 and a backend advertising `asac.candidate_evaluation`.
 
 Exact Network publication uses `--candidate UUID --evaluation UUID --notes REASON --yes` and preserves Production. Inspect or explicitly resume/cancel with `network UUID publication PUBLICATION_UUID [reconcile|cancel]`. See [the complete recovery flow](ASAC.md#publish-and-recover-an-exact-network-candidate); legacy publication without `--candidate` retains its activation behavior.
+
+Workflow reservations use `woobe agent '@support' lease acquire --scope draft`
+(and Network equivalents). Renew/release present privately retained workflow
+proofs; `lease reconcile` recovers original acceptance without another mutation.
+See [ASaC workflow reservations](ASAC.md#bounded-workflow-reservations) for scope,
+expiry, native UUID flags and administrative break.

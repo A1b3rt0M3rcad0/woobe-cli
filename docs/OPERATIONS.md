@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from current discovery: 335 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
+Generated from current discovery: 337 executable entries, including 193 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
 
 Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. Assistant installation uses local `skills` commands, not HTTP operations. The optional npm `woobe-skill` executable uses the same payload and receipts.
 
@@ -51,6 +51,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `develop agent evaluation` | `development` | — | `local` | — | — |
 | `develop agent heads` | `development` | — | `local` | — | — |
 | `develop agent history` | `development` | — | `local_or_server-dependent` | — | — |
+| `develop agent lease` | `development` | — | `local` | — | — |
 | `develop agent publication` | `development` | — | `local` | — | — |
 | `develop agent publish` | `development` | — | `local` | — | — |
 | `develop agent pull` | `development-http` | — | `server-dependent` | — | — |
@@ -74,6 +75,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `develop network evaluation` | `development` | — | `local` | — | — |
 | `develop network heads` | `development` | — | `local` | — | — |
 | `develop network history` | `development` | — | `local_or_server-dependent` | — | — |
+| `develop network lease` | `development` | — | `local` | — | — |
 | `develop network publication` | `development` | — | `local` | — | — |
 | `develop network publish` | `development` | — | `local` | — | — |
 | `develop network pull` | `development-http` | — | `server-dependent` | — | — |

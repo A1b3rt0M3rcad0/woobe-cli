@@ -48,3 +48,9 @@ For an uncertain `test --candidate`, use `draft reconcile` to recover the origin
 For exact Candidate publication, retain the original pending operation. An unknown acceptance or exit 10 after local receipt failure requires `woobe agent '@support' draft reconcile`; never repeat publish to repair its local mirror.
 
 Network Candidate publication can remain accepted with partial immutable constituent copies. Do not repeat publish. Inspect `woobe network NETWORK_UUID publication PUBLICATION_UUID`, explicitly resume with `reconcile --yes` or cancel with `cancel --notes REASON --yes`, then run the original local `draft reconcile` to mirror terminal evidence. Cancellation preserves unused immutable child Releases and cannot undo published Networks. See [lifecycle](lifecycle.md).
+
+Lease acceptance uses private pending operations. Read the original with `lease
+reconcile` or `draft reconcile`; never repeat acquire after an uncertain response.
+Expired/superseded proofs are intentionally retained and fenced by the server.
+Explicit release or a deliberate new acquisition is required to change workflow
+ownership; `lease show` never adopts a reservation.
