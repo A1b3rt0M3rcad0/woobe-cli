@@ -139,8 +139,7 @@ func (a *App) asacDeploymentCommands() {
 				if c != nil {
 					raw, err := c.ReadOperationalFile(pendingPath, 16<<20)
 					if err == nil {
-						var previous asacPending
-						if decodeASaCPending(raw, &previous) != nil || previous.OperationID != "" {
+						if !clearedASaCPending(raw) {
 							return output.New(9, "An ASaC write is unresolved; reconcile its original operation first")
 						}
 					} else if !os.IsNotExist(err) {

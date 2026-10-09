@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Correct completed Draft reconciliation, nested command errors and compact ASaC continuation identities.
+- Distinguish absent/null fields, add read-only strict field projection, and preserve cloned display names independently of aliases.
+- Add verified offline `package edit`/`seal` copies and align documentation and the bundled assistant skill (CLI 0.32.2+).
+
 - Accept simple runtime YAML session/options names and retain legacy SDK spellings; reject unknown/conflicting fields instead of silently opening a new Session.
 
 - Add offline exact-commit Git proofs and independently authorized Agent/Network Git attestation receipts, preserving original publication/deployment history. Coordinate help/docs/assistant references for CLI 0.32+.

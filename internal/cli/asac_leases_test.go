@@ -118,6 +118,32 @@ func TestNativeWorkflowLeasesRequireExplicitIdentityAndIgnoreDevelopmentConfig(t
 	}
 }
 
+func TestWorkflowLeaseCannotOverwriteMalformedPendingCheckpoint(t *testing.T) {
+	root, _ := filepath.Abs("../..")
+	t.Setenv("WOOBE_TEST_REPOSITORY", root)
+	t.Setenv("WOOBE_CONTROL_KEY", "test-control")
+	for _, marker := range []string{"null", `{"unexpected":true}`, "{} {}", `{"operation_id":null}`} {
+		t.Run(marker, func(t *testing.T) {
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests++
+				t.Error("unresolved checkpoint reached backend")
+			}))
+			defer server.Close()
+			c, state, resource := asacWorkspace(t, server.URL)
+			path := asacPrivatePath(c, state, resource.UID, "pending")
+			if err := c.WriteOperationalFile(path, []byte(marker)); err != nil {
+				t.Fatal(err)
+			}
+			code, result := invoke(t, []string{"agent", "@support", "lease", "acquire", "--api-url", server.URL, "--workspace", "workspace", "--project", "project", "--output", "json"}, "")
+			raw, err := c.ReadOperationalFile(path, 16<<20)
+			if code != 9 || requests != 0 || err != nil || string(raw) != marker {
+				t.Fatal("uncertain operation was discarded", code, result, requests, err)
+			}
+		})
+	}
+}
+
 func TestLeaseReceiptRejectsScopeClockAndNumericForgery(t *testing.T) {
 	body := map[string]any{"operation_id": "12345678-1234-4321-8321-123456789016", "workflow_id": "12345678-1234-4321-8321-123456789017"}
 	for _, change := range []map[string]any{{"scope": "production"}, {"fencing_token": "1"}, {"fencing_token": json.Number("1.5")}, {"fencing_token": json.Number("9223372036854775808")}, {"clock_authority": "client"}, {"expires_at": "invalid"}, {"complete": false}, {"state": "unreserved"}} {

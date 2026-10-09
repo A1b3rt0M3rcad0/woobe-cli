@@ -2,6 +2,8 @@ package cli
 
 import (
 	"errors"
+	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
@@ -77,6 +79,43 @@ func (a *App) packageCommands() {
 	}
 	validate.Flags().BoolVar(&locked, "locked", false, "Require and verify woobe.lock.json without rewriting it")
 	group.AddCommand(validate)
+	for _, action := range []string{"edit", "seal"} {
+		var destination string
+		cmd := &cobra.Command{Use: action + " SOURCE", Args: cobra.ExactArgs(1), Short: action + " a separate portable package copy offline", Long: "edit verifies a sealed source and creates an editable copy without its captured lock. seal validates an author directory and creates a new sealed copy with a new inventory lock. Neither changes the source, overwrites destinations, calls the backend or validates server semantics. --destination must name a new directory under an existing parent.", Example: "woobe package edit ./captured --destination ./author\nwoobe package validate ./author\nwoobe package seal ./author --destination ./sealed\nwoobe package validate ./sealed --locked", RunE: func(cmd *cobra.Command, args []string) error {
+			if err := packageFlags(cmd); err != nil {
+				return err
+			}
+			if destination == "" {
+				return output.New(2, "--destination requires a new separate directory")
+			}
+			bundle, err := loadPackage(args[0], action == "edit")
+			if err != nil {
+				return err
+			}
+			defer bundle.Close()
+			absolute, err := filepath.Abs(destination)
+			if err != nil {
+				return err
+			}
+			if !a.DryRun {
+				if action == "edit" {
+					err = bundle.PublishAuthor(absolute)
+				} else {
+					err = bundle.Publish(absolute)
+				}
+				if err != nil {
+					return packageError(err)
+				}
+			}
+			next := "woobe package validate " + strconv.Quote(absolute)
+			if action == "seal" {
+				next += " --locked"
+			}
+			return a.emit(map[string]any{"action": action, "destination": absolute, "artifact_digest": bundle.ArtifactDigest, "source_retained": true, "sealed": action == "seal", "executed": !a.DryRun, "next_command": next, "authorization": "not_evaluated", "semantic_validation": "server_required"})
+		}}
+		cmd.Flags().StringVar(&destination, "destination", "", "New author or sealed package directory")
+		group.AddCommand(cmd)
+	}
 	a.packageBindingsCommand(group)
 	a.packageOperationCommands(group)
 	a.packagePlanningCommands(group)

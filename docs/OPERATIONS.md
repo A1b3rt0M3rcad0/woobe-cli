@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from current discovery: 357 executable entries, including 202 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
+Generated from current discovery: 359 executable entries, including 202 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
 
 Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. Assistant installation uses local `skills` commands, not HTTP operations. The optional npm `woobe-skill` executable uses the same payload and receipts.
 
@@ -125,11 +125,13 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `package bindings` | `local` | — | `local` | — | — |
 | `package cancel` | `package-http` | — | `server-dependent` | — | — |
 | `package doctor` | `diagnostic-http` | — | `server-dependent` | — | — |
+| `package edit` | `local` | — | `local` | — | — |
 | `package export agent` | `package-http` | — | `server-dependent` | — | — |
 | `package export network` | `package-http` | — | `server-dependent` | — | — |
 | `package import` | `package-http` | — | `server-dependent` | — | — |
 | `package plan` | `package-http` | — | `server-dependent` | — | — |
 | `package resume` | `package-http` | — | `server-dependent` | — | — |
+| `package seal` | `local` | — | `local` | — | — |
 | `package status` | `package-http` | — | `server-dependent` | — | — |
 | `package validate` | `local` | — | `local` | — | — |
 | `permission check` | `http` | `POST /identity/access/check` | `proposed` | — | — |

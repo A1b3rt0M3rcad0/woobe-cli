@@ -91,6 +91,7 @@ func TestOutputInvalidPresentationFlagsNeverSendMutation(t *testing.T) {
 		{"--output", "json", "--fields", "id"},
 		{"--output", "jsonl", "--fields", "id"},
 		{"--output", "invalid"},
+		{"--output", "compact", "--fields", "id", "--strict-fields"},
 	} {
 		args := append([]string{"agent", "create", "--api-url", server.URL, "--project", "project"}, flags...)
 		code, text := outputInvoke(t, args)

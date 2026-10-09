@@ -109,6 +109,42 @@ func TestASaCDraftUnknownWriteReconcilesWithoutSecondPUT(t *testing.T) {
 	if result.Generation != float64(2) || writes != 1 {
 		t.Fatal("reconcile changed write count or lost generation", result, writes)
 	}
+	if code, value := run("reconcile"); code != 0 || value["data"].(map[string]any)["pending"] != false || writes != 1 {
+		t.Fatal("cleared marker was treated as uncertain", code, value, writes)
+	}
+}
+
+func TestASaCDraftReconcileCheckpointStates(t *testing.T) {
+	root, _ := filepath.Abs("../..")
+	t.Setenv("WOOBE_TEST_REPOSITORY", root)
+	t.Setenv("WOOBE_CONTROL_KEY", "test-control")
+	for _, tc := range []struct {
+		name, marker string
+		code         int
+	}{
+		{"absent", "", 0}, {"cleared", "{}", 0}, {"whitespace", " { }\n", 0},
+		{"null", "null", 9}, {"partial", `{"operation_id":"12345678-1234-4321-8321-123456789013"}`, 9},
+		{"invalid", "{", 9}, {"trailing", "{} {}", 9}, {"unknown", `{"unexpected":true}`, 9},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requests++; t.Error("unexpected backend request", r.URL) }))
+			defer server.Close()
+			c, state, resource := asacWorkspace(t, server.URL)
+			if tc.marker != "" {
+				if err := c.WriteOperationalFile(asacPrivatePath(c, state, resource.UID, "pending"), []byte(tc.marker)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			code, value := invoke(t, []string{"agent", "@support", "draft", "reconcile", "--api-url", server.URL, "--workspace", "workspace", "--project", "project", "--output", "json"}, "")
+			if code != tc.code || requests != 0 {
+				t.Fatal(code, value, requests)
+			}
+			if code == 0 && value["data"].(map[string]any)["pending"] != false {
+				t.Fatal(value)
+			}
+		})
+	}
 }
 
 func TestASaCDraftCheckpointRejectsYAMLChangedAfterSeal(t *testing.T) {

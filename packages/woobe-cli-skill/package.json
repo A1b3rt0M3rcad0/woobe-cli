@@ -11,5 +11,5 @@
   "engines": {"node": ">=22"},
   "files": ["bin/", "lib/", "skills/", "README.md"],
   "keywords": ["woobe", "agent-skills", "codex", "claude-code", "copilot", "cursor"],
-  "woobeSkill": {"name": "woobe-cli", "minimumCliVersion": "0.32.0"}
+  "woobeSkill": {"name": "woobe-cli", "minimumCliVersion": "0.32.2"}
 }

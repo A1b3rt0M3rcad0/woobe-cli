@@ -15,6 +15,7 @@ type Options struct {
 	Mode, Command string
 	Fields        []string
 	Wide          bool
+	StrictFields  bool
 }
 
 func ValidMode(mode string) bool {
@@ -68,6 +69,11 @@ func WriteView(w io.Writer, options Options, data any, scope map[string]string, 
 		delete(evidence, "complete")
 	}
 	if len(options.Fields) > 0 {
+		if err == nil && data != nil && options.StrictFields {
+			if missing := absentFields(value, options.Fields); len(missing) != 0 {
+				return New(2, "--fields paths absent from response: "+strings.Join(missing, ", ")+"; inspect --wide or --output json")
+			}
+		}
 		value = project(value, options.Fields, true)
 	} else if !options.Wide {
 		value = summarize(options.Command, value)
@@ -179,11 +185,40 @@ func project(v any, fields []string, explicit bool) any {
 	out := map[string]any{}
 	for _, field := range fields {
 		value, ok := lookup(v, field)
-		if ok || explicit {
+		if ok {
 			out[field] = value
 		}
 	}
 	return out
+}
+
+func absentFields(value any, fields []string) []string {
+	missing := map[string]bool{}
+	var visit func(any)
+	visit = func(v any) {
+		if rows, ok := v.([]any); ok {
+			for _, row := range rows {
+				visit(row)
+			}
+			return
+		}
+		for _, field := range fields {
+			if _, exists := lookup(v, field); !exists {
+				missing[field] = true
+			}
+		}
+	}
+	visit(value)
+	return sortedKeysBool(missing)
+}
+
+func sortedKeysBool(values map[string]bool) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 var relevantFields = []string{
@@ -192,6 +227,7 @@ var relevantFields = []string{
 	"action", "context", "api_url", "workspace_id", "project_id", "credential_source", "logged_out", "revoked", "method", "path",
 	"message", "result", "output", "text", "content", "stopped_at", "checkpoint_saved", "counts", "diagnostics", "errors", "warnings", "complete", "apply_ready",
 	"checkpoint", "inventory", "resource_id", "destination", "artifact_path", "plan_id", "plan_digest", "expires_at",
+	"candidate_id", "preparation_operation_id", "evaluation_id", "publication_id", "release_id", "deployment_id", "draft_id", "revision_id", "upload_id", "export_id", "resource_uid", "registry_id", "workflow_id", "lease_id", "generation", "write_outcome", "pending", "next_command",
 }
 
 func summarize(command string, value any) any {

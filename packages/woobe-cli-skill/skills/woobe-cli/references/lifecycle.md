@@ -305,3 +305,9 @@ ready-to-apply template. Preserve the original operation after uncertain writes.
 For server-signed export and offline verification with a separately pinned root,
 read [signatures](signatures.md). Unsigned history integrity checks do not
 establish offline server authority.
+
+On compatible backends, `agent test --env staging` resolves the authoritative
+ASaC selection: an immutable Release selected in Staging stays a Release, and
+its exact UUID is tested without copying it to a Staging-kind snapshot. A changed
+selection rejects the stale testcase; legacy native Staging snapshots still work.
+Use `current --env staging` to inspect authority/generation.

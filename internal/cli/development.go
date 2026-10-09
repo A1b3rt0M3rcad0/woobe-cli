@@ -15,6 +15,7 @@ import (
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packageapi"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagebundle"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagecheckpoint"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/spf13/cobra"
 )
 
@@ -297,7 +298,7 @@ func (a *App) developmentCommands() {
 					if err != nil {
 						return output.New(2, err.Error())
 					}
-					return a.emit(map[string]any{"executed": false, "resource": resource.Alias, "environment": "draft", "changes": changes, "effects": plan.Effects, "plan_id": plan.PlanID, "plan_digest": plan.PlanDigest, "semantic_validation": "server_validated"})
+					return a.emit(map[string]any{"executed": false, "resource": resource.Alias, "name": packagefmt.Object(graph.Nodes[resource.Key].Document["metadata"])["name"], "environment": "draft", "changes": changes, "effects": plan.Effects, "plan_id": plan.PlanID, "plan_digest": plan.PlanDigest, "semantic_validation": "server_validated"})
 				}
 				acceptedBases, err := graph.AcceptedBases(bundle)
 				if err != nil {

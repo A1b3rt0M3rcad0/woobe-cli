@@ -112,3 +112,8 @@ working head and Production are preserved. Author objects are reported separatel
 when retained by the backend, exact author source is also downloaded and recompiled against the sealed definition before local storage. A separate guarded checkout restores YAML/comments/support files. Legacy records without retained source report it unavailable. Credentials and native bindings are not restored, and hydration does not qualify execution.
 
 Guarded checkout verifies both the current clean source anchor and the target revision. If author objects were removed or absent in a clone, hydrate both revision IDs first. This recovery never bypasses protection of local edits.
+
+Names and aliases are separate: clone creates a new UID/alias but keeps an
+Agent/Network's `metadata.name`. Edit that field explicitly before create/push to
+rename the presentation. Runtime Skill clones also rename their manifest identity.
+Dry-run create/push shows the compiled `name`; aliases never rename remote roots.

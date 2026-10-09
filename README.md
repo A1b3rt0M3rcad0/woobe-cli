@@ -324,3 +324,9 @@ Trusted CI provenance is a separate, explicitly authorized workflow.
 `woobe agent REFERENCE git-proof` checks committed author bytes offline;
 `woobe agent UUID git-attest` attaches a trusted proof to an existing Publication.
 Neither publishes nor deploys. See [trusted Git provenance](docs/GIT_PROVENANCE.md).
+
+Portable sealed packages can be edited through verified separate copies with
+`woobe package edit SOURCE --destination ./author`, then resealed with
+`woobe package seal ./author --destination ./sealed`. See [Packages](docs/PACKAGES.md).
+For read-only automation, `--fields "id,name" --strict-fields --output compact`
+rejects absent fields; compact ASaC outputs retain continuation IDs.

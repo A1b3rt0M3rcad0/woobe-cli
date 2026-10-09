@@ -336,3 +336,14 @@ Managed Project gates apply to development and legacy promotion at the server. I
 Binding recovery accepts the empty private pending marker left by a completed
 ASaC operation. Unresolved or malformed checkpoints still block recovery;
 reconcile the original operation before trying again.
+
+## Display name and local alias
+
+`uid` identifies a logical local resource, `alias` is a local reference, and
+`metadata.name` is the presentation name compiled for create/push. Clone creates
+a new UID and alias and preserves the presentation name; edit `metadata.name`
+explicitly to rename the clone. Runtime Skills additionally require their cloned
+manifest name to match their new identity. Changing an alias never renames a
+remote Agent/Network. Push/create dry-run shows the intended `name`; inspect the
+remote getter after the original operation completes. Names can duplicate; UUIDs
+and registered aliases remain the unambiguous operation references.

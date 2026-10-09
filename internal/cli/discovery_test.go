@@ -18,7 +18,7 @@ func TestDiscoveryCoversEveryExecutableHandler(t *testing.T) {
 	}
 	var walk func(*cobra.Command)
 	walk = func(cmd *cobra.Command) {
-		if cmd.Runnable() {
+		if cmd.Runnable() && cmd.Annotations["command_group"] != "true" {
 			path := cmd.CommandPath()[len("woobe "):]
 			op, ok := paths[path]
 			if !ok {

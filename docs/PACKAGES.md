@@ -38,8 +38,9 @@ UUID. Paths are safe on Linux, macOS and Windows and existing paths are never re
 `--name` optionally overrides package metadata and its default directory name.
 Exported `woobe.yaml` and component descriptors are readable YAML, with multiline
 prompts. YAML and JSON descriptors are accepted. Operational plans/checkpoints/locks
-remain JSON. Editing exported files invalidates the old lock; use ordinary validation
-for edited author data and `--locked` to verify an unchanged captured package.
+remain JSON. A present lock is always verified, including without `--locked`.
+That flag additionally requires a lock; omitting it never authorizes changing
+sealed bytes. Use the separate editable-copy workflow below.
 
 ```powershell
 woobe package validate ./orders-requests-agent --locked
@@ -195,3 +196,22 @@ interruption (`130`). An uncertain acceptance has domain code
 `PACKAGE_OUTCOME_UNKNOWN`; it never permits an automatic second Apply. Polling
 honors a positive server delay; otherwise it uses bounded 2–15 second exponential
 backoff with jitter. A local timeout does not cancel the remote operation.
+
+## Editable copies and new seals
+
+```sh
+woobe package edit ./captured --destination ./author
+# Edit the YAML in ./author.
+woobe package validate ./author
+woobe package seal ./author --destination ./sealed
+woobe package validate ./sealed --locked
+```
+
+Both commands are offline and accept a directory, manifest or archive source.
+`edit` requires a valid sealed source; the separate author copy omits the original
+lock. `seal` creates a new captured inventory from validated author bytes. Parents
+must exist; destinations must be new. `--dry-run` validates input without creating
+a copy. The original is preserved, and a corrupted sealed source is rejected.
+Author validation is structural: semantic checks and destination bindings remain
+the backend plan's responsibility. For updating an existing Agent/Network, prefer
+managed pull/edit/push rather than importing a new resource.
