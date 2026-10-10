@@ -2,12 +2,9 @@ package cli
 
 import (
 	"os"
-	"path/filepath"
 
-	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/config"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/devworkspace"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
-	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagecheckpoint"
 	"github.com/spf13/cobra"
 )
 
@@ -38,56 +35,7 @@ func (a *App) developmentConfigCommands() {
 	a.developmentBindCommand()
 	a.developmentSurfaceCommands()
 	a.developmentBulkCommands()
-	var root string
-	init := &cobra.Command{Use: "init", Short: "Initialize an optional local development registry", Args: cobra.NoArgs, Example: "woobe init --context local --root .woobe", Long: "Create .woobe-config explicitly. Ordinary API, runtime and authentication commands remain independent. Provider files contain public connection intent and credential references only.", RunE: func(cmd *cobra.Command, _ []string) error {
-		if a.ProjectConfig != "" || a.NoProjectConfig {
-			return output.New(2, "init creates .woobe-config in the current directory")
-		}
-		user, err := config.Load(a.ConfigPath)
-		if err != nil {
-			return output.New(2, "Cannot load private connection config")
-		}
-		context := a.ContextName
-		if context == "" {
-			context = os.Getenv("WOOBE_CONTEXT")
-		}
-		if context == "" {
-			context = user.Current
-		}
-		if context != "" {
-			if _, ok := user.Contexts[context]; !ok {
-				return output.New(2, "Unknown connection; create it with context create or initialize without a context")
-			}
-		}
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		c, err := devworkspace.Create(cwd, root, context)
-		if err != nil {
-			return output.New(2, err.Error())
-		}
-		if err := packagecheckpoint.EnsurePrivateDirectory(filepath.Join(c.RootPath(), ".state")); err != nil {
-			return err
-		}
-		ignore := filepath.Join(c.RootPath(), ".gitignore")
-		f, err := os.OpenFile(ignore, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
-		if err == nil {
-			_, err = f.WriteString(".state/\n")
-			closeErr := f.Close()
-			if err == nil {
-				err = closeErr
-			}
-		} else if os.IsExist(err) {
-			err = nil
-		}
-		if err != nil {
-			return err
-		}
-		return a.emit(map[string]any{"initialized": true, "config": c.File, "root": c.RootPath(), "context": c.Context, "registry_id": c.RegistryID})
-	}}
-	init.Flags().StringVar(&root, "root", ".woobe", "Artifact root, relative to the project config or absolute")
-	a.Root.AddCommand(init)
+	a.Root.AddCommand(a.projectInitCommand())
 	group := a.group("config")
 	for _, action := range []string{"show", "check"} {
 		action := action

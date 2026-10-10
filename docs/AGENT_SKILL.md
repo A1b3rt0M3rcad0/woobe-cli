@@ -1,5 +1,15 @@
 # Woobe CLI skill for coding agents
 
+For complete project setup, run `woobe init --agents codex`,
+`woobe init --agents codex-legacy` or `woobe init --agents claude`. This initializes
+or reuses the registry, installs the skill, adds managed `AGENTS.md`/host
+instructions and ignores private `.state/` and `.woobe-lab/`. Multiple presets,
+repeat initialization and `--dry-run` are supported. See
+[project setup](https://github.com/A1b3rt0M3rcad0/woobe-cli/blob/master/docs/PROJECT_SETUP.md).
+The standalone installers described below remain skill-only and do not manage
+those project files.
+
+
 The CLI embeds the portable `woobe-cli` Agent Skill and installs it directly:
 `woobe skill install`. It teaches a coding assistant to use Woobe efficiently;
 it is different from runtime Skills uploaded to Woobe Agents. Built-in installation

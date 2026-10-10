@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -49,11 +50,11 @@ func TestPackageDevelopmentInitAndOfflineValidation(t *testing.T) {
 		t.Fatal(code, result)
 	}
 	code, result = invoke(t, []string{"init"}, "")
-	if code != 2 {
-		t.Fatal("overwrote config", code, result)
+	if code != 0 || result["data"].(map[string]any)["registry_id"] != c.RegistryID {
+		t.Fatal("did not preserve registry", code, result)
 	}
 	data, err := os.ReadFile(filepath.Join("definitions", ".gitignore"))
-	if err != nil || string(data) != ".state/\n" {
+	if err != nil || !strings.Contains(string(data), "/.state/\n") {
 		t.Fatal(string(data), err)
 	}
 }

@@ -103,6 +103,32 @@ def smoke(root, commit):
         version = invoke(['version'])['data']
         if any(version[k] != v for k, v in {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch}.items()):
             raise ValueError('packaged binary identity differs from archive metadata')
+        project = pathlib.Path(directory) / 'assistant-project'
+        project.mkdir()
+        invoke(['init', '--agents', 'codex,codex-legacy,claude', '--dry-run'], cwd=project)
+        if list(project.iterdir()):
+            raise ValueError('integrated setup dry-run wrote files')
+        (project / 'AGENTS.md').write_bytes(b'# Project rules\r\nPreserve user instructions.\r\n')
+        invoke(['init', '--agents', 'codex,codex-legacy,claude'], cwd=project)
+        config_before = (project / '.woobe-config').read_bytes()
+        instructions_before = (project / 'AGENTS.md').read_bytes()
+        invoke(['init', '--agents', 'claude'], cwd=project)
+        if (project / '.woobe-config').read_bytes() != config_before or (project / 'AGENTS.md').read_bytes() != instructions_before:
+            raise ValueError('integrated setup changed registry or duplicated instructions')
+        if not instructions_before.startswith(b'# Project rules\r\nPreserve user instructions.\r\n'):
+            raise ValueError('integrated setup lost project instructions')
+        for folder in ['.agents', '.codex', '.claude']:
+            installed = project / folder / 'skills/woobe-cli'
+            for file in source.rglob('*'):
+                if file.is_file() and (installed / file.relative_to(source)).read_bytes() != file.read_bytes():
+                    raise ValueError('integrated setup skill differs from canonical payload')
+        if not (project / 'CLAUDE.md').is_file() or not (project / '.woobe-lab').is_dir():
+            raise ValueError('integrated setup missing host instructions/lab')
+        edited = project / '.agents/skills/woobe-cli/SKILL.md'
+        edited.write_bytes(edited.read_bytes() + b'\nLocal edit\n')
+        invoke(['init', '--agents', 'copilot'], code=2, cwd=project)
+        if (project / '.github').exists() or (project / 'AGENTS.md').read_bytes() != instructions_before:
+            raise ValueError('conflicting skill caused partial assistant installation')
         invoke(['init'])
         author = pathlib.Path(directory) / 'author.json'
         author.write_text(json.dumps({'kind': 'Agent', 'metadata': {'name': 'Support'}, 'spec': {'instructions': 'First line\nSecond line\n', 'limit': 9007199254740993}}), encoding='utf-8')
@@ -152,6 +178,7 @@ def smoke(root, commit):
         # including Windows DACL initialization and scratch compilation.
         author_project = pathlib.Path(directory) / 'asac-project'
         author_project.mkdir()
+        (author_project / ".git").mkdir()  # Independent project boundary.
         invoke(['init'], cwd=author_project)
         author_root = author_project / '.woobe'
         resources = []
@@ -326,7 +353,7 @@ def smoke(root, commit):
             server.server_close()
             thread.join(timeout=5)
     return {'commit': commit, 'version': manifest['version'], 'os': system, 'arch': arch,
-            'archive': artifact['name'], 'success': True, 'checks': ['project-codex-preset-lifecycle', 'project-codex-legacy-preset-lifecycle', 'embedded-assistant-skill', 'native-npm-receipt-compatibility', 'linked-skill-destination-refusal', 'identity', 'discovery', 'schemas', 'complete-package-offline', 'package-python-inventory-parity', 'package-lock-tamper', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff', 'protected-reference-compile', 'canonical-mcp-permissions'],
+            'archive': artifact['name'], 'success': True, 'checks': ['integrated-project-init', 'init-preserves-edits-and-identity', 'project-codex-preset-lifecycle', 'project-codex-legacy-preset-lifecycle', 'embedded-assistant-skill', 'native-npm-receipt-compatibility', 'linked-skill-destination-refusal', 'identity', 'discovery', 'schemas', 'complete-package-offline', 'package-python-inventory-parity', 'package-lock-tamper', 'manifest', 'invalid-input', 'body-pagination', 'partial-collection', 'request-direction', 'uuid-date-time', 'validation-before-write', 'path-query-validation', 'validated-pagination', 'workspace-category-manifest', 'category-revision-diff', 'protected-reference-compile', 'canonical-mcp-permissions'],
             'local_registry_checks': ['readable-yaml', 'yaml-json-move', 'json-clone', 'stale-registry-preview', 'explicit-stale-registry-prune', 'agent-network-source-checkout-rebase-merge'],
             'backend_acceptance': 'not_evaluated', 'credential_provider_acceptance': 'not_evaluated'}
 

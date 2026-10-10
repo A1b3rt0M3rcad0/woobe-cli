@@ -4,6 +4,10 @@
 
 `woobe skill install/status/uninstall` uses normal text/compact/JSON output;
 installation destinations, version and drift evidence remain visible.
+`woobe init --agents codex` summarizes execution/reuse status, config/root,
+connection, assistant presets, instruction files and lab. `--output json` adds
+the registry UUID, detailed file actions and installation receipts; dry-run
+reports `executed: false`.
 
 The embedded [assistant skill](AGENT_SKILL.md) selects compact output and exact
 fields for inspection, and reads only the reference needed for the task. Full

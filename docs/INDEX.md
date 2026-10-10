@@ -8,6 +8,7 @@ that every original roadmap criterion is complete.
 | --- | --- |
 | [Repository agent instructions](../AGENTS.md) | Maintain CLI behavior, help, docs and the embedded/npm skill together; regeneration and validation rules |
 | [Installation](INSTALLATION.md) | Native/npm/container setup, CLI Keys, automatic release, Trusted Publishing and recovery |
+| [Project setup](PROJECT_SETUP.md) | One-command registry, skills, managed assistant instructions and private lab/Git exclusions |
 | [Coding assistant skill](AGENT_SKILL.md) | Built-in offline install, Codex/.codex, Claude Code, custom paths, compatible npm installer and publisher bootstrap |
 | [Usage](USAGE.md) | Canonical CLI workflows, managed YAML editing and recovery |
 | [Development](DEVELOPMENT.md) | Provider bindings, shared dependencies and Surfaces |
