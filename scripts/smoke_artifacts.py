@@ -129,8 +129,14 @@ def smoke(root, commit):
         invoke(['config', 'check'])
         discovery = invoke(['help'])['data']
         commands = {row['command'] for row in discovery}
-        if not {'manifest validate', 'manifest apply', 'manifest reconcile', 'runtime target run', 'version', 'workspace authority category diff'} <= commands:
+        if not {'manifest validate', 'manifest apply', 'manifest reconcile', 'runtime target run', 'version', 'workspace authority category diff', 'develop agent deploy', 'develop network deploy'} <= commands:
             raise ValueError('discovery is missing essential executable commands')
+        for kind in ('agent', 'network'):
+            rejected = invoke([kind, '12345678-1234-4321-8321-123456789012', 'deploy',
+                               '--from', 'release', '--release', 'invalid', '--notes', 'Smoke preflight',
+                               '--plan-only'], code=2)
+            if '--release UUID' not in rejected['error']['message']:
+                raise ValueError('packaged unified deploy did not reject invalid identity before authentication')
         for revision, identity in [('1', 'urn:woobe:manifest:steps:1'), ('2', 'urn:woobe:manifest:resources:2')]:
             schema = invoke(['schema', '--command', 'manifest validate', '--kind', 'document', '--manifest-version', revision])['data']
             if schema['$id'] != identity:

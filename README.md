@@ -1,5 +1,7 @@
 # Woobe CLI
 
+Deploy exact evaluated Agent/Network Releases with `woobe agent UUID deploy --from release --release RELEASE_UUID --notes "Approved delivery" --yes`. Local YAML delivery and protected CI recovery are documented in [Deployment](docs/DEPLOYMENT.md) and [CI deployment](docs/CI_DEPLOYMENT.md).
+
 Prepare a checkpointed isolated Draft with `stage --revision REVISION_ID --yes`
 and inspect `candidate CANDIDATE_UUID`. This freezes the exact retained closure
 without changing native environments or publishing; see the

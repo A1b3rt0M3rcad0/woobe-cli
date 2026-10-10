@@ -234,7 +234,7 @@ func (a *App) publishASaCCandidate(cmd *cobra.Command, kind, reference, candidat
 	if qualified["state"] != "passed" || qualified["evaluation_id"] != evaluation || qualified["candidate_id"] != candidate || qualified["resource_id"] != id || qualified["record_digest"] != frozen["record_digest"] || qualified["runtime_digest"] != frozen["runtime_digest"] {
 		return output.New(6, "Evaluation does not qualify this exact Candidate; inspect its original native Runs")
 	}
-	operation, err := devworkspace.NewID()
+	operation, err := a.nextASaCOperation()
 	if err != nil {
 		return err
 	}

@@ -71,6 +71,7 @@ func (a *App) aliasCommands() {
 						actions["git-attest"] = "git-attest"
 						actions["lease"] = "lease"
 						actions["deployment"] = "deployment"
+						actions["deploy"] = "deploy"
 						actions["test"] = "test"
 					}
 				}

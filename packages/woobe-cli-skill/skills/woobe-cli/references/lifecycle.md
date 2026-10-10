@@ -311,3 +311,5 @@ ASaC selection: an immutable Release selected in Staging stays a Release, and
 its exact UUID is tested without copying it to a Staging-kind snapshot. A changed
 selection rejects the stale testcase; legacy native Staging snapshots still work.
 Use `current --env staging` to inspect authority/generation.
+
+For unified delivery and original intent recovery, read [deployment](deployment.md). Native UUID deploy works without the development registry; local delivery requires accepted source and bindings.

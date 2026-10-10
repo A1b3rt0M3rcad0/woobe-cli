@@ -204,7 +204,7 @@ func (a *App) stageASaCRevision(cmd *cobra.Command, kind, reference, revision st
 	if json.Unmarshal(encoded, &remoteRecord) != nil || devworkspace.ValidateRemoteRevision(*resource, remoteRecord) != nil || remoteRecord.RecordDigest != record.RecordDigest {
 		return output.New(9, "Remote registered revision differs from the verified local record")
 	}
-	op, err := devworkspace.NewID()
+	op, err := a.nextASaCOperation()
 	if err != nil {
 		return err
 	}

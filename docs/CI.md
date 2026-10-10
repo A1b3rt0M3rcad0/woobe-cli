@@ -71,3 +71,7 @@ The code revision `659baea23458380b84bc7059d2a544c9c06fc1f5` passed all six jobs
 [Woobe PR #177](https://github.com/A1b3rt0M3rcad0/woobe/pull/177) pins that code revision. Its required live CLI workflow passed at backend `8ab9d13953c1cd77462af85a3a3a957395141edc`; other backend workflow results and user approval remain recorded in the PR. The backend pin can remain on the reviewed code revision when a later client commit only updates documentation/evidence.
 
 Request-validation continuation adds loopback native checks for request direction, UUID/date-time and mutation refusal. These are client/package evidence; live server DTO validation remains a separate backend contract.
+
+## Unified delivery
+
+See [Deployment](DEPLOYMENT.md) for exact Release/Staging/local delivery, private intent recovery and explicit rollback. See [CI deployment](CI_DEPLOYMENT.md) for deploy-only authority and encrypted checkpoints. Existing commands retain their semantics.

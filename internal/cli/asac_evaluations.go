@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/devworkspace"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/spf13/cobra"
@@ -174,7 +173,7 @@ func (a *App) evaluateASaCCandidate(cmd *cobra.Command, kind, reference, candida
 	if observed["candidate_id"] != candidate || observed["resource_id"] != id || observed["resource_uid"] != resource.UID || observed["state"] != "ready" || packagefmt.Text(observed["record_digest"]) == "" || packagefmt.Text(observed["runtime_digest"]) == "" {
 		return output.New(9, "Candidate is not ready or belongs to another logical resource")
 	}
-	operation, err := devworkspace.NewID()
+	operation, err := a.nextASaCOperation()
 	if err != nil {
 		return err
 	}
