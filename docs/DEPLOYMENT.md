@@ -86,6 +86,9 @@ woobe agent AGENT_UUID deploy inspect --env production
 
 Status reports documentary journal evidence, not a fresh claim about current.
 Resume needs the same API, Project, principal, target and original private journal.
+The backend must advertise `asac.operation_environment_reads`: deployment/lease
+recovery reads carry their exact environment and the owner verifies the retained
+receipt scope. A Production-only deployer never needs Draft access for recovery.
 It observes submitted operations; 404 or `not_observed` never permits re-POST.
 Missing state blocks resume. A completed resume is read-only and checks current
 before claiming it still matches. A changed destination is an explicit conflict.

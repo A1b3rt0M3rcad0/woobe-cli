@@ -42,3 +42,5 @@ before --yes. Rollback uses --from release --release PREVIOUS_RELEASE_UUID
 Do not infer latest/previous or roll back automatically. Protected CI uses a scoped
 Production Control Key and managed policy's stable production actor allowlist;
 Runtime Keys never authorize administration. Git verification remains separate.
+
+Scoped deployment recovery requires backend capability `asac.operation_environment_reads`. The CLI reads each original deployment/lease operation with its exact environment; it never asks a deploy-only key for Draft access.

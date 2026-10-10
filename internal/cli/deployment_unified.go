@@ -193,7 +193,7 @@ func (a *App) runUnifiedDeploy(cmd *cobra.Command, kind string, args []string, o
 		return err
 	}
 	protocol := packagefmt.Object(cap["asac"])
-	if protocol["schema_version"] != "1.0" || protocol["fenced_deployment"] != true || protocol["deployment_scope"] != "exact-release-owner-selection@1" || protocol["operation_leases"] != true || protocol["lease_clock"] != "database" || protocol["lease_fencing_scope"] != "owner-authoring-transaction@1" {
+	if protocol["schema_version"] != "1.0" || protocol["fenced_deployment"] != true || protocol["operation_environment_reads"] != true || protocol["deployment_scope"] != "exact-release-owner-selection@1" || protocol["operation_leases"] != true || protocol["lease_clock"] != "database" || protocol["lease_fencing_scope"] != "owner-authoring-transaction@1" {
 		return output.New(9, "Backend lacks exact fenced deployment/workflow leases; no legacy activation fallback")
 	}
 	principal := packagefmt.Text(cap["principal_fingerprint"])
@@ -264,7 +264,7 @@ func (a *App) runUnifiedDeploy(cmd *cobra.Command, kind string, args []string, o
 		return output.New(9, "Original deploy journal is unavailable; restore its private checkpoint before recovery. No write attempted")
 	} else {
 		// A surviving remote operation with no local journal must not be replayed.
-		original, probeErr := w.read(w.base+"/operations/"+deployOperationID(w.intent, "plan:"+opts.Environment), nil)
+		original, probeErr := w.read(w.base+"/operations/"+deployOperationID(w.intent, "plan:"+opts.Environment), url.Values{"environment": {opts.Environment}})
 		if probeErr == nil && original != nil && !(original["operation_id"] == deployOperationID(w.intent, "plan:"+opts.Environment) && original["complete"] == false && original["retry_authorized"] == false && original["state"] == "not_observed") {
 			return output.New(9, "This intent already has remote evidence; restore its original checkpoint before continuing")
 		}
@@ -444,7 +444,11 @@ func (w *deployWorkflow) step(name, method, path string, body map[string]any, va
 		}
 	} else {
 		var operation map[string]any
-		operation, err = w.read(w.base+"/operations/"+url.PathEscape(step.Operation), nil)
+		environment := packagefmt.Text(step.Body["environment"])
+		if environment == "" {
+			environment = packagefmt.Text(step.Body["scope"])
+		}
+		operation, err = w.read(w.base+"/operations/"+url.PathEscape(step.Operation), url.Values{"environment": {environment}})
 		if err == nil {
 			if operation["operation_id"] != step.Operation || operation["state"] != "committed" {
 				err = output.New(9, "Original operation is not proven committed; no replay permitted")

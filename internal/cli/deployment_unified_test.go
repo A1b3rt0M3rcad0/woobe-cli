@@ -22,21 +22,22 @@ const deployTestRelease = "12345678-1234-4321-8321-123456789077"
 const deployTestIntent = "12345678-1234-4321-8321-123456789011"
 
 type deployFixture struct {
-	kind               string
-	generation         int64
-	selected           string
-	sourceGeneration   int64
-	staging            string
-	authority          string
-	capability         bool
-	lost, deny, forged string
-	writes             map[string]int
-	operations         map[string]map[string]any
-	plans              map[string]map[string]any
-	deployments        map[string]map[string]any
-	driftStaging       bool
-	unobserved         bool
-	principal          string
+	kind                  string
+	generation            int64
+	selected              string
+	sourceGeneration      int64
+	staging               string
+	authority             string
+	capability            bool
+	missingOperationScope bool
+	lost, deny, forged    string
+	writes                map[string]int
+	operations            map[string]map[string]any
+	plans                 map[string]map[string]any
+	deployments           map[string]map[string]any
+	driftStaging          bool
+	unobserved            bool
+	principal             string
 }
 
 func newDeployFixture(kind string) *deployFixture {
@@ -133,7 +134,7 @@ func (f *deployFixture) serve(w http.ResponseWriter, r *http.Request) {
 			if principal == "" {
 				principal = strings.Repeat("a", 64)
 			}
-			data = map[string]any{"principal_fingerprint": principal, "asac": map[string]any{"schema_version": "1.0", "fenced_deployment": f.capability, "deployment_scope": "exact-release-owner-selection@1", "operation_leases": true, "lease_clock": "database", "lease_fencing_scope": "owner-authoring-transaction@1"}}
+			data = map[string]any{"principal_fingerprint": principal, "asac": map[string]any{"schema_version": "1.0", "fenced_deployment": f.capability, "operation_environment_reads": !f.missingOperationScope, "deployment_scope": "exact-release-owner-selection@1", "operation_leases": true, "lease_clock": "database", "lease_fencing_scope": "owner-authoring-transaction@1"}}
 		case strings.HasSuffix(path, "/current"):
 			env := r.URL.Query().Get("environment")
 			selected, generation := f.selected, f.generation
@@ -240,7 +241,7 @@ func TestUnifiedDeployLostResponsesReconcileEveryOriginalWithoutRepeatingWrite(t
 	}
 }
 func TestUnifiedDeployPreflightCapabilitiesLegacyStagingGenerationAndAuthority(t *testing.T) {
-	for _, scenario := range []string{"plan-only", "dry-run", "capability", "legacy", "empty-staging", "generation", "forbidden", "forged", "changed-input"} {
+	for _, scenario := range []string{"plan-only", "dry-run", "capability", "operation-scope", "legacy", "empty-staging", "generation", "forbidden", "forged", "changed-input"} {
 		t.Run(scenario, func(t *testing.T) {
 			fixture := newDeployFixture("Agent")
 			server := httptest.NewServer(http.HandlerFunc(fixture.serve))
@@ -255,6 +256,9 @@ func TestUnifiedDeployPreflightCapabilitiesLegacyStagingGenerationAndAuthority(t
 				args = append(args, "--dry-run")
 			case "capability":
 				fixture.capability = false
+				expected = 9
+			case "operation-scope":
+				fixture.missingOperationScope = true
 				expected = 9
 			case "legacy":
 				fixture.authority = "legacy"
