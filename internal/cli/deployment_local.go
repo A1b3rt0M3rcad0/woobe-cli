@@ -13,6 +13,7 @@ import (
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/devworkspace"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packageapi"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/requestinput"
 )
@@ -143,6 +144,25 @@ func (w *deployWorkflow) prepareLocal(write bool) error {
 	graph, err := devworkspace.LoadGraph(c)
 	if err != nil {
 		return output.New(2, err.Error())
+	}
+	nodes, err := graph.Closure(resource.Key)
+	if err != nil {
+		return output.New(2, err.Error())
+	}
+	packages, err := packageapi.New(w.client, w.intent.Project)
+	if err != nil {
+		return err
+	}
+	registry, err := packages.Registry(w.cmd.Context(), c.RegistryID)
+	if err != nil {
+		return err
+	}
+	_, stale, err := recoveredDevelopmentBindings(nodes, state, registry)
+	if err != nil {
+		return output.New(9, "Local deploy has no complete accepted native closure; inspect bindings recover --dry-run and establish it explicitly with managed push before delivery")
+	}
+	if stale != 0 {
+		return output.New(6, "Accepted native bindings changed; explicitly inspect/recover the closure before a new delivery")
 	}
 	tracking, err := c.ReadTracking(*resource)
 	if err != nil {
