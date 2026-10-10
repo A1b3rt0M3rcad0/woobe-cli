@@ -455,8 +455,17 @@ func (w *deployWorkflow) step(name, method, path string, body map[string]any, va
 			} else {
 				data = packagefmt.Object(operation["result"])
 			}
-		} else if output.Normalize(err).Code == 5 {
-			err = &output.Error{Code: 9, Message: "Original operation remains unobserved; 404 does not authorize replay", Outcome: "unknown"}
+		}
+		if err != nil {
+			// A failed observation never proves the original submitted write was
+			// rejected, including an authorization failure during recovery.
+			failure := output.Normalize(err)
+			failure.Outcome = "unknown"
+			if failure.Code != 8 {
+				failure.Code = 9
+			}
+			failure.Message = "Original operation cannot be observed; restore access and reconcile the same intent. No write repeated"
+			err = failure
 		}
 	}
 	if err != nil {

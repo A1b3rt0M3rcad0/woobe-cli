@@ -37,6 +37,7 @@ type deployFixture struct {
 	deployments           map[string]map[string]any
 	driftStaging          bool
 	unobserved            bool
+	denyOperationRead     bool
 	principal             string
 }
 
@@ -147,6 +148,11 @@ func (f *deployFixture) serve(w http.ResponseWriter, r *http.Request) {
 			}
 			data = map[string]any{"schema_version": "1.0", "kind": f.kind, "resource_id": deployTestTarget, "environment": env, "snapshot_id": snapshot, "environment_generation": generation, "selection_authority": f.authority, "generation_status": "monotonic_owner_selection", "complete": true}
 		case strings.Contains(path, "/operations/"):
+			if f.denyOperationRead {
+				w.WriteHeader(403)
+				_ = json.NewEncoder(w).Encode(map[string]any{"success": false})
+				return
+			}
 			if f.unobserved {
 				data = map[string]any{"state": "not_observed", "retry_authorized": false, "complete": false}
 				break
@@ -450,5 +456,31 @@ func TestUnifiedDeployUppercaseUUIDsAndRollbackRemainExact(t *testing.T) {
 	code, result := invoke(t, args, "")
 	if code != 0 || f.writes["deployments"] != 1 || result["data"].(map[string]any)["release_id"] != deployTestRelease {
 		t.Fatal(code, result, f.writes)
+	}
+}
+
+func TestUnifiedDeployDeniedRecoveryReadDoesNotRejectOriginalCommittedApply(t *testing.T) {
+	fixture := newDeployFixture("Agent")
+	fixture.lost = "deployments"
+	server := httptest.NewServer(http.HandlerFunc(fixture.serve))
+	defer server.Close()
+	flags := deployTestFlags(t, server)
+	if code, value := invoke(t, deployInvocation(flags, "Agent", "release"), ""); code != 9 {
+		t.Fatal(code, value)
+	}
+	fixture.denyOperationRead = true
+	resume := append([]string{"agent", deployTestTarget, "deploy", "resume", "--intent", deployTestIntent, "--yes"}, flags...)
+	if code, value := invoke(t, resume, ""); code != 9 || value["data"].(map[string]any)["status"] != "outcome_unknown" {
+		t.Fatal(code, value)
+	}
+	if fixture.writes["deployments"] != 1 {
+		t.Fatal("Original write repeated after denied observation")
+	}
+	fixture.denyOperationRead = false
+	if code, value := invoke(t, resume, ""); code != 0 {
+		t.Fatal(code, value)
+	}
+	if fixture.writes["deployments"] != 1 {
+		t.Fatal("Original apply repeated after restoring access")
 	}
 }

@@ -2,7 +2,9 @@
 
 `deploy` orchestrates the existing ASaC owner contracts. It does not deploy the
 Woobe server, transfer resources between instances or bypass Project policy.
-Agent and Network use the same interface:
+For an installed package, first confirm `woobe agent AGENT_UUID deploy --help`;
+a draft PR artifact is not a published npm release. Agent and Network use the
+same interface:
 
 ```sh
 woobe agent AGENT_UUID deploy --from release --release RELEASE_UUID --notes 'Approved delivery' --yes

@@ -1,17 +1,29 @@
 # Current implementation status
 
-Updated 2026-10-09. ASaC history, workflow leases, isolated Drafts, exact
+Updated 2026-10-10. ASaC history, workflow leases, isolated Drafts, exact
 Candidate evaluation/publication, fenced deployment and trusted Git proof
-commands are implemented. The final Git/runtime client delivery is
-[PR #58](https://github.com/A1b3rt0M3rcad0/woobe-cli/pull/58); its latest reviewed
-commit passed all six native platforms, race checks and paired live integration.
+commands are implemented. Unified Agent/Network delivery is tracked in
+[CLI PR #63](https://github.com/A1b3rt0M3rcad0/woobe-cli/pull/63) and
+[Woobe PR #205](https://github.com/A1b3rt0M3rcad0/woobe/pull/205).
+It adds exact Release deployment, captured Staging promotion, evaluated local
+ASaC delivery, optional separate Runtime smoke and private original-operation
+recovery. See [DEPLOYMENT.md](DEPLOYMENT.md) and [CI_DEPLOYMENT.md](CI_DEPLOYMENT.md).
+The protected deploy-only example runs on a self-hosted runner and restores an
+encrypted checkpoint across attempts; it does not configure an operator's secrets
+or protected Environments. Backend capability `asac.operation_environment_reads`
+is required so Production recovery does not demand a Draft grant.
+
+Release availability follows merged source and the release manifest. Confirm
+`woobe agent AGENT_UUID deploy --help` before using new instructions on an installed
+package. PR checks retain exact reviewed source/native qualification; draft
+artifacts are not an npm release.
 
 Use [GitHub Releases](https://github.com/A1b3rt0M3rcad0/woobe-cli/releases) and the
 permanent release manifest for the current published version and exact source
 commit; a PR build is not a published package. The automatic release workflow
 validates the merged source before publishing native assets, the image and npm.
 
-The complete server delivery is tracked in
+The historical server delivery is tracked in
 [Woobe #199](https://github.com/A1b3rt0M3rcad0/woobe/pull/199), including the
 H01–H35 acceptance matrix. Installing a client does not deploy or migrate the
 backend, enable managed Project policy or configure instance/builder trust.
