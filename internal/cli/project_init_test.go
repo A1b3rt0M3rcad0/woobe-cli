@@ -31,7 +31,7 @@ func TestProjectInitAssistantPresetsAndRepeat(t *testing.T) {
 			if !bytes.HasPrefix(instructions, original) || !bytes.Contains(instructions, []byte(layout.Project+"/woobe-cli/SKILL.md")) {
 				t.Fatal("existing instructions or skill reference lost")
 			}
-			status, e := assistantskill.Inspect(filepath.Join(layout.Project, "woobe-cli"))
+			status, e := assistantskill.Inspect(filepath.Join(filepath.Dir(first["config"].(string)), layout.Project, "woobe-cli"))
 			if e != nil || status.Status != "managed" {
 				t.Fatal(status, e)
 			}
