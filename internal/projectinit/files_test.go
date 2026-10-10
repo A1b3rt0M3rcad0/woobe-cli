@@ -34,7 +34,11 @@ func TestProjectInitManagedBlockPreservesCustomText(t *testing.T) {
 }
 
 func TestProjectInitFileDriftAndInvalidInput(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "AGENTS.md")
+	directory, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(directory, "AGENTS.md")
 	if err := os.WriteFile(path, []byte("Original\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
