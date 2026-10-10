@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add unified Agent/Network deploy from exact Releases, captured Staging or evaluated local ASaC, private stable intent recovery, optional separate Runtime smoke, protected CI example and coordinated assistant references.
+
 - Preserve the authoritative package validation help instead of replacing it with an older guide; show structural-only and locked examples together.
 
 - Separate edited package structure from capture integrity with offline `package validate --structure-only`; retain integrity gates on transfers and coordinate help/assistant references (CLI 0.32.3+).

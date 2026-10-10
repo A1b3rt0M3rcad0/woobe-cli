@@ -28,6 +28,7 @@ policy. Existing authorization does not require repeated confirmation.
 | Create/edit an Agent or Network with YAML | [development](references/development.md) |
 | Providers/Models/Tools/Skills/Knowledge and shared dependencies | [dependencies](references/dependencies.md) |
 | Transfer portable packages between Projects | [packages](references/packages.md) |
+| Unified deploy, delivery from Release/Staging/local and CI recovery | [deployment](references/deployment.md) |
 | Tests, staging, release, production, rollback or archive | [lifecycle](references/lifecycle.md) |
 | Runtime, administration, schemas, pagination or output | [operations](references/operations.md) |
 | Missing files, incompatible backend, conflicts or uncertain writes | [recovery](references/recovery.md) |

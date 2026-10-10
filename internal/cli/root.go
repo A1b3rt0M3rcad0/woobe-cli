@@ -25,6 +25,9 @@ var Version = "dev"
 var Commit = "unknown"
 
 type App struct {
+	asacResult                                                                               func(any) error
+	asacOperation                                                                            string
+	asacSourceExport, asacArtifactDigest                                                     string
 	ProjectConfig                                                                            string
 	NoProjectConfig                                                                          bool
 	packageCheckpointPath                                                                    string
@@ -138,6 +141,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.developmentConfigCommands()
 	a.developmentCommands()
 	a.asacCommands()
+	a.unifiedDeployCommands()
 	a.asacReceiptCommands()
 	a.asacGitCommands()
 	a.developmentLifecycleCommands()
@@ -221,6 +225,9 @@ func (a *App) validateCommandGroups(cmd *cobra.Command) {
 	}
 }
 func (a *App) emit(v any) error {
+	if a.asacResult != nil {
+		return a.asacResult(v)
+	}
 	return a.writeOutput(a.Out, output.Redact(v), map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, nil, nil)
 }
 
@@ -376,6 +383,10 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 	command, e := a.Root.ExecuteContextC(ctx)
 	if e == nil {
 		return 0
+	}
+	if failure, ok := e.(*deployFailure); ok {
+		_ = a.writeOutput(a.Out, failure.Data, map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, failure.Cause, map[string]any{"complete": false})
+		return failure.Cause.Code
 	}
 	if failure, ok := e.(*releaseTestFailure); ok {
 		_ = a.writeOutput(a.Out, failure.Data, nil, failure.Cause, map[string]any{"complete": true, "executed": true})

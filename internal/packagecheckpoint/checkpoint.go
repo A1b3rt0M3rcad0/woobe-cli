@@ -180,7 +180,17 @@ func (s *Store) Close() error {
 }
 
 func (s *Store) Read() (Checkpoint, error) {
-	var empty Checkpoint
+	data, err := s.ReadDocument()
+	if err != nil {
+		return Checkpoint{}, err
+	}
+	return Parse(data)
+}
+
+// ReadDocument shares the OS protection and bounded no-follow read used by
+// package checkpoints. Callers own the schema and immutable identity checks.
+func (s *Store) ReadDocument() ([]byte, error) {
+	var empty []byte
 	info, err := s.root.Lstat(s.name)
 	if err != nil {
 		return empty, err
@@ -204,7 +214,10 @@ func (s *Store) Read() (Checkpoint, error) {
 	if err != nil {
 		return empty, err
 	}
-	return Parse(data)
+	if len(data) > 1<<20 || jsoninput.Validate(data) != nil {
+		return nil, output.New(2, "invalid private checkpoint JSON")
+	}
+	return data, nil
 }
 
 func sameIdentity(left, right Checkpoint) bool {
@@ -232,6 +245,20 @@ func (s *Store) Save(checkpoint Checkpoint) error {
 	}
 	data, err := json.Marshal(checkpoint)
 	if err != nil {
+		return err
+	}
+	return s.SaveDocument(data)
+}
+
+// SaveDocument is atomic and durable, retaining the same private file,
+// hardlink/symlink, parent-directory and Windows DACL checks as Save.
+func (s *Store) SaveDocument(data []byte) error {
+	if len(data) > 1<<20 || jsoninput.Validate(data) != nil {
+		return output.New(2, "invalid private checkpoint JSON")
+	}
+	_, err := s.ReadDocument()
+	existing := err == nil
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	nonce := make([]byte, 16)

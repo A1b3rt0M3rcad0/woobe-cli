@@ -102,3 +102,5 @@ Agent snapshot. A `/spec/model/primary` or `/fallback` suffix means missing
 ModelSpec evidence. Recover mutable Draft configuration explicitly, or create a
 new complete Draft/Candidate/Release for incomplete immutable history. Never
 replace a pinned snapshot with latest or rewrite historical hashes.
+
+For unified delivery and original intent recovery, read [deployment](deployment.md). Native UUID deploy works without the development registry; local delivery requires accepted source and bindings.

@@ -456,3 +456,7 @@ rotation, revocation and limits on freshness and Git provenance.
 An exact commit proof and trusted pipeline receipt are separate from revision,
 publication and deployment identities. See [Git provenance](GIT_PROVENANCE.md).
 A failed Git/documentary step never repeats activation.
+
+## Unified delivery
+
+See [Deployment](DEPLOYMENT.md) for exact Release/Staging/local delivery, private intent recovery and explicit rollback. See [CI deployment](CI_DEPLOYMENT.md) for deploy-only authority and encrypted checkpoints. Existing commands retain their semantics.

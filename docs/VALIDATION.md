@@ -1,5 +1,37 @@
 # Validation
 
+## Unified deployment qualification — 2026-10-10
+
+`make check` includes exact Release/Staging orchestration, read-only preflight,
+capability refusal, scoped stable operation IDs, changed actor/input, forged
+receipts, Staging drift, malformed suite refusal before authoring writes, exact
+large-integer evaluation assertions, independent original plan/lease/apply/cleanup response
+loss, and completed-intent observation. Recovery tests retain submitted state
+when an original read is denied and recover after access returns without another
+apply. Private checkpoint regressions cover locks, malformed/duplicate JSON,
+symlinks and hard links; native CI verifies Linux/macOS/Windows on amd64 and arm64.
+
+The official self-hosted CI example has shell syntax, stable intent, missing
+checkpoint refusal and encryption/public-summary tests. Package qualification
+verifies six archives, the native CLI, npm launcher and embedded/standalone
+assistant payload; packaged smoke checks discover the new commands and reject
+invalid deploy inputs offline.
+
+[Woobe PR #205](https://github.com/A1b3rt0M3rcad0/woobe/pull/205) pins the compiled
+CLI commit and runs the existing full five-test CLI/API contract plus both-kind
+unified acceptance. The helper exercises accepted local closure, isolated Draft,
+exact Candidate/Evaluation/Publication, Staging promotion, explicit rollback,
+Production Runtime identity, truncated committed response with SQL uniqueness,
+restricted deploy keys and failing Evaluation/Staging smoke gates. Backend owner
+regressions verify persisted operation environments, actor scope, forged filters
+and access-check/actual-request agreement. Latest commit results are recorded in
+the paired PR checks; these descriptions identify executable coverage rather than
+claiming ninety independent new tests or customer Production certification.
+
+Protected Environment settings, actual provider behavior and physical multi-host
+load remain operator qualification. Git signatures/provenance are independent
+gates and are never inferred from a deployment workflow URL.
+
 ## Functional audit regressions — 2026-10-09
 
 `make check` includes recovery of absent/cleared Draft checkpoints, refusal to

@@ -42,6 +42,9 @@ func (a *App) completeDiscovery() {
 					if strings.HasSuffix(path, " current") {
 						kind, effect, availability = "development-http", "read", "server-dependent"
 					}
+					if strings.HasSuffix(path, " deploy") {
+						kind, effect, availability = "deployment-orchestration", "explicit_activation_or_read", "server-dependent"
+					}
 					if strings.HasSuffix(path, " history") {
 						effect, availability = "local_history_or_remote_fetch", "local_or_server-dependent"
 					}

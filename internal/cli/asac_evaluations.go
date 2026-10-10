@@ -1,13 +1,13 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
 	"strings"
 
-	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/devworkspace"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"github.com/spf13/cobra"
@@ -107,13 +107,13 @@ func (a *App) evaluateASaCCandidate(cmd *cobra.Command, kind, reference, candida
 		return output.New(2, "Evaluation suite exceeds 1 MiB")
 	}
 	var suite map[string]any
-	if json.Unmarshal(raw, &suite) != nil || suite["schema_version"] != "1.0" || len(packagefmt.List(suite["cases"])) < 1 || len(packagefmt.List(suite["cases"])) > 16 {
-		return output.New(2, "Use a versioned Evaluation suite with schema_version: '1.0' and 1–16 cases")
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if decoder.Decode(&suite) != nil {
+		return output.New(2, "Evaluation suite must be a YAML/JSON object")
 	}
-	for _, key := range []string{"suite_id", "suite_version", "dataset_version"} {
-		if packagefmt.Text(suite[key]) == "" {
-			return output.New(2, "Evaluation suite requires "+key)
-		}
+	if err := validateEvaluationSuite(suite); err != nil {
+		return err
 	}
 	c, err := a.developmentConfig(true)
 	if err != nil {
@@ -174,7 +174,7 @@ func (a *App) evaluateASaCCandidate(cmd *cobra.Command, kind, reference, candida
 	if observed["candidate_id"] != candidate || observed["resource_id"] != id || observed["resource_uid"] != resource.UID || observed["state"] != "ready" || packagefmt.Text(observed["record_digest"]) == "" || packagefmt.Text(observed["runtime_digest"]) == "" {
 		return output.New(9, "Candidate is not ready or belongs to another logical resource")
 	}
-	operation, err := devworkspace.NewID()
+	operation, err := a.nextASaCOperation()
 	if err != nil {
 		return err
 	}

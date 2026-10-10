@@ -140,3 +140,7 @@ Unknown subcommands and extra arguments return exit 2, including in nested
 groups. Explicit `--help` and a bare group are discovery requests and return
 readable help with exit 0. JSON/compact usage errors remain parseable; human text
 is not a successful operation result.
+
+## Unified delivery
+
+See [Deployment](DEPLOYMENT.md) for exact Release/Staging/local delivery, private intent recovery and explicit rollback. See [CI deployment](CI_DEPLOYMENT.md) for deploy-only authority and encrypted checkpoints. Existing commands retain their semantics.

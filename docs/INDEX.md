@@ -11,6 +11,8 @@ that every original roadmap criterion is complete.
 | [Coding assistant skill](AGENT_SKILL.md) | Built-in offline install, Codex/.codex, Claude Code, custom paths, compatible npm installer and publisher bootstrap |
 | [Usage](USAGE.md) | Canonical CLI workflows, managed YAML editing and recovery |
 | [Development](DEVELOPMENT.md) | Provider bindings, shared dependencies and Surfaces |
+| [Unified deployment](DEPLOYMENT.md) | Release/Staging/local delivery, exact qualification, private intents and recovery |
+| [CI deployment](CI_DEPLOYMENT.md) | Pinned protected deploy-only workflow, encrypted recovery and separate builder identity |
 | [Project lifecycle policy](PROJECT_LIFECYCLE.md) | Server-managed gates, CAS policy changes, stable Production actors and original-operation recovery |
 | [ASaC tracking/history](ASAC.md) | Immutable checkpoints, guarded source checkout/rebase, objects, origin locks, isolated Drafts, exact Candidate evaluation/publication and scoped remote observations |
 | [Trusted Git provenance](GIT_PROVENANCE.md) | Offline exact-commit source proof, explicitly scoped builder trust and independent append-only Git receipts |

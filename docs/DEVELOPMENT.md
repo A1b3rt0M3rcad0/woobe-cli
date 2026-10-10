@@ -347,3 +347,7 @@ manifest name to match their new identity. Changing an alias never renames a
 remote Agent/Network. Push/create dry-run shows the intended `name`; inspect the
 remote getter after the original operation completes. Names can duplicate; UUIDs
 and registered aliases remain the unambiguous operation references.
+
+## Unified delivery
+
+See [Deployment](DEPLOYMENT.md) for exact Release/Staging/local delivery, private intent recovery and explicit rollback. See [CI deployment](CI_DEPLOYMENT.md) for deploy-only authority and encrypted checkpoints. Existing commands retain their semantics.

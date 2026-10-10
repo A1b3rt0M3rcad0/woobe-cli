@@ -856,3 +856,7 @@ For an existing publication, use offline `git-proof` and an independently
 authorized `git-attest` operation. See [the complete workflow](GIT_PROVENANCE.md).
 
 Synchronous Runtime JSON preserves exact integer identities and generations, including values above the floating-point integer limit. Responses are bounded to 16 MiB; SDK authentication and failure semantics remain in effect.
+
+## Unified delivery
+
+See [Deployment](DEPLOYMENT.md) for exact Release/Staging/local delivery, private intent recovery and explicit rollback. See [CI deployment](CI_DEPLOYMENT.md) for deploy-only authority and encrypted checkpoints. Existing commands retain their semantics.

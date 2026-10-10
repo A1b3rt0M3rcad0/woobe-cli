@@ -59,3 +59,7 @@ selection and accept its exact immutable Release. Preparation checks the selecte
 identity while locking the environment observation; stale selected UUIDs are
 rejected. Legacy Staging-kind snapshots remain compatible where ASaC has no
 selection. This does not relabel, copy or publish a Release.
+
+## Unified delivery
+
+See [Deployment](DEPLOYMENT.md) for exact Release/Staging/local delivery, private intent recovery and explicit rollback. See [CI deployment](CI_DEPLOYMENT.md) for deploy-only authority and encrypted checkpoints. Existing commands retain their semantics.

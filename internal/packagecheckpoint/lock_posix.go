@@ -21,6 +21,10 @@ func lockCheckpoint(root *os.Root, name string) (*os.File, error) {
 		file.Close()
 		return nil, output.New(3, "package checkpoint lock must be private and regular")
 	}
+	if err = checkPrivateFile(file); err != nil {
+		file.Close()
+		return nil, err
+	}
 	if err = unix.Flock(fd, unix.LOCK_EX|unix.LOCK_NB); err != nil {
 		file.Close()
 		return nil, output.New(2, "package checkpoint is in use by another command")
@@ -50,6 +54,13 @@ func checkPrivateFile(file *os.File) error {
 	}
 	if !privateMode(info) {
 		return output.New(3, "Package operational file must be private and regular")
+	}
+	var identity unix.Stat_t
+	if err = unix.Fstat(int(file.Fd()), &identity); err != nil {
+		return err
+	}
+	if identity.Nlink != 1 {
+		return output.New(3, "Package operational file must not have hard links")
 	}
 	return nil
 }
