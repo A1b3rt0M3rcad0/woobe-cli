@@ -397,3 +397,54 @@ func TestUnifiedDeployStagingDriftAndUnknownNeverAuthorizeReplay(t *testing.T) {
 		})
 	}
 }
+
+func TestDeployIntentRejectsSymlinkAndHardlinkWithoutReplacingOriginal(t *testing.T) {
+	for _, link := range []struct {
+		name   string
+		create func(string, string) error
+	}{{"symlink", os.Symlink}, {"hardlink", os.Link}} {
+		t.Run(link.name, func(t *testing.T) {
+			parent := filepath.Join(t.TempDir(), "state")
+			if err := packagecheckpoint.EnsurePrivateDirectory(parent); err != nil {
+				t.Fatal(err)
+			}
+			original := filepath.Join(parent, "original.json")
+			if err := os.WriteFile(original, []byte(`{"original":true}`), 0600); err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(parent, "intent.json")
+			if err := link.create(original, path); err != nil {
+				t.Skip("filesystem does not permit this link:", err)
+			}
+			store, err := packagecheckpoint.Open(path)
+			if err == nil {
+				defer store.Close()
+				if err = store.SaveDocument([]byte(`{"replacement":true}`)); err == nil {
+					t.Fatal("linked journal accepted")
+				}
+			}
+			raw, err := os.ReadFile(original)
+			if err != nil || string(raw) != `{"original":true}` {
+				t.Fatal("original modified", err, string(raw))
+			}
+		})
+	}
+}
+
+func TestUnifiedDeployUppercaseUUIDsAndRollbackRemainExact(t *testing.T) {
+	f := newDeployFixture("Agent")
+	f.selected = deployTestRelease
+	server := httptest.NewServer(http.HandlerFunc(f.serve))
+	defer server.Close()
+	args := deployInvocation(deployTestFlags(t, server), "Agent", "release")
+	for i, arg := range args {
+		if deployUUID.MatchString(arg) {
+			args[i] = strings.ToUpper(arg)
+		}
+	}
+	args = append(args, "--action", "rollback")
+	code, result := invoke(t, args, "")
+	if code != 0 || f.writes["deployments"] != 1 || result["data"].(map[string]any)["release_id"] != deployTestRelease {
+		t.Fatal(code, result, f.writes)
+	}
+}

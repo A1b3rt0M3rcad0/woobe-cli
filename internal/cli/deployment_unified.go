@@ -163,6 +163,7 @@ func (a *App) runUnifiedDeploy(cmd *cobra.Command, kind string, args []string, o
 	if err := validateDeployOptions(a, verb, opts); err != nil {
 		return err
 	}
+	opts.Intent, opts.Release, opts.Publication = strings.ToLower(opts.Intent), strings.ToLower(opts.Release), strings.ToLower(opts.Publication)
 	id, err := a.nativeReference(kind+"_id", args[0])
 	if err != nil {
 		return err
@@ -170,6 +171,7 @@ func (a *App) runUnifiedDeploy(cmd *cobra.Command, kind string, args []string, o
 	if !deployUUID.MatchString(id) {
 		return output.New(2, "Deploy requires a native UUID or an unambiguous registered @alias/path")
 	}
+	id = strings.ToLower(id)
 	control, err := a.client()
 	if err != nil {
 		return err
@@ -177,6 +179,7 @@ func (a *App) runUnifiedDeploy(cmd *cobra.Command, kind string, args []string, o
 	if a.Project == "" {
 		return output.New(2, "Select a Project before deployment")
 	}
+	a.Project, a.Workspace = strings.ToLower(a.Project), strings.ToLower(a.Workspace)
 	w := &deployWorkflow{app: a, cmd: cmd, client: control, base: fmt.Sprintf("/projects/%s/%ss/%s/asac", url.PathEscape(a.Project), kind, url.PathEscape(id))}
 	if verb == "inspect" {
 		current, err := w.current(opts.Environment)
@@ -262,7 +265,7 @@ func (a *App) runUnifiedDeploy(cmd *cobra.Command, kind string, args []string, o
 	} else {
 		// A surviving remote operation with no local journal must not be replayed.
 		original, probeErr := w.read(w.base+"/operations/"+deployOperationID(w.intent, "plan:"+opts.Environment), nil)
-		if probeErr == nil && original != nil && !(original["complete"] == false && original["retry_authorized"] == false && original["state"] == "not_observed") {
+		if probeErr == nil && original != nil && !(original["operation_id"] == deployOperationID(w.intent, "plan:"+opts.Environment) && original["complete"] == false && original["retry_authorized"] == false && original["state"] == "not_observed") {
 			return output.New(9, "This intent already has remote evidence; restore its original checkpoint before continuing")
 		}
 		if probeErr != nil && output.Normalize(probeErr).Code != 5 {
@@ -298,6 +301,9 @@ func (a *App) runUnifiedDeploy(cmd *cobra.Command, kind string, args []string, o
 		failure := output.Normalize(err)
 		if failure.Outcome == "unknown" {
 			w.intent.Status = "outcome_unknown"
+			if failure.Code != 8 {
+				failure.Code = 9
+			}
 		}
 		_ = w.save()
 		failure.Message += "; intent " + w.intent.ID + " retained; use deploy resume --intent " + w.intent.ID + " --yes"

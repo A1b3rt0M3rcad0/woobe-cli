@@ -16,6 +16,16 @@ func privateMode(info os.FileInfo) bool { return info.Mode().IsRegular() }
 // Windows privacy is an ACL property, never inferred from Unix mode bits.
 // Only the current account and Windows administrative principals may have access.
 func checkPrivateFile(file *os.File) error {
+	info, statErr := file.Stat()
+	if statErr != nil {
+		return statErr
+	}
+	if info.Mode().IsRegular() {
+		var identity windows.ByHandleFileInformation
+		if err := windows.GetFileInformationByHandle(windows.Handle(file.Fd()), &identity); err != nil || identity.NumberOfLinks != 1 {
+			return output.New(3, "Package operational file must not have hard links")
+		}
+	}
 	descriptor, err := windows.GetSecurityInfo(windows.Handle(file.Fd()), windows.SE_FILE_OBJECT, windows.OWNER_SECURITY_INFORMATION|windows.DACL_SECURITY_INFORMATION)
 	if err != nil {
 		return output.New(3, "Package operational ACL could not be verified")

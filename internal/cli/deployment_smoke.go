@@ -119,7 +119,7 @@ func (w *deployWorkflow) runStagingSmoke() error {
 	if err != nil {
 		w.intent.Status = "staging_smoke_unknown"
 		_ = w.save()
-		return runtimeError(err)
+		return &output.Error{Code: 9, Message: "Staging Runtime response lost; observe the original Run before another intention. No execution repeated", Outcome: "unknown"}
 	}
 	result, err = capture.preciseResult(result)
 	if err != nil {
