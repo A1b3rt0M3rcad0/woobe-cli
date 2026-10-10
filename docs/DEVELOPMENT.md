@@ -9,8 +9,10 @@ bind destination Providers. Recovery does not establish an accepted YAML base.
 See [ASaC recovery](ASAC.md#recover-native-bindings-after-cloning) for conflicts,
 exact frozen snapshots and dry-run behavior.
 
-For coding assistants, use `woobe skill install --agent codex` or `claude`;
-the [Woobe CLI skill](AGENT_SKILL.md) is embedded and installs offline.
+For coding assistants, use `woobe init --agents codex` or `--agents claude`
+from the project root. [Integrated setup](PROJECT_SETUP.md) installs the embedded
+skill, prepares instructions and protects private state/lab files. Standalone
+`woobe skill install` remains available for skill-only setup.
 It follows these same development flows; it does not upload a runtime Skill or
 replace the optional registry. UUID API/runtime commands still work without it.
 

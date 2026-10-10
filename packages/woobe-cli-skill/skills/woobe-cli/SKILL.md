@@ -24,6 +24,7 @@ policy. Existing authorization does not require repeated confirmation.
 
 | Request | Read only this reference |
 | --- | --- |
+| Initialize a project, install/update assistant tooling | [setup](references/setup.md) |
 | Connect, select Project, troubleshoot scope | [connection](references/connection.md) |
 | Create/edit an Agent or Network with YAML | [development](references/development.md) |
 | Providers/Models/Tools/Skills/Knowledge and shared dependencies | [dependencies](references/dependencies.md) |

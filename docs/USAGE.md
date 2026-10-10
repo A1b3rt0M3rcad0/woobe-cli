@@ -7,7 +7,9 @@ snapshot checks and the distinction between recovered identity and author base.
 
 ## Coding assistants
 
-Install offline with `woobe skill install --agent codex` or `--agent claude`.
+Prepare the whole project with `woobe init --agents codex`, `--agents codex-legacy`
+or `--agents claude`; see [project setup](PROJECT_SETUP.md). For skill-only setup,
+install offline with `woobe skill install --agent codex` or `--agent claude`.
 Use `woobe skill status`, `uninstall` and `agents`; `--project-dir` selects a local
 folder and `--scope user` installs for the current user. No key, context, Node.js,
 npm or `.woobe-config` is required. Runtime `woobe skill list/create/...` is separate.
@@ -455,10 +457,12 @@ No project configuration file is required for request input or command help.
 
 ## Optional local development registry
 
-`woobe init --root .woobe --context local` creates `.woobe-config` in the
+`woobe init --agents codex --root .woobe --context local` creates or reuses `.woobe-config` in the
 current directory. This YAML file identifies the registry and records resource
 UIDs, kinds, logical keys, aliases and paths relative to the artifact root.
-Keep it in Git. `.woobe/.state/` is private and ignored by Git.
+Keep it in Git. `.woobe/.state/` and `.woobe-lab/` are private and ignored by Git.
+Repeating init preserves registry identity/resources and can add assistants.
+See [project setup](PROJECT_SETUP.md) for instruction blocks, layouts and recovery.
 
 ```yaml
 schema_version: 1

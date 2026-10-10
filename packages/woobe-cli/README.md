@@ -59,16 +59,20 @@ for functional coverage and known limitations. Published versions are identified
 
 ## Coding assistant integration
 
-New CLI releases containing this feature embed the same portable assistant skill:
+Prepare the project, assistant instructions, Git exclusions and embedded skill together:
 
 ```sh
-woobe skill install --agent codex
-woobe skill install --agent claude
+woobe init --agents codex
+woobe init --agents codex-legacy
+woobe init --agents claude
 woobe skill status --agent codex,claude
 ```
 
-Installation is offline and requires no extra npm package, Node.js, backend login
-or development registry. Native `--project-dir` selects a local project;
-`--agent codex-legacy` targets `.codex/skills`. `woobe-cli-skill` remains an
+Initialization is offline and requires no extra npm package, Node.js or backend
+login. Run it from the project root; it creates or reuses the development registry.
+For standalone `woobe skill install`, `--project-dir` selects another project
+and `--agent codex-legacy` targets `.codex/skills`. `woobe-cli-skill` remains an
 optional independent npm installer. See
 [skill installation and host layouts](https://github.com/A1b3rt0M3rcad0/woobe-cli/blob/master/docs/AGENT_SKILL.md).
+
+Integrated init preserves existing registry identity and custom instructions; `--dry-run` previews changes. See [project setup](https://github.com/A1b3rt0M3rcad0/woobe-cli/blob/master/docs/PROJECT_SETUP.md). `woobe skill install --agent codex` remains available for skill-only installation.

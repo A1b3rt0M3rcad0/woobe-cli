@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Prepare local development and coding assistants together with `woobe init --agents codex|codex-legacy|claude`: reuse registry identity, install embedded skills, maintain project instruction blocks and ignore private state/lab files. Coordinate help, canonical skill and native package tests.
+
 - Add unified Agent/Network deploy from exact Releases, captured Staging or evaluated local ASaC, private stable intent recovery, optional separate Runtime smoke, protected CI example and coordinated assistant references.
 
 - Preserve the authoritative package validation help instead of replacing it with an older guide; show structural-only and locked examples together.

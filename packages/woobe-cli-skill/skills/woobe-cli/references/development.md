@@ -6,10 +6,11 @@ accepted native closure without editing YAML or recovering an accepted author
 base. Bind Providers explicitly afterward; stale generations stay stale.
 
 Use `.woobe-config` only for managed development. If it exists, check it; do not
-reinitialize it or delete `.state/`. Initialize a new project explicitly:
+delete it or `.state/`. Repeating `init` preserves the registry and can add/update
+assistant setup; see [setup](setup.md). Initialize a new project explicitly:
 
 ```sh
-woobe init --root .woobe --context local
+woobe init --agents codex --root .woobe --context local
 woobe agent AGENT_UUID pull --alias support
 woobe network NETWORK_UUID pull --alias service
 ```

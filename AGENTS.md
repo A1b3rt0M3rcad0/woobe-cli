@@ -22,6 +22,7 @@ documentation edits; explain that assessment in the PR's validation notes.
 | Errors, conflicts, local state or uncertain writes | Relevant guide, actionable command help, skill `references/recovery.md` |
 | Trusted pipeline Git proofs, builder scope or custody | `docs/GIT_PROVENANCE.md`, cross-language Git signature fixtures, exact Git-blob and owner-idempotency tests, skill `references/signatures.md` and `references/recovery.md`; keep proof files independent of source commits |
 | Signed ASaC receipts, cryptography or instance trust | `docs/SIGNED_RECEIPTS.md`, cross-language signature fixtures, trust lifecycle regressions and skill `references/signatures.md`; never imply hashes alone establish authority |
+| Project init, assistant instructions or local lab/Git exclusions | `docs/PROJECT_SETUP.md`, managed instruction templates, canonical skill `references/setup.md`, repeat-init and native Windows/macOS/Linux tests; preserve registry identity and custom content |
 | Assistant installation, receipts, presets or distribution | `docs/AGENT_SKILL.md`, `docs/INSTALLATION.md`, package READMEs, both installers and interoperability tests |
 | Toolchain, packaging, versioning or CI | `docs/CI.md`, `docs/VALIDATION.md`, installation/release guidance and affected scripts |
 

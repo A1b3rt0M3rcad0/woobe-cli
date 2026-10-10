@@ -20,29 +20,35 @@ closure validation, explicit Provider binding and stale-generation protection.
 
 The CLI bundles a small portable skill, offline references and YAML templates
 for Codex, Claude Code, Copilot, Cursor and other Agent Skills-compatible hosts.
-Install it directly with the CLI after this feature's release:
+Prepare the project and assistant together from its root:
 
 ```sh
-woobe skill install --agent codex
-woobe skill install --agent claude
-woobe skill status --agent codex,claude
+woobe init --agents codex
+# Alternatives:
+woobe init --agents codex-legacy
+woobe init --agents claude
+# Or several hosts:
+woobe init --agents codex,claude
 ```
 
-No npm, Node.js, backend connection or key is required. Codex defaults to
-`.agents/skills/woobe-cli`; `--agent codex-legacy` selects `.codex/skills/woobe-cli`.
-Use `--scope user`, `--project-dir`, multiple agents or `--path` for other roots.
-Updates/removal preserve edited files and settings. Runtime Skills still use
-`woobe skill list/create/get/update/delete`.
+This creates/reuses `.woobe-config`, installs embedded skills, adds managed
+`AGENTS.md`/host instructions and ignores private `.state/` and `.woobe-lab/`.
+Repeated initialization preserves resource identity and custom instructions;
+`--dry-run` previews setup. No backend, Node.js or extra package is required.
+Remote operations still require a saved connection and CLI Key.
+
+For skill-only or user-scope installation, use `woobe skill install --agent codex`
+and `woobe skill status/uninstall`. Runtime Skills remain separate under
+`woobe project skill`.
 
 | Distribution | Purpose |
 | --- | --- |
-| `woobe-cli` / native binary | CLI with offline `woobe skill install/status/uninstall/agents` |
+| `woobe-cli` / native binary | Integrated project init plus offline skill management |
 | `woobe-cli-skill` (optional npm) | Same skill plus independent `woobe-skill` installer, Node.js 22+ |
 
-See [skill installation and publisher setup](docs/AGENT_SKILL.md) and the
-[complete documentation index](docs/INDEX.md). The optional npm package is
-prepared in this PR; its first publication still needs owner bootstrap after
-approved merge. Built-in installation is independent of that publication.
+See [project setup](docs/PROJECT_SETUP.md), [standalone skill installation](docs/AGENT_SKILL.md)
+and the [documentation index](docs/INDEX.md). New flags become available in npm
+`latest` only after the corresponding release is published.
 
 ## Develop locally with YAML
 

@@ -187,3 +187,12 @@ func TestDeploymentSummaryKeepsRecoveryAndCASWithoutBindingPayload(t *testing.T)
 		t.Fatal("unrequested binding payload in concise output")
 	}
 }
+
+func TestOutputInitPreviewKeepsPathsAndExecutionStatus(t *testing.T) {
+	data := map[string]any{"initialized": false, "executed": false, "reused": true, "config": "/project/.woobe-config", "root": "/project/.woobe", "context": "local", "agents": []string{"codex", "claude"}, "instructions": []string{"AGENTS.md", "CLAUDE.md"}, "lab": "/project/.woobe-lab", "files": []string{"verbose file detail"}}
+	text, result := view(t, Options{Mode: "compact", Command: "init"}, data, nil, nil)
+	projected := result["data"].(map[string]any)
+	if projected["executed"] != false || projected["reused"] != true || projected["config"] != data["config"] || projected["lab"] != data["lab"] || len(projected["agents"].([]any)) != 2 || strings.Contains(text, "verbose file detail") {
+		t.Fatal(text)
+	}
+}

@@ -249,6 +249,14 @@ npx --yes --package=woobe-cli woobe version
 ```
 
 
+## Integrated project setup
+
+Run `woobe init --agents codex`, `--agents codex-legacy` or `--agents claude`
+from the project root. This prepares local development, embedded skills,
+`AGENTS.md`/host instructions and `.woobe-lab`/private-state Git exclusions.
+Use `--dry-run` to preview; repeat safely to add an assistant without replacing
+registry identity or resource mappings. See [project setup](PROJECT_SETUP.md).
+
 ## Assistant skill installation
 
 The CLI binary embeds the reviewed skill. No extra package, Node.js, npm,

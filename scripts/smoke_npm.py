@@ -59,6 +59,15 @@ def smoke(commit):
             invoke(['skill', 'uninstall', '--agent', agent])
             if target.exists():
                 raise ValueError(f'npm launcher did not remove the embedded {agent} skill')
+        invoke(['init', '--agents', 'codex,claude'])
+        original = (directory / '.woobe-config').read_bytes()
+        invoke(['init', '--agents', 'codex-legacy'])
+        if (directory / '.woobe-config').read_bytes() != original:
+            raise ValueError('npm init changed registry identity')
+        for relative in ['AGENTS.md', 'CLAUDE.md', '.agents/skills/woobe-cli/SKILL.md',
+                         '.codex/skills/woobe-cli/SKILL.md', '.claude/skills/woobe-cli/SKILL.md']:
+            if not (directory / relative).is_file():
+                raise ValueError('npm init missing assistant file: ' + relative)
         document = json.dumps({'schema_version': '2', 'workspace_id': 'w', 'resources': [
             {'key': 'reader', 'kind': 'AuthorityCategory', 'action': 'create',
              'spec': {'name': 'reader', 'permissions': ['agent:read']}}]})
@@ -75,7 +84,7 @@ def smoke(commit):
     return {'success': True, 'commit': commit, 'version': manifest['version'],
             'os': version['os'], 'arch': version['arch'], 'package': artifact.name,
             'checks': ['offline-install', 'ignore-scripts', 'version-commit', 'discovery',
-                       'codex-preset-install', 'codex-legacy-preset-install',
+                       'codex-preset-install', 'codex-legacy-preset-install', 'integrated-init',
                        'stdin', 'native-error-exit-code', 'npm-exec']}
 
 

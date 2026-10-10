@@ -15,3 +15,5 @@ See [the complete installation, update and publisher guide](../../docs/AGENT_SKI
 The distribution README uses that complete guide. This directory is a private
 source template; release packaging injects the calculated version/source commit
 and creates the public tarball. Do not publish this directory directly.
+
+With the native CLI, prefer `woobe init --agents codex` (or `codex-legacy`, `claude`) for complete project setup: registry, embedded skill, managed assistant instructions and private lab/Git exclusions. This optional npm installer intentionally installs only the skill. See [project setup](https://github.com/A1b3rt0M3rcad0/woobe-cli/blob/master/docs/PROJECT_SETUP.md).

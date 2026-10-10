@@ -231,6 +231,9 @@ var relevantFields = []string{
 }
 
 func summarize(command string, value any) any {
+	if command == "init" {
+		return project(value, []string{"initialized", "executed", "reused", "config", "root", "context", "agents", "instructions", "lab"}, false)
+	}
 	if command == "develop agent deploy" || command == "develop network deploy" {
 		return project(value, []string{"kind", "resource_id", "intent_id", "source", "environment", "status", "release_id", "previous_release_id", "publication_id", "deployment_id", "generation_before", "generation_after", "actor", "write_outcome", "observed_current_matches", "executed", "server_qualification"}, false)
 	}
