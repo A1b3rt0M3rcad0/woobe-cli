@@ -4,7 +4,8 @@
 
 `make check` includes exact Release/Staging orchestration, read-only preflight,
 capability refusal, scoped stable operation IDs, changed actor/input, forged
-receipts, Staging drift, independent original plan/lease/apply/cleanup response
+receipts, Staging drift, malformed suite refusal before authoring writes, exact
+large-integer evaluation assertions, independent original plan/lease/apply/cleanup response
 loss, and completed-intent observation. Recovery tests retain submitted state
 when an original read is denied and recover after access returns without another
 apply. Private checkpoint regressions cover locks, malformed/duplicate JSON,

@@ -44,3 +44,5 @@ Production Control Key and managed policy's stable production actor allowlist;
 Runtime Keys never authorize administration. Git verification remains separate.
 
 Scoped deployment recovery requires backend capability `asac.operation_environment_reads`. The CLI reads each original deployment/lease operation with its exact environment; it never asks a deploy-only key for Draft access.
+
+Candidate suites use unique case IDs and nonblank messages; malformed/unknown fields are rejected before authoring writes, and numeric assertions retain exact YAML/JSON precision. Final evaluation remains backend-owned.

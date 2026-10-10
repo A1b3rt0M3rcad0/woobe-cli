@@ -33,7 +33,14 @@ func TestCandidateEvaluationLostAcceptanceReconcilesWithoutExecution(t *testing.
 		case r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/evaluations"):
 			writes++
 			var body map[string]any
-			_ = json.NewDecoder(r.Body).Decode(&body)
+			decoder := json.NewDecoder(r.Body)
+			decoder.UseNumber()
+			_ = decoder.Decode(&body)
+			cases := body["suite"].(map[string]any)["cases"].([]any)
+			number := cases[0].(map[string]any)["expected_output"].(map[string]any)["balance"]
+			if number != json.Number("9007199254740993") {
+				t.Error("Evaluation changed exact YAML integer", number)
+			}
 			if len(body) != 2 || body["suite"] == nil {
 				t.Error("Evaluation sent unrecognized authority fields", body)
 			}
@@ -60,7 +67,7 @@ func TestCandidateEvaluationLostAcceptanceReconcilesWithoutExecution(t *testing.
 	defer server.Close()
 	c, state, resource := asacWorkspace(t, server.URL)
 	suite := filepath.Join(t.TempDir(), "suite.yaml")
-	if err := os.WriteFile(suite, []byte("schema_version: '1.0'\nsuite_id: support\nsuite_version: '1'\ndataset_version: '1'\ncases:\n  - id: question\n    message: hello\n"), 0600); err != nil {
+	if err := os.WriteFile(suite, []byte("schema_version: '1.0'\nsuite_id: support\nsuite_version: '1'\ndataset_version: '1'\ncases:\n  - id: question\n    message: hello\n    expected_output:\n      balance: 9007199254740993\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	flags := []string{"--api-url", server.URL, "--workspace", "workspace", "--project", "project", "--output", "json"}

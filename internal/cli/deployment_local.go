@@ -98,13 +98,8 @@ func (w *deployWorkflow) prepareLocal(write bool) error {
 	if err != nil {
 		return err
 	}
-	if suite["schema_version"] != "1.0" || len(packagefmt.List(suite["cases"])) < 1 || len(packagefmt.List(suite["cases"])) > 16 {
-		return output.New(2, "Use a versioned Candidate evaluation suite with 1–16 explicit cases")
-	}
-	for _, key := range []string{"suite_id", "suite_version", "dataset_version"} {
-		if packagefmt.Text(suite[key]) == "" {
-			return output.New(2, "Candidate suite requires "+key)
-		}
+	if err := validateEvaluationSuite(suite); err != nil {
+		return err
 	}
 	if previous := w.intent.Local["suite_digest"]; previous != "" && previous != digest {
 		return output.New(6, "Evaluation suite changed after deploy intent creation")

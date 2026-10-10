@@ -49,7 +49,10 @@ cases:
 ```
 
 Use the backend's supported evaluation assertions for product-specific gates.
-A suite must contain 1–16 cases; Production is never reached after failure.
+A suite must contain 1–16 cases with unique IDs and nonblank messages. The CLI
+validates fields and bounds before creating an isolated Draft/Revision, preserves
+exact YAML/JSON numbers, and leaves final qualification to the backend. Production
+is never reached after failure.
 
 `--via-staging` applies only to local delivery to Production. It deploys the same
 Release to Staging, executes a fresh Session using a **separate Runtime Key** and

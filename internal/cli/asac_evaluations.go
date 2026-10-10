@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -106,13 +107,13 @@ func (a *App) evaluateASaCCandidate(cmd *cobra.Command, kind, reference, candida
 		return output.New(2, "Evaluation suite exceeds 1 MiB")
 	}
 	var suite map[string]any
-	if json.Unmarshal(raw, &suite) != nil || suite["schema_version"] != "1.0" || len(packagefmt.List(suite["cases"])) < 1 || len(packagefmt.List(suite["cases"])) > 16 {
-		return output.New(2, "Use a versioned Evaluation suite with schema_version: '1.0' and 1–16 cases")
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if decoder.Decode(&suite) != nil {
+		return output.New(2, "Evaluation suite must be a YAML/JSON object")
 	}
-	for _, key := range []string{"suite_id", "suite_version", "dataset_version"} {
-		if packagefmt.Text(suite[key]) == "" {
-			return output.New(2, "Evaluation suite requires "+key)
-		}
+	if err := validateEvaluationSuite(suite); err != nil {
+		return err
 	}
 	c, err := a.developmentConfig(true)
 	if err != nil {

@@ -484,3 +484,51 @@ func TestUnifiedDeployDeniedRecoveryReadDoesNotRejectOriginalCommittedApply(t *t
 		t.Fatal("Original apply repeated after restoring access")
 	}
 }
+
+func TestUnifiedLocalInvalidSuiteNeverCreatesAuthoringOrProviderWrites(t *testing.T) {
+	for _, problem := range []string{"unknown-suite-field", "unknown-case-field", "missing-id", "duplicate-id", "blank-message", "numeric-version", "numeric-message", "nonobject-case", "null-context", "unsupported-policy"} {
+		t.Run(problem, func(t *testing.T) {
+			suite := map[string]any{"schema_version": "1.0", "suite_id": "delivery", "suite_version": "1", "dataset_version": "1"}
+			item := map[string]any{"id": "question", "message": "Hello"}
+			suite["cases"] = []any{item}
+			switch problem {
+			case "unknown-suite-field":
+				suite["unexpected"] = true
+			case "unknown-case-field":
+				item["unexpected"] = true
+			case "missing-id":
+				delete(item, "id")
+			case "duplicate-id":
+				suite["cases"] = []any{item, item}
+			case "blank-message":
+				item["message"] = " \n\t "
+			case "numeric-version":
+				suite["suite_version"] = 1
+			case "numeric-message":
+				item["message"] = 1
+			case "nonobject-case":
+				suite["cases"] = []any{"wrong"}
+			case "null-context":
+				item["external_context"] = nil
+			case "unsupported-policy":
+				suite["policy_version"] = "unsupported"
+			}
+			file := filepath.Join(t.TempDir(), "suite.json")
+			raw, _ := json.Marshal(suite)
+			if err := os.WriteFile(file, raw, 0600); err != nil {
+				t.Fatal(err)
+			}
+			fixture := newDeployFixture("Agent")
+			server := httptest.NewServer(http.HandlerFunc(fixture.serve))
+			defer server.Close()
+			flags := deployTestFlags(t, server)
+			args := append([]string{"agent", deployTestTarget, "deploy", "--from", "local", "--suite", file, "--notes", "Reject invalid evaluation before authoring", "--yes"}, flags...)
+			if code, value := invoke(t, args, ""); code != 2 {
+				t.Fatal(code, value)
+			}
+			if len(fixture.writes) != 0 {
+				t.Fatal("Malformed suite caused a server write", fixture.writes)
+			}
+		})
+	}
+}
