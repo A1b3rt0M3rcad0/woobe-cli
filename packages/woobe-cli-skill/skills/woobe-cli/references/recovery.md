@@ -104,3 +104,19 @@ new complete Draft/Candidate/Release for incomplete immutable history. Never
 replace a pinned snapshot with latest or rewrite historical hashes.
 
 For unified delivery and original intent recovery, read [deployment](deployment.md). Native UUID deploy works without the development registry; local delivery requires accepted source and bindings.
+
+## Local delivery and completed Runtime observation
+
+See [deployment](deployment.md) for source/ancestry preflight and recovery. Keep
+original intent receipts: an interrupted local checkpoint is reused only with its
+original intent and unchanged artifact. Do not create new intents repeatedly to
+work around unaccepted ancestry.
+
+`runtime target observe` needs a Runtime Key with the `stream` interface. An
+HTTP-only key can run synchronously but does not grant observation. On a backend
+with terminal reconciliation, observing a completed Run returns the durable final
+state and closes even if Redis still says running; it does not execute again.
+A legacy Network with incomplete pinned constituent snapshots needs operator
+review of the reported node/dependency. Updating the CLI or substituting today's
+Agent Draft does not repair the immutable original. Missing instance signing
+configuration also requires operator setup, not a generated replacement trust key.

@@ -46,3 +46,14 @@ Runtime Keys never authorize administration. Git verification remains separate.
 Scoped deployment recovery requires backend capability `asac.operation_environment_reads`. The CLI reads each original deployment/lease operation with its exact environment; it never asks a deploy-only key for Draft access.
 
 Candidate suites use unique case IDs and nonblank messages; malformed/unknown fields are rejected before authoring writes, and numeric assertions retain exact YAML/JSON precision. Final evaluation remains backend-owned.
+
+Local delivery additionally requires `asac.draft_source_preflight`. Upgrade the
+backend first. Before sealing a Revision, the CLI checks capture target/actor/
+expiry/UID/Draft generation and exact server acceptance of local parents. A
+successful preflight does not reserve state; owners recheck on mutation.
+For `ASAC_ORIGIN_MISMATCH` or `ASAC_SOURCE_CHANGED`, preserve local edits/history
+and explicitly recover the intended target's capture. Managed push can make an
+older Draft capture stale. For `ASAC_HISTORY_INCOMPLETE`, inspect the listed
+parents-first IDs, reconcile original intents, and checkpoint each exact ancestor
+in a matching isolated Draft before a new deploy. Do not delete parents, invent
+remote acceptance, or confuse local history verification with server acceptance.

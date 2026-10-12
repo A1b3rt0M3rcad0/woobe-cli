@@ -1,5 +1,20 @@
 # Validation
 
+## 0.34 report regression coverage
+
+The local-deploy regressions check source scope, exact accepted ancestor digests,
+parents-first missing history, read-only failure, and recovery after a local
+checkpoint commit/intent-save interruption. Authentication and missing-scope
+regressions are included in native CI, including Windows Credential Manager's
+missing-reference exit code (3) and missing scope before any network call (2).
+
+Run Windows tests in a disposable private directory outside an existing
+`.woobe-config` tree. The temporary directory must have a private DACL; nested
+registries and inherited public ACLs are environmental failures, not reasons to
+relax private-state protection. Preserve a real project's `.state` and registry.
+The CI matrix provides native OS/architecture evidence; a Linux run alone does
+not qualify Windows Credential Manager or all six distribution targets.
+
 ## Unified deployment qualification — 2026-10-10
 
 `make check` includes exact Release/Staging orchestration, read-only preflight,
