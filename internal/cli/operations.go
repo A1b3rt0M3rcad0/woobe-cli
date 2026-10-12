@@ -119,11 +119,6 @@ func (a *App) register(op Operation) {
 				return e
 			}
 		}
-		if op.Status == "proposed" && !a.DryRun {
-			if e := a.requireAdvertised(cmd.Context(), op); e != nil {
-				return e
-			}
-		}
 		_, e := a.resolve()
 		if e != nil {
 			return e
@@ -162,6 +157,11 @@ func (a *App) register(op Operation) {
 			}
 			pathValues[p] = value
 			path = strings.ReplaceAll(path, "{"+p+"}", url.PathEscape(value))
+		}
+		if op.Status == "proposed" && !a.DryRun {
+			if e := a.requireAdvertised(cmd.Context(), op); e != nil {
+				return e
+			}
 		}
 		b, e := a.body(op.Body)
 		if e != nil {

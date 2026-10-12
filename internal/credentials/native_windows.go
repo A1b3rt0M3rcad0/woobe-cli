@@ -5,6 +5,7 @@ package credentials
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"golang.org/x/sys/windows"
 	"path/filepath"
 	"sort"
@@ -71,13 +72,17 @@ func (s Store) nativeGet(name string) (string, error) {
 	var c *vaultCredential
 	r, _, e := credRead.Call(uintptr(unsafe.Pointer(target)), 1, 0, uintptr(unsafe.Pointer(&c)))
 	if r == 0 {
-		return "", fmt.Errorf("Windows credential unavailable: %w", e)
+		return "", &output.Error{Code: 3, Message: "Windows credential unavailable", Cause: e}
 	}
 	defer credFree.Call(uintptr(unsafe.Pointer(c)))
 	if c == nil || c.BlobSize == 0 || c.BlobSize > 2560 || c.Blob == nil {
-		return "", fmt.Errorf("Invalid Windows credential")
+		return "", output.New(3, "Invalid Windows credential")
 	}
-	return strings.TrimSpace(string(unsafe.Slice(c.Blob, int(c.BlobSize)))), nil
+	value := strings.TrimSpace(string(unsafe.Slice(c.Blob, int(c.BlobSize))))
+	if value == "" {
+		return "", output.New(3, "Windows credential unavailable")
+	}
+	return value, nil
 }
 func (s Store) nativeRemove(name string) error {
 	target, e := s.vaultTarget(name)

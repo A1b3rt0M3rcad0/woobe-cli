@@ -1,6 +1,7 @@
 package credentials
 
 import (
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -52,5 +53,15 @@ func TestWindowsProtectionVaultChild(t *testing.T) {
 	value, err := (Store{Dir: dir}).Get("private")
 	if err != nil || value != "fixture" {
 		t.Fatal("Credential did not persist across processes")
+	}
+}
+
+func TestWindowsProtectionMissingCredentialUsesAuthenticationExit(t *testing.T) {
+	if !nativeStore {
+		t.Skip("Windows native protection")
+	}
+	_, err := (Store{Dir: t.TempDir()}).Get("missing")
+	if err == nil || output.Normalize(err).Code != 3 {
+		t.Fatal("missing credential must use authentication exit", err)
 	}
 }

@@ -203,3 +203,21 @@ func TestCandidateBindingDiagnosticsLocateComponentAndGiveSafeRecovery(t *testin
 		t.Fatal(err)
 	}
 }
+
+func TestLocalDeployDiagnosticsGiveBoundedRecovery(t *testing.T) {
+	for code, guidance := range map[string]string{"ASAC_ORIGIN_MISMATCH": "another target", "ASAC_SOURCE_CHANGED": "preserve local edits", "ASAC_HISTORY_INCOMPLETE": "checkpoint exact parents"} {
+		t.Run(code, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(409)
+				_, _ = w.Write([]byte(`{"data":{"asac_schema_version":"1.0","diagnostics":[{"code":"` + code + `","message":"private-provider-secret"}]}}`))
+			}))
+			defer server.Close()
+			client, _ := New(server.URL, "fixture", time.Second)
+			_, _, err := client.Request(context.Background(), "GET", "/projects/project/agents/agent/asac/drafts/preflight", nil, nil)
+			failure := output.Normalize(err)
+			if failure.DomainCode != code || !strings.Contains(failure.Message, guidance) || strings.Contains(failure.Message, "private-provider") {
+				t.Fatal(err)
+			}
+		})
+	}
+}

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Verify local deployment capture origin and exact remotely accepted ancestors before sealing a Revision; preserve original-intent recovery and add actionable, bounded conflict messages. Local deployment requires backend `asac.draft_source_preflight`.
+- Normalize missing Windows credentials to authentication exit 3 and reject missing command scope before capability/network requests. Add native CI regressions and coordinated help/assistant guidance.
+
 - Prepare local development and coding assistants together with `woobe init --agents codex|codex-legacy|claude`: reuse registry identity, install embedded skills, maintain project instruction blocks and ignore private state/lab files. Coordinate help, canonical skill and native package tests.
 
 - Add unified Agent/Network deploy from exact Releases, captured Staging or evaluated local ASaC, private stable intent recovery, optional separate Runtime smoke, protected CI example and coordinated assistant references.

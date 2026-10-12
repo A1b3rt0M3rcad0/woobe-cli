@@ -36,6 +36,26 @@ is retained, resume uses that Release and does not republish changed files.
 Network preparations may remain accepted but unfinished. Resume observes and
 reconciles the original preparation, preserving copied constituent Releases.
 
+Before allocating a local Revision, the CLI requires the backend capability
+`asac.draft_source_preflight`. The read-only owner check verifies the retained
+export's actor, expiry, target, logical UID and native Draft generation. It then
+checks that each local parent is an exact remotely accepted Revision. Upgrade the
+backend before using local delivery with this check; release/staging delivery
+continues to use its existing contracts. Opening/checkpointing still repeats the
+owner checks under concurrency controls: preflight cannot reserve future state.
+
+| Blocker | Recovery |
+| --- | --- |
+| `ASAC_ORIGIN_MISMATCH` | Preserve edits/history; explicitly pull the intended native target. A clone/import binding can still retain its source's export. |
+| `ASAC_SOURCE_CHANGED` | Inspect changes since capture, including managed push. Preserve author changes and explicitly refresh/reconcile the intended source before a new intent. |
+| `ASAC_HISTORY_INCOMPLETE` | Reconcile prior intents, then register exact missing ancestors in parents-first order in isolated Drafts matching those artifacts. `history verify` proves local integrity, not server acceptance. |
+
+These failures do not allocate a new local Revision or open a remote Draft during
+preflight. Never delete/rewrite parents to bypass a conflict. A revision committed
+locally before its intent journal save failed is reused only by that exact intent
+and artifact. Resume of a submitted Draft opening observes its original operation
+instead of requiring a new export ticket or repeating the write.
+
 Candidate suite example ([file](examples/deployment/evaluation.yaml)):
 
 ```yaml

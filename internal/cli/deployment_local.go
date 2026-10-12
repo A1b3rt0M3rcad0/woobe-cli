@@ -115,7 +115,7 @@ func (w *deployWorkflow) prepareLocal(write bool) error {
 		return err
 	}
 	protocol := packagefmt.Object(cap["asac"])
-	for _, key := range []string{"isolated_drafts", "candidate_preparation", "candidate_evaluation", "author_source_retention"} {
+	for _, key := range []string{"isolated_drafts", "candidate_preparation", "candidate_evaluation", "author_source_retention", "draft_source_preflight"} {
 		if protocol[key] != true {
 			return output.New(9, "Backend lacks local deploy capability: "+key)
 		}
@@ -177,6 +177,11 @@ func (w *deployWorkflow) prepareLocal(write bool) error {
 		return output.New(6, "Accepted local binding changed during deployment")
 	}
 	w.intent.Local["source_export_id"] = export
+	if w.intent.Steps["draft-open"] == nil {
+		if err := w.checkLocalOrigin(resource, export); err != nil {
+			return err
+		}
+	}
 	bundle, _, err := graph.Compile(resource.Key, tracking.Requirements, state.Credentials)
 	if err != nil {
 		return output.New(2, err.Error())
@@ -187,20 +192,23 @@ func (w *deployWorkflow) prepareLocal(write bool) error {
 		return output.New(6, "Local author changed after deploy checkpoint; restore exact source or create a new intent")
 	}
 	w.intent.Local["artifact_digest"] = content
+	// A checkpoint can exist even when persisting the intent failed. Recognize
+	// only this exact operation and artifact; its parents still need acceptance.
+	message := "Deploy intent " + w.intent.ID + ": " + w.intent.Request.Notes
+	record, parents, err := localDeployRevision(c, resource, tracking.Working, w.intent.Local["revision_id"], message, content)
+	if err != nil {
+		return err
+	}
+	if step := w.intent.Steps["revision-checkpoint"]; step == nil || step.State != "committed" {
+		if err := w.checkLocalParents(c, resource, parents); err != nil {
+			return err
+		}
+	}
 	if !write {
 		w.intent.Source = map[string]any{"mode": "local", "artifact_digest": content}
 		return nil
 	}
 	if w.intent.Local["revision_id"] == "" {
-		// Recover a locally committed checkpoint after a journal-write failure.
-		message := "Deploy intent " + w.intent.ID + ": " + w.intent.Request.Notes
-		var record *devworkspace.Revision
-		if tracking.Working != "" {
-			prior, readErr := c.ReadRevision(*resource, tracking.Working)
-			if readErr == nil && prior.Message == message && prior.ArtifactDigest == content {
-				record = prior
-			}
-		}
 		if record == nil {
 			record, err = graph.CreateRevision(*resource, state, message, nil)
 			if err != nil {

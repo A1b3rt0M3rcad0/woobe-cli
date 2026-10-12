@@ -66,13 +66,18 @@ func TestAgentCreateAndPatch(t *testing.T) {
 	}
 }
 func TestMissingScopeAndProposedCapability(t *testing.T) {
-	code, _ := invoke(t, []string{"project", "agent", "list"}, "")
-	if code != 2 {
-		t.Fatal(code)
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { calls++; w.WriteHeader(500) }))
+	defer server.Close()
+	for _, command := range [][]string{{"project", "agent", "list", "--project", ""}, {"workspace", "authority", "category", "create", "--workspace", "", "--file", "-"}} {
+		args := append(command, "--api-url", server.URL)
+		code, _ := invoke(t, args, `{}`)
+		if code != 2 {
+			t.Fatal("missing scope must fail before capability discovery", code)
+		}
 	}
-	code, _ = invoke(t, []string{"workspace", "authority", "category", "create", "--file", "-"}, `{}`)
-	if code != 9 {
-		t.Fatal(code)
+	if calls != 0 {
+		t.Fatal("missing scope reached server")
 	}
 }
 func TestSecretIssuanceRefusesOverwrite(t *testing.T) {
