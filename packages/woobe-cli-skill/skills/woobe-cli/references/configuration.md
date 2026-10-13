@@ -67,3 +67,13 @@ can inspect its reports; migration never requires local secret files.
 A copied legacy name does not grant a new Tool access. Use explicit destination
 approvals. After Environment separation, `LEGACY_ENVIRONMENT_REQUIRED` means an
 old writer is ambiguous; select the intended Environment in central configuration.
+
+Managed edits may explicitly reuse the same existing Provider UUID with a central
+legacy route. Keep that captured identity and review `binding_source` in the
+plan. Do not turn it into a new key reference expecting a legacy fallback, or
+replace it with a local secret. A deployment checks both binding revision and
+current activation evidence; replan after value rotation.
+
+HTTP Tool URL templates need a fixed origin. Path parameters require approval of
+the static parent path, and rendered destinations are checked at every send.
+Do not broaden an approval to make a changed endpoint pass.

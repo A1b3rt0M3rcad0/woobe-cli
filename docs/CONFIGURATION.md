@@ -151,3 +151,15 @@ After separating Environments, an ambiguous old writer receives
 `LEGACY_ENVIRONMENT_REQUIRED`. Configure the intended Environment centrally.
 Schema 2.0 exports contain declarations/references, never local alias authority or
 material. The CLI must not recreate a secret locally to bypass these diagnostics.
+
+An explicit package binding to the **same existing Provider UUID** can reuse its
+central legacy route. Planning records `binding_source: legacy_configuration`;
+the stored authentication, captured consumers and environment mapping are
+preserved. A direct reference to that key does not inherit legacy authority.
+Changing the connection's binding revision invalidates a captured deployment.
+A normal value rotation instead requires refreshing the activation plan.
+
+Authenticated HTTP Tools may use parameter placeholders in the path or query,
+with a fixed origin. A path such as `/v1/orders/{{order_id}}` requires approval
+for the static `/v1/orders/` prefix. Every rendered request is checked again;
+placeholders in the origin and requests outside the approved destination fail.
