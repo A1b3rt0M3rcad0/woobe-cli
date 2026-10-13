@@ -13,6 +13,7 @@ that every original roadmap criterion is complete.
 | [Contract and test recovery](CONTRACTS_TEST_RECOVERY.md) | Exact references, validation, timeout identity, revision conflicts and private secret files |
 | [Usage](USAGE.md) | Canonical CLI workflows, managed YAML editing and recovery |
 | [Development](DEVELOPMENT.md) | Provider bindings, shared dependencies and Surfaces |
+| [Project configuration](CONFIGURATION.md) | Remote declarations, Environment metadata, typed Provider references and operator value entry |
 | [Unified deployment](DEPLOYMENT.md) | Release/Staging/local delivery, exact qualification, private intents and recovery |
 | [CI deployment](CI_DEPLOYMENT.md) | Pinned protected deploy-only workflow, encrypted recovery and separate builder identity |
 | [Project lifecycle policy](PROJECT_LIFECYCLE.md) | Server-managed gates, CAS policy changes, stable Production actors and original-operation recovery |

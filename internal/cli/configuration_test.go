@@ -1,0 +1,218 @@
+package cli
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
+
+func TestConfigurationDeclareNegotiatesBeforeMutationAndSendsNoMaterial(t *testing.T) {
+	requests := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r.Method+" "+r.URL.Path)
+		data := map[string]any{"schema_version": "project_configuration.v1", "declaration_without_value": true}
+		if r.Method == "POST" {
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatal(err)
+			}
+			if body["key"] != "PRIMARY_API_KEY" || body["kind"] != "secret" || len(body) != 4 {
+				t.Error(body)
+			}
+			data = map[string]any{"id": "key-id", "key": "PRIMARY_API_KEY", "kind": "secret"}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": data})
+	}))
+	defer server.Close()
+	code, result := invoke(t, []string{"project", "configuration", "declare", "PRIMARY_API_KEY", "--project", "p", "--api-url", server.URL, "--output", "json"}, "")
+	if code != 0 {
+		t.Fatal(result)
+	}
+	if len(requests) != 2 || !strings.HasSuffix(requests[0], "/capabilities") || requests[1] != "POST /core/projects/p/configuration/keys" {
+		t.Fatal(requests)
+	}
+}
+
+func TestConfigurationOldServerNeverFallsBackOrWrites(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if r.Method != "GET" || !strings.HasSuffix(r.URL.Path, "/capabilities") {
+			t.Error("unexpected request", r.Method, r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": map[string]any{"schema_version": "older"}})
+	}))
+	defer server.Close()
+	code, result := invoke(t, []string{"project", "configuration", "declare", "PRIMARY_API_KEY", "--project", "p", "--api-url", server.URL, "--output", "json"}, "")
+	if code != 9 || requests != 1 {
+		t.Fatal(code, result, requests)
+	}
+}
+
+func TestConfigurationListScopeAndRejectMaterialBeforeRendering(t *testing.T) {
+	for _, format := range []string{"json", "text", "compact", "table"} {
+		t.Run(format, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				data := map[string]any{"schema_version": "project_configuration.v1", "declaration_without_value": true}
+				if strings.HasSuffix(r.URL.Path, "/keys") {
+					if r.URL.Query().Get("environment") != "staging" || r.URL.Query().Get("limit") != "7" {
+						t.Error(r.URL.RawQuery)
+					}
+					data = map[string]any{"items": []any{map[string]any{"key": "API_KEY", "value": "private-canary"}}}
+				}
+				_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": data})
+			}))
+			defer server.Close()
+			code, rendered := secretPlanRun(t, []string{"project", "configuration", "list", "--env", "staging", "--limit", "7", "--project", "p", "--api-url", server.URL, "--output", format}, "")
+			if code != 9 || strings.Contains(rendered, "private-canary") {
+				t.Fatal(code, rendered)
+			}
+		})
+	}
+}
+
+func TestConfigurationRejectsLocalValueFileBeforeReading(t *testing.T) {
+	code, result := invoke(t, []string{"project", "configuration", "declare", "API_KEY", "--file", "does-not-exist", "--dry-run", "--output", "json"}, "")
+	if code != 2 || !strings.Contains(result["error"].(map[string]any)["message"].(string), "does not accept --file") {
+		t.Fatal(result)
+	}
+}
+
+func TestConfigurationCheckUsesExactTargetEnvironmentAndFailClosedStates(t *testing.T) {
+	for state, wantCode := range map[string]int{"ready": 0, "ready_with_notices": 0, "blocked": 6, "unknown": 9, "unexpected": 9} {
+		t.Run(state, func(t *testing.T) {
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests++
+				if r.Method != "GET" || r.URL.Query().Get("environment") != "production" {
+					t.Error(r.Method, r.URL.String())
+				}
+				data := map[string]any{"schema_version": "project_configuration.v1", "declaration_without_value": true, "target_readiness": true}
+				if requests == 2 {
+					if !strings.HasSuffix(r.URL.Path, "/readiness/network/11111111-1111-4111-8111-111111111111") {
+						t.Error(r.URL.Path)
+					}
+					data = map[string]any{"state": state, "environment": "production", "missing_key_count": 1}
+				}
+				_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": data})
+			}))
+			defer server.Close()
+			code, result := invoke(t, []string{"project", "configuration", "check", "network", "11111111-1111-4111-8111-111111111111", "--env", "production", "--project", "p", "--api-url", server.URL, "--output", "json"}, "")
+			if code != wantCode || requests != 2 {
+				t.Fatal(code, requests, result)
+			}
+			if state != "unexpected" && result["data"].(map[string]any)["state"] != state {
+				t.Fatal(result)
+			}
+		})
+	}
+}
+
+func TestConfigurationCheckRequiresReadinessCapabilityBeforeTargetRequest(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": map[string]any{
+			"schema_version": "project_configuration.v1", "declaration_without_value": true}})
+	}))
+	defer server.Close()
+	code, result := invoke(t, []string{"project", "configuration", "check", "agent", "11111111-1111-4111-8111-111111111111", "--project", "p", "--api-url", server.URL, "--output", "json"}, "")
+	if code != 9 || requests != 1 {
+		t.Fatal(code, requests, result)
+	}
+}
+
+func TestConfigurationBindingUsesServerRevisionAndRemoteKeysOnly(t *testing.T) {
+	id := "01a00d46-b804-7f4c-b5bd-e3c814db9f0f"
+	requests := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r.Method)
+		data := map[string]any{"schema_version": "project_configuration.v1", "declaration_without_value": true, "binding_updates": true}
+		if strings.Contains(r.URL.Path, "/bindings/") {
+			data = map[string]any{"revision": "7"}
+			if r.Method == "PUT" {
+				var body map[string]any
+				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+					t.Fatal(err)
+				}
+				if body["expected_revision"] != "7" {
+					t.Error(body)
+				}
+				auth := body["authentication"].(map[string]any)
+				fields := auth["fields"].(map[string]any)
+				ref := fields["api_key"].(map[string]any)
+				if ref["source"] != "project_environment" || ref["key"] != "PRIMARY_KEY" || len(ref) != 2 {
+					t.Error(ref)
+				}
+				data = map[string]any{"revision": "8", "authentication": auth}
+			}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": data})
+	}))
+	defer server.Close()
+	code, result := invoke(t, []string{"project", "configuration", "bind", "provider", id, "--key", "PRIMARY_KEY", "--project", "p", "--api-url", server.URL, "--output", "json"}, "")
+	if code != 0 || strings.Join(requests, ",") != "GET,GET,PUT" {
+		t.Fatal(code, result, requests)
+	}
+}
+
+func TestConfigurationBindingUnsupportedServerNeverMutates(t *testing.T) {
+	writes := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			writes++
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": map[string]any{"schema_version": "project_configuration.v1", "declaration_without_value": true}})
+	}))
+	defer server.Close()
+	code, result := invoke(t, []string{"project", "configuration", "bind", "provider", "01a00d46-b804-7f4c-b5bd-e3c814db9f0f", "--key", "PRIMARY_KEY", "--project", "p", "--api-url", server.URL}, "")
+	if code != 9 || writes != 0 {
+		t.Fatal(code, result, writes)
+	}
+}
+
+func TestConfigurationExternalTestNegotiatesAndReportsFailure(t *testing.T) {
+	for _, state := range []string{"valid", "ready", "configuration_required", "unknown", "unsupported"} {
+		t.Run(state, func(t *testing.T) {
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests++
+				if r.URL.Query().Get("environment") != "staging" {
+					t.Error(r.URL.RawQuery)
+				}
+				data := map[string]any{"schema_version": "project_configuration.v1", "declaration_without_value": true, "external_validation": state != "unsupported"}
+				if r.Method == "POST" {
+					if !strings.HasSuffix(r.URL.Path, "/tests/tool/11111111-1111-4111-8111-111111111111") {
+						t.Error(r.URL.Path)
+					}
+					var body map[string]any
+					if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+						t.Fatal(err)
+					}
+					if len(body) != 1 || body["environment"] != "staging" {
+						t.Error(body)
+					}
+					data = map[string]any{"state": state}
+				}
+				_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": data})
+			}))
+			defer server.Close()
+			code, result := invoke(t, []string{"project", "configuration", "test", "tool", "11111111-1111-4111-8111-111111111111", "--env", "staging", "--project", "p", "--api-url", server.URL, "--output", "json"}, "")
+			want, calls := 0, 2
+			if state == "configuration_required" {
+				want = 6
+			}
+			if state == "unknown" || state == "unsupported" {
+				want = 9
+			}
+			if state == "unsupported" {
+				calls = 1
+			}
+			if code != want || requests != calls {
+				t.Fatal(code, requests, result)
+			}
+		})
+	}
+}

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add metadata-only Project configuration declaration/list/usage/bind/check/test commands with explicit backend capability negotiation, blocked/unknown exit statuses, no local secret lookup and coordinated assistant guidance.
+
 - Verify local deployment capture origin and exact remotely accepted ancestors before sealing a Revision; preserve original-intent recovery and add actionable, bounded conflict messages. Local deployment requires backend `asac.draft_source_preflight`.
 - Normalize missing Windows credentials to authentication exit 3 and reject missing command scope before capability/network requests. Add native CI regressions and coordinated help/assistant guidance.
 

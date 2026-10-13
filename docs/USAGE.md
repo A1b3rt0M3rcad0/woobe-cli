@@ -1,5 +1,13 @@
 # CLI workflows
 
+Project configuration can be declared without access to its values. Use
+`woobe project configuration declare PRIMARY_API_KEY`, associate it with
+`woobe project configuration bind provider CREDENTIAL_UUID --key PRIMARY_API_KEY`,
+and have an authorized operator configure it in **Project → Environments**.
+`woobe project configuration check agent AGENT_UUID --env draft` checks the
+selected target without running it. See [Configuration](CONFIGURATION.md) for
+permissions, compatibility and failure states.
+
 For a development clone missing private native bindings, run
 `woobe agent '@support' bindings recover --dry-run`, then recover and explicitly
 bind Providers. Networks use the same command. See [ASaC](ASAC.md) for exact

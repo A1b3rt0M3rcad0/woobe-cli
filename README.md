@@ -1,5 +1,11 @@
 # Woobe CLI
 
+Develop resources without handling Provider secrets: declare remote keys with
+`woobe project configuration declare PRIMARY_API_KEY`, then inspect an Agent or
+Network with `woobe project configuration check agent AGENT_UUID --env draft`.
+Operators fill values and approve destinations in Woobe Environments; see
+[Project configuration](docs/CONFIGURATION.md).
+
 Deploy exact evaluated Agent/Network Releases with `woobe agent UUID deploy --from release --release RELEASE_UUID --notes "Approved delivery" --yes`. Local YAML delivery and protected CI recovery are documented in [Deployment](docs/DEPLOYMENT.md) and [CI deployment](docs/CI_DEPLOYMENT.md).
 
 Prepare a checkpointed isolated Draft with `stage --revision REVISION_ID --yes`

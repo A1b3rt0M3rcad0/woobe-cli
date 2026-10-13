@@ -1,0 +1,300 @@
+package cli
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/url"
+	"regexp"
+	"strings"
+
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
+	"github.com/spf13/cobra"
+)
+
+var configurationKeyPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]{0,127}$`)
+
+type configurationReadinessFailure struct {
+	Data  map[string]any
+	Cause *output.Error
+}
+
+func (f *configurationReadinessFailure) Error() string { return f.Cause.Error() }
+func (f *configurationReadinessFailure) Unwrap() error { return f.Cause }
+
+func (a *App) configurationCommands() {
+	group := a.group("project configuration")
+	group.Short = "Declare remote configuration and inspect Environment metadata"
+	group.Long = "Declare keys without values. An authorized operator configures values in Project → Environments. These commands never read a local secret store or display configured values. Configuration does not publish, deploy or execute an Agent. The explicit test command contacts the configured provider or MCP server."
+	group.Example = "woobe project configuration declare PRIMARY_API_KEY --kind secret --format token\nwoobe project configuration list --env draft\nwoobe project configuration usage KEY_UUID"
+	var kind, format, description string
+	declare := &cobra.Command{Use: "declare KEY", Short: "Declare a key without supplying its value", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+		if !configurationKeyPattern.MatchString(args[0]) || (kind != "secret" && kind != "value") {
+			return output.New(2, "Use an identifier key and --kind secret or value")
+		}
+		switch format {
+		case "string", "token", "json", "pem", "url":
+		default:
+			return output.New(2, "Use --format string, token, json, pem or url")
+		}
+		if a.File != "" {
+			return output.New(2, "Declaration does not accept --file or secret values")
+		}
+		return a.configurationCall(cmd, "POST", "/keys", nil, map[string]any{"key": args[0], "kind": kind, "value_format": format, "description": description})
+	}}
+	declare.Flags().StringVar(&kind, "kind", "secret", "secret or value")
+	declare.Flags().StringVar(&format, "format", "token", "Declared material format (no material is sent)")
+	declare.Flags().StringVar(&description, "description", "", "Purpose of this key; never include its value")
+	group.AddCommand(declare)
+	var environment, status, search string
+	var offset, limit int
+	list := &cobra.Command{Use: "list", Short: "List key status in one Environment without reading values", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
+		if environment != "draft" && environment != "staging" && environment != "production" {
+			return output.New(2, "Use --env draft, staging or production")
+		}
+		switch status {
+		case "all", "configured", "missing", "legacy", "attention":
+		default:
+			return output.New(2, "Unsupported configuration status filter")
+		}
+		if offset < 0 || limit < 1 || limit > 200 {
+			return output.New(2, "Use --limit 1..200 and a nonnegative --offset")
+		}
+		return a.configurationCall(cmd, "GET", "/keys", url.Values{"environment": {environment}, "status": {status}, "search": {search}, "offset": {fmt.Sprint(offset)}, "limit": {fmt.Sprint(limit)}}, nil)
+	}}
+	list.Flags().StringVar(&environment, "env", "draft", "Environment to inspect")
+	list.Flags().StringVar(&status, "status", "all", "all, configured, missing, legacy or attention")
+	list.Flags().StringVar(&search, "search", "", "Filter key name or description")
+	list.Flags().IntVar(&offset, "offset", 0, "Number of keys to skip")
+	list.Flags().IntVar(&limit, "limit", 50, "Maximum keys in this page (1..200)")
+	group.AddCommand(list)
+	var usageOffset int
+	usage := &cobra.Command{Use: "usage KEY_UUID", Short: "Inspect retained consumers of a configuration key", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+		if !uuidReference(args[0]) || usageOffset < 0 {
+			return output.New(2, "Use a key UUID and a nonnegative --offset")
+		}
+		return a.configurationCall(cmd, "GET", "/keys/"+args[0]+"/usage", url.Values{"offset": {fmt.Sprint(usageOffset)}, "limit": {"50"}}, nil)
+	}}
+	usage.Flags().IntVar(&usageOffset, "offset", 0, "Number of consumers to skip")
+	group.AddCommand(usage)
+	var bindingKey, authType string
+	var bindingFields []string
+	bind := &cobra.Command{Use: "bind provider|tool UUID", Short: "Bind an existing resource to declared remote keys without reading values", Args: cobra.ExactArgs(2), RunE: func(cmd *cobra.Command, args []string) error {
+		kind := args[0]
+		if kind == "provider" {
+			kind = "provider_credential"
+		}
+		if (kind != "provider_credential" && kind != "tool") || !uuidReference(args[1]) {
+			return output.New(2, "Use bind provider|tool UUID")
+		}
+		fields := map[string]any{}
+		requestedFields := append([]string(nil), bindingFields...)
+		if bindingKey != "" {
+			if authType != "api_key" || len(bindingFields) != 0 {
+				return output.New(2, "Use --key alone with --type api_key, or explicit --field FIELD=KEY entries")
+			}
+			requestedFields = []string{"api_key=" + bindingKey}
+		}
+		for _, raw := range requestedFields {
+			field, key, ok := strings.Cut(raw, "=")
+			if !ok || !regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_-]{0,127}$`).MatchString(field) || !configurationKeyPattern.MatchString(key) {
+				return output.New(2, "Use --field FIELD=DECLARED_KEY; never pass secret values")
+			}
+			if _, duplicate := fields[field]; duplicate {
+				return output.New(2, "Each authentication field may be bound only once")
+			}
+			fields[field] = map[string]any{"source": "project_environment", "key": key}
+		}
+		valid := false
+		switch authType {
+		case "api_key":
+			valid = len(fields) == 1 && fields["api_key"] != nil
+		case "bearer":
+			valid = kind == "tool" && len(fields) == 1 && fields["token"] != nil
+		case "basic":
+			valid = kind == "tool" && len(fields) == 2 && fields["username"] != nil && fields["password"] != nil
+		case "headers":
+			valid = kind == "tool" && len(fields) > 0 && len(fields) <= 16
+		case "none":
+			valid = kind == "tool" && len(fields) == 0
+		}
+		if !valid {
+			return output.New(2, "Authentication type and declared field references are incompatible")
+		}
+		return a.configurationCall(cmd, "PUT", "/bindings/"+kind+"/"+args[1], nil, map[string]any{"authentication": map[string]any{"type": authType, "fields": fields}})
+	}}
+	bind.Flags().StringVar(&bindingKey, "key", "", "Declared key name for api_key authentication (not its value)")
+	bind.Flags().StringVar(&authType, "type", "api_key", "api_key; Tools also support bearer, basic, headers or none")
+	bind.Flags().StringArrayVar(&bindingFields, "field", nil, "Bind FIELD=DECLARED_KEY (repeatable; never values)")
+	bind.Example = "woobe project configuration bind provider UUID --key PRIMARY_API_KEY\nwoobe project configuration bind tool UUID --type basic --field username=TOOL_USER --field password=TOOL_PASSWORD"
+	group.AddCommand(bind)
+	var testEnvironment string
+	test := &cobra.Command{Use: "test provider|tool UUID", Short: "Explicitly test a provider connection or prepare an MCP Tool",
+		Long: "Contact the configured provider or MCP server with values resolved by Woobe for the selected Environment. MCP discovery is saved if the Tool revision and your permission still match. This may incur provider traffic; it never runs an Agent or deploys a resource. HTTP Tool operations are not executed by this command.", Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			kind := args[0]
+			if kind == "provider" {
+				kind = "provider_credential"
+			}
+			if (kind != "provider_credential" && kind != "tool") || !uuidReference(args[1]) {
+				return output.New(2, "Use test provider|tool UUID (Tools must use MCP)")
+			}
+			if testEnvironment != "draft" && testEnvironment != "staging" && testEnvironment != "production" {
+				return output.New(2, "Use --env draft, staging or production")
+			}
+			return a.configurationCall(cmd, "POST", "/tests/"+kind+"/"+args[1], url.Values{"environment": {testEnvironment}}, map[string]any{"environment": testEnvironment})
+		}}
+	test.Flags().StringVar(&testEnvironment, "env", "draft", "Environment whose values and use approvals authorize the external test")
+	test.Example = "woobe project configuration test provider UUID --env staging\nwoobe project configuration test tool UUID --env draft"
+	group.AddCommand(test)
+	var checkEnvironment, version string
+	check := &cobra.Command{Use: "check agent|network|provider|tool UUID", Short: "Check remote configuration for the selected target and Environment",
+		Long: "Inspect the backend-selected dependency closure without decrypting values or contacting providers. Missing, unauthorized or unresolved dependencies return a nonzero exit status. External credentials are not tested, and no Run or deployment is started.", Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			kind := args[0]
+			if kind == "provider" {
+				kind = "provider_credential"
+			}
+			if (kind != "agent" && kind != "network" && kind != "provider_credential" && kind != "tool") || !uuidReference(args[1]) {
+				return output.New(2, "Use check agent|network|provider|tool UUID")
+			}
+			if checkEnvironment != "draft" && checkEnvironment != "staging" && checkEnvironment != "production" {
+				return output.New(2, "Use --env draft, staging or production")
+			}
+			query := url.Values{"environment": {checkEnvironment}}
+			if version != "" {
+				if (kind != "agent" && kind != "network") || !uuidReference(version) {
+					return output.New(2, "Use --version-id UUID only with an Agent or Network")
+				}
+				query.Set("version_id", version)
+			}
+			return a.configurationCall(cmd, "GET", "/readiness/"+kind+"/"+args[1], query, nil)
+		}}
+	check.Flags().StringVar(&checkEnvironment, "env", "draft", "Environment whose configured values and grants are checked")
+	check.Flags().StringVar(&version, "version-id", "", "Inspect an exact retained Agent/Network snapshot instead of the current selection")
+	check.Example = "woobe project configuration check agent UUID --env staging\nwoobe project configuration check network UUID --env production"
+	group.AddCommand(check)
+}
+
+func (a *App) configurationCall(cmd *cobra.Command, method, suffix string, query url.Values, body map[string]any) error {
+	if a.File != "" {
+		return output.New(2, "This configuration command does not accept --file")
+	}
+	if len(a.Query) != 0 {
+		return output.New(2, "Use the explicit configuration flags instead of --query")
+	}
+	if _, err := a.resolve(); err != nil {
+		return err
+	}
+	if err := resourceID(a.Project); err != nil {
+		return err
+	}
+	path := "/core/projects/" + url.PathEscape(a.Project) + "/configuration"
+	if a.DryRun {
+		return a.emit(map[string]any{"method": method, "path": path + suffix, "query": query, "body": body, "executed": false})
+	}
+	control, err := a.client()
+	if err != nil {
+		return err
+	}
+	capQuery := url.Values{}
+	if query.Get("environment") != "" {
+		capQuery.Set("environment", query.Get("environment"))
+	}
+	raw, _, err := control.Request(cmd.Context(), "GET", path+"/capabilities", capQuery, nil)
+	if err != nil {
+		return output.New(9, "Server configuration capability is unavailable; upgrade Woobe or check project:environment:read. No local secrets were used")
+	}
+	capabilities, err := developmentResponseData(raw)
+	if err != nil || capabilities["schema_version"] != "project_configuration.v1" || capabilities["declaration_without_value"] != true {
+		return output.New(9, "Server does not support project_configuration.v1; no configuration mutation was sent")
+	}
+	if strings.HasPrefix(suffix, "/readiness/") && capabilities["target_readiness"] != true {
+		return output.New(9, "Server does not advertise target configuration readiness; upgrade Woobe before checking this target")
+	}
+	if strings.HasPrefix(suffix, "/tests/") && capabilities["external_validation"] != true {
+		return output.New(9, "Server does not advertise external configuration validation; no external test was requested")
+	}
+	if strings.HasPrefix(suffix, "/bindings/") && method == "PUT" {
+		if capabilities["binding_updates"] != true {
+			return output.New(9, "Server does not support configuration binding updates; no mutation was sent")
+		}
+		current, _, readErr := control.Request(cmd.Context(), "GET", path+suffix, nil, nil)
+		if readErr != nil {
+			return readErr
+		}
+		metadata, parseErr := developmentResponseData(current)
+		if parseErr != nil || configurationContainsMaterial(metadata) {
+			return output.New(9, "Server returned invalid configuration binding metadata")
+		}
+		revision, ok := metadata["revision"].(string)
+		if !ok || revision == "" {
+			return output.New(9, "Server did not provide a binding revision; no mutation was sent")
+		}
+		body["expected_revision"] = revision
+	}
+	var encoded []byte
+	if body != nil {
+		encoded, err = json.Marshal(body)
+		if err != nil {
+			return err
+		}
+	}
+	response, _, err := control.Request(cmd.Context(), method, path+suffix, query, encoded)
+	if err != nil {
+		return err
+	}
+	data, err := developmentResponseData(response)
+	if err != nil {
+		return err
+	}
+	// Configuration is a metadata-only contract. Refuse accidental material
+	// fields before any renderer, including JSON and --wide, sees the response.
+	if configurationContainsMaterial(data) {
+		return output.New(9, "Server returned material in a metadata-only configuration response")
+	}
+	if strings.HasPrefix(suffix, "/readiness/") {
+		switch data["state"] {
+		case "ready", "ready_with_notices":
+		case "blocked":
+			return &configurationReadinessFailure{Data: data, Cause: output.New(6, "Configuration is blocked; review missing values and use approvals in Project → Environments")}
+		case "unknown":
+			return &configurationReadinessFailure{Data: data, Cause: output.New(9, "Configuration readiness is unknown; review unresolved dependencies before execution")}
+		default:
+			return output.New(9, "Server returned an unrecognized readiness state")
+		}
+	}
+	if strings.HasPrefix(suffix, "/tests/") {
+		switch data["state"] {
+		case "valid", "ready":
+		case "unknown":
+			return &configurationReadinessFailure{Data: data, Cause: output.New(9, "External configuration validation is inconclusive")}
+		default:
+			return &configurationReadinessFailure{Data: data, Cause: output.New(6, "The connection is not ready; review configuration and discovery status")}
+		}
+	}
+	return a.emit(data)
+}
+
+func configurationContainsMaterial(value any) bool {
+	switch node := value.(type) {
+	case map[string]any:
+		for key, child := range node {
+			switch key {
+			case "value", "stored_value", "ciphertext", "encrypted_secret", "secret_value":
+				if child != nil {
+					return true
+				}
+			}
+			if configurationContainsMaterial(child) {
+				return true
+			}
+		}
+	case []any:
+		for _, child := range node {
+			if configurationContainsMaterial(child) {
+				return true
+			}
+		}
+	}
+	return false
+}
