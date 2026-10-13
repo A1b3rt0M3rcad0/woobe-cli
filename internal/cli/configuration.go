@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
@@ -146,6 +147,18 @@ func (a *App) configurationCommands() {
 	test.Flags().StringVar(&testEnvironment, "env", "draft", "Environment whose values and use approvals authorize the external test")
 	test.Example = "woobe project configuration test provider UUID --env staging\nwoobe project configuration test tool UUID --env draft"
 	group.AddCommand(test)
+	var summaryEnvironment string
+	summary := &cobra.Command{Use: "summary", Short: "Summarize current Agent and Network configuration in one Environment",
+		Long: "Inspect current selections without reading values, running external tests or deploying. The backend reports a bounded Project observation. Incomplete inventories return exit 9; blocked configuration returns exit 6. Use check for an exact target or Candidate.", Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if summaryEnvironment != "draft" && summaryEnvironment != "staging" && summaryEnvironment != "production" {
+				return output.New(2, "Use --env draft, staging or production")
+			}
+			return a.configurationCall(cmd, "GET", "/summary", url.Values{"environment": {summaryEnvironment}}, nil)
+		}}
+	summary.Flags().StringVar(&summaryEnvironment, "env", "draft", "Environment whose current selections are inspected")
+	summary.Example = "woobe project configuration summary --env draft"
+	group.AddCommand(summary)
 	var checkEnvironment, version string
 	check := &cobra.Command{Use: "check agent|network|provider|tool UUID", Short: "Check remote configuration for the selected target and Environment",
 		Long: "Inspect the backend-selected dependency closure without decrypting values or contacting providers. Missing, unauthorized or unresolved dependencies return a nonzero exit status. External credentials are not tested, and no Run or deployment is started.", Args: cobra.ExactArgs(2),
@@ -211,6 +224,9 @@ func (a *App) configurationCall(cmd *cobra.Command, method, suffix string, query
 	if strings.HasPrefix(suffix, "/readiness/") && capabilities["target_readiness"] != true {
 		return output.New(9, "Server does not advertise target configuration readiness; upgrade Woobe before checking this target")
 	}
+	if suffix == "/summary" && capabilities["project_summary"] != true {
+		return output.New(9, "Server does not advertise Project configuration summaries; use check for an exact target")
+	}
 	if strings.HasPrefix(suffix, "/tests/") && capabilities["external_validation"] != true {
 		return output.New(9, "Server does not advertise external configuration validation; no external test was requested")
 	}
@@ -252,7 +268,12 @@ func (a *App) configurationCall(cmd *cobra.Command, method, suffix string, query
 	if configurationContainsMaterial(data) {
 		return output.New(9, "Server returned material in a metadata-only configuration response")
 	}
-	if strings.HasPrefix(suffix, "/readiness/") {
+	if suffix == "/summary" {
+		if !validConfigurationSummary(data, query.Get("environment")) {
+			return output.New(9, "Server returned incomplete Project configuration evidence")
+		}
+	}
+	if strings.HasPrefix(suffix, "/readiness/") || suffix == "/summary" {
 		switch data["state"] {
 		case "ready", "ready_with_notices":
 		case "blocked":
@@ -297,4 +318,22 @@ func configurationContainsMaterial(value any) bool {
 		}
 	}
 	return false
+}
+
+func validConfigurationSummary(data map[string]any, environment string) bool {
+	complete, ok := data["complete"].(bool)
+	if !ok || data["environment"] != environment || data["scope"] != "current_selections" || (!complete && data["state"] != "unknown") {
+		return false
+	}
+	for _, name := range []string{"inspected_target_count", "unselected_target_count", "affected_target_count", "blocked_key_count", "missing_key_count", "required_key_count", "affected_consumer_count"} {
+		raw, err := json.Marshal(data[name])
+		if err != nil {
+			return false
+		}
+		count, err := strconv.ParseUint(string(raw), 10, 64)
+		if err != nil || count > 1<<53-1 {
+			return false
+		}
+	}
+	return true
 }

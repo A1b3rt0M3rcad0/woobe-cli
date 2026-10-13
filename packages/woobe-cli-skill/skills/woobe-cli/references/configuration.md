@@ -77,3 +77,9 @@ current activation evidence; replan after value rotation.
 HTTP Tool URL templates need a fixed origin. Path parameters require approval of
 the static parent path, and rendered destinations are checked at every send.
 Do not broaden an approval to make a changed endpoint pass.
+
+Start a Project-wide review with `woobe project configuration summary --env draft`.
+It reports metadata for current selections, not historical costs or execution
+success. The backend bounds the observation to 50 Agents and 50 Networks;
+`unknown` / incomplete exits 9, blocked exits 6. Follow with an exact target
+`check`; never treat incomplete aggregate counts as permission to execute.

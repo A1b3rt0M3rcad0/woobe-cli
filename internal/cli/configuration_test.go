@@ -262,3 +262,52 @@ func TestKnowledgePreparationRejectsUnadvertisedServerBeforeWriting(t *testing.T
 		t.Fatal(code, result, calls)
 	}
 }
+
+func TestConfigurationSummaryScopesCapabilityCountsAndFailureStates(t *testing.T) {
+	for _, tc := range []struct {
+		name, state          string
+		advertised, complete bool
+		code, requests       int
+	}{
+		{"ready", "ready", true, true, 0, 2}, {"notices", "ready_with_notices", true, true, 0, 2},
+		{"blocked", "blocked", true, true, 6, 2}, {"truncated", "unknown", true, false, 9, 2},
+		{"false-ready", "ready", true, false, 9, 2}, {"unsupported", "ready", false, true, 9, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests++
+				if r.Method != "GET" || r.URL.Query().Get("environment") != "staging" {
+					t.Error("unexpected operation")
+				}
+				data := map[string]any{"schema_version": "project_configuration.v1", "declaration_without_value": true, "project_summary": tc.advertised}
+				if strings.HasSuffix(r.URL.Path, "/summary") {
+					data = map[string]any{"scope": "current_selections", "environment": "staging", "state": tc.state, "complete": tc.complete,
+						"inspected_target_count": 2, "unselected_target_count": 0, "affected_target_count": 0,
+						"blocked_key_count": 0, "missing_key_count": 0, "required_key_count": 0, "affected_consumer_count": 0}
+				}
+				_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": data})
+			}))
+			defer server.Close()
+			code, result := invoke(t, []string{"project", "configuration", "summary", "--env", "staging", "--project", "p", "--api-url", server.URL, "--output", "json"}, "")
+			if code != tc.code || requests != tc.requests {
+				t.Fatal(code, result, requests)
+			}
+		})
+	}
+}
+
+func TestConfigurationSummaryRejectsInvalidCountsAndCrossEnvironmentReply(t *testing.T) {
+	base := map[string]any{"scope": "current_selections", "environment": "draft", "state": "ready", "complete": true,
+		"inspected_target_count": 0, "unselected_target_count": 0, "affected_target_count": 0,
+		"blocked_key_count": 0, "missing_key_count": 0, "required_key_count": 0, "affected_consumer_count": 0}
+	if !validConfigurationSummary(base, "draft") || validConfigurationSummary(base, "production") {
+		t.Fatal("Environment mismatch")
+	}
+	for _, invalid := range []any{nil, -1, 0.5, "0", json.Number("9007199254740992")} {
+		base["required_key_count"] = invalid
+		if validConfigurationSummary(base, "draft") {
+			t.Fatal("invalid count accepted")
+		}
+	}
+}

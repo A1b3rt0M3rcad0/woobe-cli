@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from current discovery: 368 executable entries, including 203 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
+Generated from current discovery: 369 executable entries, including 203 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
 
 Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. Assistant installation uses local `skills` commands, not HTTP operations. The optional npm `woobe-skill` executable uses the same payload and receipts.
 
@@ -193,6 +193,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `project configuration check` | `local` | — | `local` | — | — |
 | `project configuration declare` | `local` | — | `local` | — | — |
 | `project configuration list` | `local` | — | `local` | — | — |
+| `project configuration summary` | `local` | — | `local` | — | — |
 | `project configuration test` | `local` | — | `local` | — | — |
 | `project configuration usage` | `local` | — | `local` | — | — |
 | `project create` | `http` | `POST /core/projects` | `observed` | — | — |

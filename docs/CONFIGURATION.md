@@ -163,3 +163,19 @@ Authenticated HTTP Tools may use parameter placeholders in the path or query,
 with a fixed origin. A path such as `/v1/orders/{{order_id}}` requires approval
 for the static `/v1/orders/` prefix. Every rendered request is checked again;
 placeholders in the origin and requests outside the approved destination fail.
+
+## Project overview
+
+```sh
+woobe project configuration summary --env draft
+woobe project configuration summary --env production
+```
+
+This metadata-only command reports distinct keys, connections and affected
+Agent/Network targets for the selected Environment's current selections. It does
+not inspect historical Runs or test credentials. Targets without a deployed
+selection are counted separately. The backend bounds the inventory to 50 Agents
+and 50 Networks; a larger or unresolved observation exits 9 with `unknown` and
+`complete: false`. A complete blocked observation exits 6. Use `check` for an
+exact target/Candidate before execution. An older server without the optional
+`project_summary` capability is rejected before the summary request is sent.

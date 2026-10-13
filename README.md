@@ -3,6 +3,7 @@
 Develop resources without handling Provider secrets: declare remote keys with
 `woobe project configuration declare PRIMARY_API_KEY`, then inspect an Agent or
 Network with `woobe project configuration check agent AGENT_UUID --env draft`.
+Use `woobe project configuration summary --env draft` for a bounded Project overview.
 Operators fill values and approve destinations in Woobe Environments; see
 [Project configuration](docs/CONFIGURATION.md).
 
