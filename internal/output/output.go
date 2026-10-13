@@ -11,6 +11,8 @@ import (
 )
 
 type DomainDiagnostic struct {
+	Key              string `json:"key,omitempty"`
+	Environment      string `json:"environment,omitempty"`
 	Kind             string `json:"kind,omitempty"`
 	ResourceID       string `json:"resource_id,omitempty"`
 	ExpectedRevision string `json:"expected_revision,omitempty"`

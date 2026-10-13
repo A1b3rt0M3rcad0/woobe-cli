@@ -460,3 +460,12 @@ A failed Git/documentary step never repeats activation.
 ## Unified delivery
 
 See [Deployment](DEPLOYMENT.md) for exact Release/Staging/local delivery, private intent recovery and explicit rollback. See [CI deployment](CI_DEPLOYMENT.md) for deploy-only authority and encrypted checkpoints. Existing commands retain their semantics.
+
+Configuration-aware backends qualify deployment against the exact target
+Environment. Preparation of a Candidate artifact can finish while its required
+values are missing; check configuration before running its evaluation. A
+Production plan retains configuration versions. If a value, declaration or use
+policy changes before apply, `CONFIG_REVISION_CONFLICT` requires a new plan after
+review. Reuse the same immutable Release; do not republish merely to rotate a
+secret. Native promotion and rollback also reject incomplete Production
+configuration. Project lifecycle permissions and workflow leases still apply.

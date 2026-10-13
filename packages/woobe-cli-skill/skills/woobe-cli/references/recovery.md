@@ -139,3 +139,13 @@ Credential import / CLI-Key stdin login validate the documented or legacy envelo
 and accept a raw token. Never use full JSON as an HTTP bearer token or print it.
 A committed issuance with a local file failure requires inspection/rotation,
 not an automatic second issuance.
+
+Configuration-aware API failures retain `CONFIG_*` codes and the affected key and
+Environment. For `CONFIG_VALUE_MISSING`, ask the authorized operator to fill the
+value in Woobe; do not request the secret in chat or read a local environment
+variable as a substitute. For `CONFIG_REVISION_CONFLICT` during deployment,
+refresh readiness and create an explicit new deployment plan after review; keep
+the immutable Release. For `CONFIG_STORE_UNAVAILABLE` or expired pinned versions,
+reconcile any original operation before starting a new one. Candidate artifact
+preparation can succeed with configuration pending; it does not prove execution
+or Production readiness.

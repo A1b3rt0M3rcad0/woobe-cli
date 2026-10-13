@@ -148,3 +148,11 @@ is not a successful operation result.
 ## Unified delivery
 
 See [Deployment](DEPLOYMENT.md) for exact Release/Staging/local delivery, private intent recovery and explicit rollback. See [CI deployment](CI_DEPLOYMENT.md) for deploy-only authority and encrypted checkpoints. Existing commands retain their semantics.
+
+Versioned Project configuration errors preserve the bounded `domain_code`,
+`diagnostics[].key` and `diagnostics[].environment`, including when returned by
+Agent/Network execution or deployment. Guidance comes from the CLI; server
+messages, input snapshots and values are omitted. Missing/revoked configuration
+and stale plans exit 6, unavailable stores/versions exit 9, invalid definitions
+exit 2, and authentication/authorization retain exits 3/4. Unknown contracts keep
+the generic HTTP failure rather than printing untrusted diagnostics.

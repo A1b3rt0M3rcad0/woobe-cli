@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Preserve bounded configuration diagnostics across runtime and deployment, with actionable guidance and Environment scope.
+
 - Negotiate remote-reference Package 2.0 in managed development, preserve distinct v1/v2 ASaC digests and author recipes, and retain typed references through capture, Draft sync, checkpoint, hydration and Candidate preparation. Fix schema2 bindings templates; update development/package guides and assistant skill.
 
 - Add metadata-only Project configuration declaration/list/usage/bind/check/test commands with explicit backend capability negotiation, blocked/unknown exit statuses, no local secret lookup and coordinated assistant guidance.
