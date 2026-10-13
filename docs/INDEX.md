@@ -10,6 +10,7 @@ that every original roadmap criterion is complete.
 | [Installation](INSTALLATION.md) | Native/npm/container setup, CLI Keys, automatic release, Trusted Publishing and recovery |
 | [Project setup](PROJECT_SETUP.md) | One-command registry, skills, managed assistant instructions and private lab/Git exclusions |
 | [Coding assistant skill](AGENT_SKILL.md) | Built-in offline install, Codex/.codex, Claude Code, custom paths, compatible npm installer and publisher bootstrap |
+| [Contract and test recovery](CONTRACTS_TEST_RECOVERY.md) | Exact references, validation, timeout identity, revision conflicts and private secret files |
 | [Usage](USAGE.md) | Canonical CLI workflows, managed YAML editing and recovery |
 | [Development](DEVELOPMENT.md) | Provider bindings, shared dependencies and Surfaces |
 | [Unified deployment](DEPLOYMENT.md) | Release/Staging/local delivery, exact qualification, private intents and recovery |

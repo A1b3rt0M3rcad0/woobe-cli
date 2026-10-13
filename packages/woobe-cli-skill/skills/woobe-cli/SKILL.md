@@ -50,6 +50,8 @@ PowerShell. Do not paste full schemas or package inventories into the chat.
 
 Keep `.state/`, import checkpoints and pending receipts. Reconcile an uncertain
 write before another attempt. Never blindly retry create/apply/publication.
+Provider completion alone is not a passed output-contract test; consult lifecycle
+and recovery for missing schema, invalid output and native test timeout UUIDs.
 Only add `--yes` for the specifically authorized execution or lifecycle change.
 State the affected connection, Project, resource and environment in your result,
 then report verified changes and any unresolved server validation.

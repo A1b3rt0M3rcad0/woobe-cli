@@ -340,3 +340,5 @@ Portable sealed packages can be edited through verified separate copies with
 `woobe package seal ./author --destination ./sealed`. See [Packages](docs/PACKAGES.md).
 For read-only automation, `--fields "id,name" --strict-fields --output compact`
 rejects absent fields; compact ASaC outputs retain continuation IDs.
+
+Prompt/Contract capture, native test result validation, uncertain test recovery and versioned secret-file custody are described in [the recovery guide](docs/CONTRACTS_TEST_RECOVERY.md).

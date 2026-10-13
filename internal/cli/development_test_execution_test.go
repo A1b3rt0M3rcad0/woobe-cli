@@ -13,8 +13,12 @@ func TestYAMLReleaseTestSelectsStagingAndReturnsOneTerminalEnvelope(t *testing.T
 	t.Setenv("WOOBE_CONTROL_KEY", "test-control")
 	for _, status := range []string{"passed", "failed"} {
 		t.Run(status, func(t *testing.T) {
-			requests := 0
+			requests, schemas := 0, 0
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if serveReleaseTestSchema(w, r) {
+					schemas++
+					return
+				}
 				requests++
 				var body map[string]any
 				_ = json.NewDecoder(r.Body).Decode(&body)
@@ -38,7 +42,7 @@ func TestYAMLReleaseTestSelectsStagingAndReturnsOneTerminalEnvelope(t *testing.T
 			if status == "failed" {
 				want = 6
 			}
-			if code != want || requests != 2 || reply["data"].(map[string]any)["status"] != status {
+			if code != want || requests != 2 || schemas != 1 || reply["data"].(map[string]any)["status"] != status {
 				t.Fatal(code, reply, requests)
 			}
 		})

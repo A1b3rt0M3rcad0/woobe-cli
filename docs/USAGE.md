@@ -94,7 +94,7 @@ woobe project knowledge document upload --collection COLLECTION --document-file 
 woobe project agent export AGENT --destination agent-projection.json
 ```
 
-Exports are explicitly incomplete authorized projections, not apply-ready patches. API issuance destinations must not exist; a failed attempt can leave an empty file. Reconcile before deciding whether another issuance is necessary.
+Exports are explicitly incomplete authorized projections, not apply-ready patches. API issuance destinations must not exist. Rejected attempts leave no final file; successful issuance publishes a versioned private JSON envelope. See [test/contract and secret recovery](CONTRACTS_TEST_RECOVERY.md).
 
 ## Runtime
 
@@ -864,3 +864,7 @@ Synchronous Runtime JSON preserves exact integer identities and generations, inc
 ## Unified delivery
 
 See [Deployment](DEPLOYMENT.md) for exact Release/Staging/local delivery, private intent recovery and explicit rollback. See [CI deployment](CI_DEPLOYMENT.md) for deploy-only authority and encrypted checkpoints. Existing commands retain their semantics.
+
+## Contract and timeout recovery
+
+See [references, validation and private recovery](CONTRACTS_TEST_RECOVERY.md) for exact Prompt/Contract capture, Contract PATCH concurrency, failed test exits, recoverable native test UUIDs and issued-secret stdin import.

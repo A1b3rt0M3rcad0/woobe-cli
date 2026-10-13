@@ -173,7 +173,11 @@ func (a *App) loginControl(cmd *cobra.Command, stdin bool, selection string) err
 	if len(key) > 65536 || strings.TrimSpace(string(key)) == "" {
 		return output.New(2, "CLI Key must contain 1 to 65536 bytes")
 	}
-	client, e := controlplane.New(v.APIURL, strings.TrimSpace(string(key)), a.Timeout)
+	token, e := credentialFromInput(key)
+	if e != nil {
+		return e
+	}
+	client, e := controlplane.New(v.APIURL, token, a.Timeout)
 	if e != nil {
 		return e
 	}
@@ -194,7 +198,7 @@ func (a *App) loginControl(cmd *cobra.Command, stdin bool, selection string) err
 		return e
 	}
 	ref := "connection-" + hex.EncodeToString(nonce)
-	if e = a.store().Put(ref, strings.TrimSpace(string(key))); e != nil {
+	if e = a.store().Put(ref, token); e != nil {
 		return e
 	}
 	oldManaged := isConnectionCredential(v)

@@ -150,7 +150,7 @@ jobs:
           go test ./packages/woobe-cli-skill
           go test ./internal/devworkspace ./internal/projectinit
           go test ./internal/output
-          go test ./internal/cli -run 'Package|Control|Output|ProjectInit|MissingScope|ProtectedDryRun|LocalDeploy|Unified'
+          go test ./internal/cli -run 'Package|Control|Output|ProjectInit|MissingScope|ProtectedDryRun|LocalDeploy|Unified|SecretIssuance|CredentialImport|ReleaseTest|CanonicalRunTest'
           go test ./internal/credentials -run 'WindowsProtection'
       - name: Qualify the skill installer on the native host
         shell: bash

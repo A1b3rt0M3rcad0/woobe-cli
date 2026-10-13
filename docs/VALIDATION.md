@@ -133,3 +133,15 @@ Projects, then runs after removing local package directories. The provider/MCP
 peer is deterministic; HTTP auth resolves destination Secret/Environment bindings,
 Knowledge is rebuilt through the native pipeline, and native Network child runs
 retain Tool execution evidence. No external production service is required.
+
+## Contract/runtime report regressions — 2026-10-12
+
+`make check` covers versioned private secret publication, rejection cleanup,
+raw/legacy/versioned credential readers, native test uncertainty with one POST,
+legacy-backend refusal, failed-test exit 6 and result retention. The paired backend
+integration covers real PostgreSQL Contract PATCH/CAS, exact selected Prompt and
+schema capture, strict invalid-output failure, preserved old capture export and
+remote completion after client timeout. The full lifecycle suite remains required;
+its checks qualify deterministic fixtures rather than customer Production.
+The Docker gate builds a polluted nested-package context with the actual ignore
+rules and requires host modules/compiler caches to be absent.

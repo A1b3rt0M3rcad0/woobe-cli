@@ -16,10 +16,11 @@ type releaseTestFailure struct {
 }
 
 func (f *releaseTestFailure) Error() string { return f.Cause.Error() }
+func (f *releaseTestFailure) Unwrap() error { return f.Cause }
 
 func (a *App) developmentTestCommands() {
 	var environment, version, candidate string
-	command := &cobra.Command{Use: "test REFERENCE", Short: "Execute a saved Agent snapshot and record its test result", Args: cobra.ExactArgs(1), Long: "Read a YAML/JSON testcase with message, optional expected_output and external_context. Select current Staging by default, Draft/Production with --env, or an immutable Release with --env release --version. Run the native Agent execution pipeline and store actual output, latency and validation errors. A failed assertion or execution exits with code 6; network uncertainty is never retried automatically." + candidateEvaluationHelp, Example: "woobe agent '@support' test --candidate CANDIDATE_UUID --file suite.yaml --yes\nwoobe agent '@support' evaluation EVALUATION_UUID", RunE: func(cmd *cobra.Command, args []string) error {
+	command := &cobra.Command{Use: "test REFERENCE", Short: "Execute a saved Agent snapshot and record its test result", Args: cobra.ExactArgs(1), Long: "Read a YAML/JSON testcase with message, optional expected_output and external_context. Select current Staging by default, Draft/Production with --env, or an immutable Release with --env release --version. Run the native Agent execution pipeline and store actual output, latency and validation errors. A failed assertion or execution exits with code 6; network uncertainty is never retried automatically. Default deadline: 2m unless --timeout is explicit. Preserve the private test UUID and use the reported recovery command after timeout." + candidateEvaluationHelp, Example: "woobe agent '@support' test --candidate CANDIDATE_UUID --file suite.yaml --yes\nwoobe agent '@support' evaluation EVALUATION_UUID", RunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("candidate") {
 			if cmd.Flags().Changed("env") || cmd.Flags().Changed("version") {
 				return output.New(2, "Candidate evaluation selects an exact frozen snapshot; omit --env and --version")
@@ -89,7 +90,7 @@ func (a *App) developmentTestCommands() {
 		if a.DryRun {
 			return a.call(cmd, "POST", path, data, false)
 		}
-		result, _, err := control.Request(cmd.Context(), "POST", path, nil, data)
+		result, err := a.requestReleaseTest(cmd, control, path, data)
 		if err != nil {
 			return err
 		}
