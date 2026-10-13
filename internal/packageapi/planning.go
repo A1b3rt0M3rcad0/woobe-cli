@@ -13,6 +13,7 @@ import (
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagebundle"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 )
 
 var digestPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
@@ -32,6 +33,10 @@ type Upload struct {
 }
 
 func (c *Client) Upload(ctx context.Context, bundle *packagebundle.Bundle, locked bool) (Upload, error) {
+	version := packagefmt.Text(bundle.Graph.Manifest["schema_version"])
+	if err := c.RequireSchema(ctx, version, version == "2.0"); err != nil {
+		return Upload{}, err
+	}
 	reader, writer := io.Pipe()
 	defer reader.Close()
 	form := multipart.NewWriter(writer)
@@ -66,7 +71,7 @@ func (c *Client) Upload(ctx context.Context, bundle *packagebundle.Bundle, locke
 	}
 	encoded, _ := json.Marshal(envelope["data"])
 	var result Upload
-	if json.Unmarshal(encoded, &result) != nil || result.PackageSchemaVersion != "1.0" || result.ProjectID != c.ProjectID ||
+	if json.Unmarshal(encoded, &result) != nil || result.PackageSchemaVersion != version || result.ProjectID != c.ProjectID ||
 		!identifier.MatchString(result.UploadID) || result.ArtifactDigest != bundle.ArtifactDigest || !reflect.DeepEqual(result.Inventory, bundle.Inventory) || !validExpiry(result.ExpiresAt) {
 		return Upload{}, output.New(9, "Server accepted a different Package artifact")
 	}
@@ -74,6 +79,7 @@ func (c *Client) Upload(ctx context.Context, bundle *packagebundle.Bundle, locke
 }
 
 type PlanRequest struct {
+	InstallationMode string                       `json:"installation_mode,omitempty"`
 	RegistryID       string                       `json:"registry_id,omitempty"`
 	ResourceBindings map[string]DevelopmentTarget `json:"resource_bindings,omitempty"`
 	Mode             string                       `json:"mode"`
@@ -94,6 +100,7 @@ type Effect struct {
 	State               string   `json:"state"`
 }
 type Plan struct {
+	InstallationMode     string                       `json:"installation_mode,omitempty"`
 	Mode                 string                       `json:"mode,omitempty"`
 	RegistryID           string                       `json:"registry_id,omitempty"`
 	ResourceBindings     map[string]DevelopmentTarget `json:"resource_bindings,omitempty"`
@@ -119,9 +126,19 @@ type Plan struct {
 
 func (c *Client) Plan(ctx context.Context, request PlanRequest) (Plan, error) {
 	var result Plan
+	version := packagefmt.Text(request.Bindings["schema_version"])
+	if version == "2.0" && request.InstallationMode != "structural" {
+		return result, output.New(2, "Package 2.0 requires --structural")
+	}
+	if err := c.RequireSchema(ctx, version, request.InstallationMode == "structural"); err != nil {
+		return result, err
+	}
 	err := c.request(ctx, http.MethodPost, "/plan", request, &result)
 	if err != nil {
 		return result, err
+	}
+	if result.PackageSchemaVersion != version || result.InstallationMode != request.InstallationMode {
+		return Plan{}, output.New(9, "Server changed Package schema or installation mode")
 	}
 	if request.Mode == "sync" {
 		if result.Mode != "sync" || result.RegistryID != request.RegistryID || len(result.ResourceBindings) != len(request.ResourceBindings) {

@@ -98,3 +98,5 @@ match. It does not execute HTTP Tool actions. Values never return to the CLI.
 An inconclusive result exits with 9; a connection that is not ready exits with 6.
 Each command requires its advertised capability, so an unsupported server is
 rejected before a binding change or external test is requested.
+
+Portable structure and explicit remote reuse are described in [Packages](PACKAGES.md#remote-configuration-packages-schema-20). Structural import does not imply execution readiness.

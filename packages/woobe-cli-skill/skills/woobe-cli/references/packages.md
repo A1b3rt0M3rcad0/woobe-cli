@@ -47,3 +47,35 @@ Import creates Draft resources even when exported from Production; it is not the
 managed update flow. Editing an existing resource uses pull/push. Repeating an
 import reconciles its checkpoint, not an intentional second create. Keep the
 checkpoint and use `woobe package status --checkpoint PATH --wait` after uncertainty.
+
+
+## Remote configuration packages (schema 2.0)
+
+With a server advertising the matching 2.0 catalog and structural installation:
+
+```sh
+woobe package export agent AGENT_UUID --package-schema 2.0
+woobe package plan ./support --structural --save-plan ./support-plan.json
+woobe package import --plan-file ./support-plan.json --wait
+```
+
+The manifest declares configuration keys and Provider connections without values.
+The CLI generates explicit create bindings for these declarations; it does not
+adopt existing keys or connections by name. To reuse them deliberately, pass
+`--bind configuration.PRIMARY_API_KEY=EXISTING_KEY` and/or
+`--bind credential.primary=CREDENTIAL_UUID` when planning or importing.
+An explicit bindings file must cover every requirement.
+
+Structural installation is Draft-only and never reads local protected values,
+performs MCP discovery, builds embeddings or activates a deployment. The receipt
+reports installation, configuration, runtime preparation and deployment
+separately. Missing values are filled by an authorized operator in Woobe →
+Project → Environments. The matching capability is checked before mutation;
+older servers reject this flow without falling back to local secrets.
+
+Export defaults to the unchanged 1.0 format. Select `--package-schema 2.0` for
+remote authentication declarations. Existing operational 1.0 imports preserve
+their behavior; `--structural` is explicit and never silently inferred.
+
+This branch is under qualification; complete preparation/resume and ASaC
+integration are not yet ready for release.

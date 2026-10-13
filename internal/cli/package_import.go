@@ -71,7 +71,7 @@ func (a *App) packageProtectedSnapshot(bindings map[string]any) (map[string]stri
 func (a *App) packageImportCommands(group *cobra.Command) {
 	var planPath, checkpointPath, bindingsPath, savePath, lifecycle, notes, reason string
 	var shortcuts []string
-	var locked, wait bool
+	var locked, wait, structural bool
 	var deadline time.Duration
 	command := &cobra.Command{Use: "import [SOURCE]", Short: "Apply a pinned native Package plan with durable single-request recovery", Args: cobra.MaximumNArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		if err := packageFlags(cmd, "yes", "idempotency-key", "validate-body", "validate-parameters", "schema-sha256"); err != nil {
@@ -80,7 +80,7 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 		if (len(args) == 0) == (planPath == "") || deadline <= 0 {
 			return output.New(2, "Import requires SOURCE or --plan-file and a positive wait timeout")
 		}
-		if planPath != "" && (bindingsPath != "" || len(shortcuts) > 0 || savePath != "" || locked || cmd.Flags().Changed("lifecycle") || notes != "" || reason != "") {
+		if planPath != "" && (bindingsPath != "" || len(shortcuts) > 0 || savePath != "" || locked || cmd.Flags().Changed("structural") || cmd.Flags().Changed("lifecycle") || notes != "" || reason != "") {
 			return output.New(2, "A saved plan cannot be changed by import flags")
 		}
 		if err := packageLifecycle(lifecycle, notes, reason); err != nil {
@@ -102,7 +102,10 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 			if err != nil {
 				return packageError(err)
 			}
-			return a.emit(map[string]any{"package_schema_version": "1.0", "artifact_digest": bundle.ArtifactDigest, "inventory": bundle.Inventory, "bindings": bindings, "lifecycle": lifecycle, "executed": false, "authorization": "not_evaluated", "semantic_validation": "server_required"})
+			if _, err = packageInstallation(bindings, structural, lifecycle); err != nil {
+				return err
+			}
+			return a.emit(map[string]any{"package_schema_version": bundle.Graph.Manifest["schema_version"], "structural": structural, "artifact_digest": bundle.ArtifactDigest, "inventory": bundle.Inventory, "bindings": bindings, "lifecycle": lifecycle, "executed": false, "authorization": "not_evaluated", "semantic_validation": "server_required"})
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), deadline)
 		defer cancel()
@@ -196,7 +199,11 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 			if e != nil {
 				return packageError(e)
 			}
-			request := packageapi.PlanRequest{Mode: "create", UploadID: "00000000-0000-4000-8000-000000000000", ArtifactDigest: bundle.ArtifactDigest, Bindings: bindings, Lifecycle: lifecycle}
+			installationMode, e := packageInstallation(bindings, structural, lifecycle)
+			if e != nil {
+				return e
+			}
+			request := packageapi.PlanRequest{InstallationMode: installationMode, Mode: "create", UploadID: "00000000-0000-4000-8000-000000000000", ArtifactDigest: bundle.ArtifactDigest, Bindings: bindings, Lifecycle: lifecycle}
 			if notes != "" {
 				request.ReleaseNotes = &notes
 			}
@@ -233,6 +240,12 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 			}
 		}
 		plan := receipt.Plan
+		if cmd.Flags().Changed("structural") && (plan.InstallationMode == "structural") != structural {
+			return output.New(2, "Prepared installation mode differs from the approved plan")
+		}
+		if err := client.RequireSchema(ctx, plan.PackageSchemaVersion, plan.InstallationMode == "structural"); err != nil {
+			return err
+		}
 		if readErr == nil && planPath == "" {
 			bundle, err := loadPackage(args[0], locked)
 			if err != nil {
@@ -283,7 +296,7 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 			return err
 		}
 		progressSecrets = values
-		request := packageapi.ApplyRequest{PlanID: plan.PlanID, PlanDigest: plan.PlanDigest, UploadID: plan.UploadID, ArtifactDigest: plan.ArtifactDigest, Bindings: plan.Bindings, ProtectedBindings: values, Lifecycle: plan.Lifecycle, ReleaseNotes: plan.ReleaseNotes, Reason: plan.Reason}
+		request := packageapi.ApplyRequest{InstallationMode: plan.InstallationMode, PlanID: plan.PlanID, PlanDigest: plan.PlanDigest, UploadID: plan.UploadID, ArtifactDigest: plan.ArtifactDigest, Bindings: plan.Bindings, ProtectedBindings: values, Lifecycle: plan.Lifecycle, ReleaseNotes: plan.ReleaseNotes, Reason: plan.Reason}
 		if schema != nil {
 			if err = a.validatePackageRequest(schema, "POST", "/apply", map[string]string{"project_id": client.ProjectID}, nil, request); err != nil {
 				return err
@@ -343,13 +356,14 @@ func (a *App) packageImportCommands(group *cobra.Command) {
 	command.Flags().StringVar(&planPath, "plan-file", "", "Private approved plan receipt; exclusive with SOURCE")
 	command.Flags().StringVar(&checkpointPath, "checkpoint", "", "Private checkpoint; defaults to CLI state and is reused for the same source/destination")
 	command.Flags().StringVar(&bindingsPath, "bindings", "", "Destination bindings file")
-	command.Flags().StringArrayVar(&shortcuts, "bind", nil, "Bind credential.ALIAS=UUID")
+	command.Flags().StringArrayVar(&shortcuts, "bind", nil, "Explicit reuse: credential.ALIAS=UUID or configuration.KEY=REMOTE_KEY (schema 2.0)")
 	command.Flags().StringVar(&savePath, "save-plan", "", "Save approved private plan exclusively")
 	command.Flags().StringVar(&lifecycle, "lifecycle", "draft", "Explicit destination lifecycle")
 	command.Flags().StringVar(&notes, "release-notes", "", "Release audit description")
 	command.Flags().StringVar(&reason, "reason", "", "Production activation reason")
 	command.Flags().BoolVar(&locked, "locked", false, "Require immutable bundle inventory lock")
 	command.Flags().BoolVar(&wait, "wait", false, "Observe until terminal state")
+	command.Flags().BoolVar(&structural, "structural", false, "Install definitions and remote references without local secrets or deployment")
 	command.Flags().DurationVar(&deadline, "wait-timeout", 5*time.Minute, "Total upload, planning, acceptance and observation deadline")
 	group.AddCommand(command)
 }

@@ -34,3 +34,5 @@ to reading local protected files or using a value from another Environment.
 Bind an existing connection with `woobe project configuration bind provider CREDENTIAL_UUID --key PRIMARY_API_KEY`. Tool bindings support explicit api_key, bearer, basic, headers or none; use declared names only. The server compares the binding revision and rejects concurrent edits. Migrate existing inline credentials before replacing their authority.
 
 Use `woobe project configuration test provider CREDENTIAL_UUID --env staging` only when an external connection test is requested. For MCP discovery use `woobe project configuration test tool MCP_TOOL_UUID --env draft`. These make outbound requests and may save MCP discovery; they do not execute an Agent or arbitrary HTTP Tool. `check` remains read-only with no external I/O. Never retrieve a value or substitute a local token to make readiness succeed.
+
+For packages, use negotiated schema `2.0` and explicit `--structural` installation as described in [packages](packages.md). Never provide or recover local secret values for this flow. An installed structure can still require configuration and preparation.
