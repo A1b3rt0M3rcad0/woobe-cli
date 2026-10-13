@@ -20,9 +20,9 @@ func TestSecretIssuanceRejectionLeavesNoDestinationOrTemporaryFile(t *testing.T)
 	defer server.Close()
 	folder := t.TempDir()
 	destination := filepath.Join(folder, "secret.json")
-	code, _ := invoke(t, []string{"project", "api-key", "create", "--api-url", server.URL, "--project", "p", "--file", "-", "--secret-file", destination}, `{}`)
+	code, result := invoke(t, []string{"project", "api-key", "create", "--api-url", server.URL, "--project", "p", "--file", "-", "--secret-file", destination}, `{}`)
 	if code != 4 {
-		t.Fatal(code)
+		t.Fatal(code, result["error"])
 	}
 	entries, err := os.ReadDir(folder)
 	if err != nil || len(entries) != 0 {
@@ -37,8 +37,11 @@ func TestSecretIssuancePublishesVersionedPrivateEnvelopeAndImportsCredential(t *
 	defer server.Close()
 	destination := filepath.Join(t.TempDir(), "secret.json")
 	code, result := invoke(t, []string{"project", "api-key", "create", "--api-url", server.URL, "--project", "p", "--file", "-", "--secret-file", destination}, `{}`)
-	if code != 0 || strings.Contains(strings.ReplaceAll(fmtJSON(result), "[REDACTED]", ""), secret) {
-		t.Fatal("Issuance leaked or failed")
+	if code != 0 {
+		t.Fatal("Issuance failed", code, result["error"])
+	}
+	if strings.Contains(strings.ReplaceAll(fmtJSON(result), "[REDACTED]", ""), secret) {
+		t.Fatal("Issuance leaked")
 	}
 	data, err := packagecheckpoint.ReadPrivate(destination)
 	if err != nil {

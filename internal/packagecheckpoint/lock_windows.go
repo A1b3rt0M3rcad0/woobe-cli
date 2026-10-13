@@ -138,7 +138,16 @@ func protectNewPrivateFile(file *os.File) error {
 	if err != nil {
 		return err
 	}
-	return windows.SetSecurityInfo(windows.Handle(file.Fd()), windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION|windows.PROTECTED_DACL_SECURITY_INFORMATION, nil, nil, acl, nil)
+	// os.OpenFile requests data access, not WRITE_DAC. Reopen the same kernel
+	// object with security rights rather than resolving an attacker-changeable path.
+	reopen := windows.NewLazySystemDLL("kernel32.dll").NewProc("ReOpenFile")
+	handle, _, callErr := reopen.Call(file.Fd(), uintptr(windows.WRITE_DAC|windows.READ_CONTROL), uintptr(windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE), 0)
+	if handle == ^uintptr(0) || handle == 0 {
+		return output.New(3, "Windows secret file security handle could not be acquired: "+callErr.Error())
+	}
+	securityHandle := windows.Handle(handle)
+	defer windows.CloseHandle(securityHandle)
+	return windows.SetSecurityInfo(securityHandle, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION|windows.PROTECTED_DACL_SECURITY_INFORMATION, nil, nil, acl, nil)
 }
 
 func checkPublicationParent(root *os.Root) error {
