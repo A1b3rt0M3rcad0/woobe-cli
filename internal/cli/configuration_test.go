@@ -245,3 +245,20 @@ func TestKnowledgePreparationAcceptsYAMLAndQueuesOneExplicitRequest(t *testing.T
 		t.Fatal(code, result, calls)
 	}
 }
+
+func TestKnowledgePreparationRejectsUnadvertisedServerBeforeWriting(t *testing.T) {
+	calls := 0
+	id := "00000000-0000-4000-8000-000000000001"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.Method != "GET" || r.URL.Path != "/openapi.json" {
+			t.Error("unexpected write", r.Method, r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"paths": map[string]any{}})
+	}))
+	defer server.Close()
+	code, result := invoke(t, []string{"project", "knowledge", "snapshot", "prepare", id, "--api-url", server.URL, "--project", id, "--file", "-", "--input-format", "yaml", "--output", "json"}, "project_id: "+id+"\nexpected_build_config_hash: "+strings.Repeat("a", 64)+"\n")
+	if code == 0 || calls != 1 {
+		t.Fatal(code, result, calls)
+	}
+}
