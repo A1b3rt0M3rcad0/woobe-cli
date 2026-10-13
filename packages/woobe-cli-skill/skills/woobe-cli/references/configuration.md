@@ -36,3 +36,20 @@ Bind an existing connection with `woobe project configuration bind provider CRED
 Use `woobe project configuration test provider CREDENTIAL_UUID --env staging` only when an external connection test is requested. For MCP discovery use `woobe project configuration test tool MCP_TOOL_UUID --env draft`. These make outbound requests and may save MCP discovery; they do not execute an Agent or arbitrary HTTP Tool. `check` remains read-only with no external I/O. Never retrieve a value or substitute a local token to make readiness succeed.
 
 For packages, use negotiated schema `2.0` and explicit `--structural` installation as described in [packages](packages.md). Never provide or recover local secret values for this flow. An installed structure can still require configuration and preparation.
+
+
+Knowledge installed structurally retains a `PENDING_PREPARATION` vector snapshot.
+After the operator fills the referenced values and approves their use, read its
+`build_config_hash` with `woobe project knowledge snapshot get SNAPSHOT_UUID`.
+Create a YAML file containing `project_id`, `environment` and
+`expected_build_config_hash`, then queue it explicitly:
+
+```sh
+woobe project knowledge snapshot prepare SNAPSHOT_UUID --file prepare.yaml
+woobe project knowledge snapshot get SNAPSHOT_UUID
+```
+
+The queue request checks the exact build intent and configuration before accepting
+work. Repeating the same accepted request does not create another build. `BUILDING`
+is pending; wait for `READY` before Candidate/release preparation. A failed or
+changed intent requires a new snapshot version. The CLI does not supply values.

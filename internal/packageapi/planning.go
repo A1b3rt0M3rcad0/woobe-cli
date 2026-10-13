@@ -100,28 +100,29 @@ type Effect struct {
 	State               string   `json:"state"`
 }
 type Plan struct {
-	InstallationMode     string                       `json:"installation_mode,omitempty"`
-	Mode                 string                       `json:"mode,omitempty"`
-	RegistryID           string                       `json:"registry_id,omitempty"`
-	ResourceBindings     map[string]DevelopmentTarget `json:"resource_bindings,omitempty"`
-	APIOrigin            string                       `json:"api_origin"`
-	PackageSchemaVersion string                       `json:"package_schema_version"`
-	PlanID               string                       `json:"plan_id"`
-	PlanDigest           string                       `json:"plan_digest"`
-	ProjectID            string                       `json:"project_id"`
-	UploadID             string                       `json:"upload_id"`
-	ArtifactDigest       string                       `json:"artifact_digest"`
-	DefinitionDigest     string                       `json:"definition_digest"`
-	CapabilitiesDigest   string                       `json:"capabilities_digest"`
-	BindingsDigest       string                       `json:"bindings_digest"`
-	Bindings             map[string]any               `json:"bindings"`
-	Lifecycle            string                       `json:"lifecycle"`
-	ReleaseNotes         *string                      `json:"release_notes"`
-	Reason               *string                      `json:"reason"`
-	Effects              []Effect                     `json:"effects"`
-	RequiredPermissions  []string                     `json:"required_permissions"`
-	CreatedAt            string                       `json:"created_at"`
-	ExpiresAt            string                       `json:"expires_at"`
+	ConstituentBindingPolicy string                       `json:"constituent_binding_policy,omitempty"`
+	InstallationMode         string                       `json:"installation_mode,omitempty"`
+	Mode                     string                       `json:"mode,omitempty"`
+	RegistryID               string                       `json:"registry_id,omitempty"`
+	ResourceBindings         map[string]DevelopmentTarget `json:"resource_bindings,omitempty"`
+	APIOrigin                string                       `json:"api_origin"`
+	PackageSchemaVersion     string                       `json:"package_schema_version"`
+	PlanID                   string                       `json:"plan_id"`
+	PlanDigest               string                       `json:"plan_digest"`
+	ProjectID                string                       `json:"project_id"`
+	UploadID                 string                       `json:"upload_id"`
+	ArtifactDigest           string                       `json:"artifact_digest"`
+	DefinitionDigest         string                       `json:"definition_digest"`
+	CapabilitiesDigest       string                       `json:"capabilities_digest"`
+	BindingsDigest           string                       `json:"bindings_digest"`
+	Bindings                 map[string]any               `json:"bindings"`
+	Lifecycle                string                       `json:"lifecycle"`
+	ReleaseNotes             *string                      `json:"release_notes"`
+	Reason                   *string                      `json:"reason"`
+	Effects                  []Effect                     `json:"effects"`
+	RequiredPermissions      []string                     `json:"required_permissions"`
+	CreatedAt                string                       `json:"created_at"`
+	ExpiresAt                string                       `json:"expires_at"`
 }
 
 func (c *Client) Plan(ctx context.Context, request PlanRequest) (Plan, error) {

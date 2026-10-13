@@ -20,6 +20,7 @@ func (a *App) knowledgeCommands() {
 		{Command: "project knowledge collection vector-preview", Method: "POST", Path: "/agent/knowledge/collections/{collection_id}/vector-preview", Scope: "project", Body: true},
 		{Command: "project knowledge snapshot create", Method: "POST", Path: "/agent/knowledge/collections/{collection_id}/vector-snapshots", Scope: "project", Body: true},
 		{Command: "project knowledge snapshot list", Method: "GET", Path: "/agent/knowledge/collections/{collection_id}/vector-snapshots", Scope: "project", Body: false, QueryScope: "project_id"},
+		{Command: "project knowledge snapshot prepare", Status: "proposed", Summary: "Queue a structural Knowledge snapshot after remote configuration is ready", Details: "Requires the server-advertised preparation route. Supply environment and expected_build_config_hash in YAML. BUILDING is pending; poll snapshot get until READY. Does not activate an Agent or deployment.", Method: "POST", Path: "/agent/knowledge/vector-snapshots/{snapshot_id}/prepare", Scope: "project", Body: true},
 		{Command: "project knowledge snapshot get", Method: "GET", Path: "/agent/knowledge/vector-snapshots/{snapshot_id}", Scope: "project", Body: false},
 	} {
 		a.register(op)

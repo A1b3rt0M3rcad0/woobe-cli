@@ -100,3 +100,20 @@ Each command requires its advertised capability, so an unsupported server is
 rejected before a binding change or external test is requested.
 
 Portable structure and explicit remote reuse are described in [Packages](PACKAGES.md#remote-configuration-packages-schema-20). Structural import does not imply execution readiness.
+
+
+Knowledge installed structurally retains a `PENDING_PREPARATION` vector snapshot.
+After the operator fills the referenced values and approves their use, read its
+`build_config_hash` with `woobe project knowledge snapshot get SNAPSHOT_UUID`.
+Create a YAML file containing `project_id`, `environment` and
+`expected_build_config_hash`, then queue it explicitly:
+
+```sh
+woobe project knowledge snapshot prepare SNAPSHOT_UUID --file prepare.yaml
+woobe project knowledge snapshot get SNAPSHOT_UUID
+```
+
+The queue request checks the exact build intent and configuration before accepting
+work. Repeating the same accepted request does not create another build. `BUILDING`
+is pending; wait for `READY` before Candidate/release preparation. A failed or
+changed intent requires a new snapshot version. The CLI does not supply values.

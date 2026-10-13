@@ -298,3 +298,22 @@ their behavior; `--structural` is explicit and never silently inferred.
 
 This branch is under qualification; complete preparation/resume and ASaC
 integration are not yet ready for release.
+
+
+Knowledge installed structurally retains a `PENDING_PREPARATION` vector snapshot.
+After the operator fills the referenced values and approves their use, read its
+`build_config_hash` with `woobe project knowledge snapshot get SNAPSHOT_UUID`.
+Create a YAML file containing `project_id`, `environment` and
+`expected_build_config_hash`, then queue it explicitly:
+
+```sh
+woobe project knowledge snapshot prepare SNAPSHOT_UUID --file prepare.yaml
+woobe project knowledge snapshot get SNAPSHOT_UUID
+```
+
+The queue request checks the exact build intent and configuration before accepting
+work. Repeating the same accepted request does not create another build. `BUILDING`
+is pending; wait for `READY` before Candidate/release preparation. A failed or
+changed intent requires a new snapshot version. The CLI does not supply values.
+
+Structural Network import keeps captured Agent content but binds destination nodes to imported Drafts (`constituent_binding_policy: imported_draft`). It does not create Staging/Release snapshots or deploy constituent Agents. Review this policy in the approved plan before applying.

@@ -216,3 +216,32 @@ func TestConfigurationExternalTestNegotiatesAndReportsFailure(t *testing.T) {
 		})
 	}
 }
+
+func TestKnowledgePreparationAcceptsYAMLAndQueuesOneExplicitRequest(t *testing.T) {
+	calls := 0
+	id := "00000000-0000-4000-8000-000000000001"
+	hash := strings.Repeat("a", 64)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.URL.Path == "/openapi.json" {
+			_ = json.NewEncoder(w).Encode(map[string]any{"paths": map[string]any{"/agent/knowledge/vector-snapshots/{snapshot_id}/prepare": map[string]any{"post": map[string]any{"operationId": "prepare_vector_snapshot"}}}})
+			return
+		}
+		if r.Method != "POST" || r.URL.Path != "/agent/knowledge/vector-snapshots/"+id+"/prepare" {
+			t.Error(r.Method, r.URL.Path)
+		}
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		if body["expected_build_config_hash"] != hash || body["environment"] != "staging" {
+			t.Error(body)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": map[string]any{"id": id, "status": "BUILDING", "runtime_preparation_status": "pending"}})
+	}))
+	defer server.Close()
+	code, result := invoke(t, []string{"project", "knowledge", "snapshot", "prepare", id, "--api-url", server.URL, "--project", id, "--file", "-", "--input-format", "yaml", "--output", "json"}, "project_id: "+id+"\nenvironment: staging\nexpected_build_config_hash: "+hash+"\n")
+	if code != 0 || calls != 2 {
+		t.Fatal(code, result, calls)
+	}
+}
