@@ -117,3 +117,37 @@ The queue request checks the exact build intent and configuration before accepti
 work. Repeating the same accepted request does not create another build. `BUILDING`
 is pending; wait for `READY` before Candidate/release preparation. A failed or
 changed intent requires a new snapshot version. The CLI does not supply values.
+
+## Legacy source migration
+
+Migration is a separate administrative operation. Inspect the server's
+`migration_source_kinds` capability before choosing a source family. The current
+bridge supports Provider credentials and recognized API-key/custom Secret header
+templates; OAuth, mixed authentication and route-specific forms may require review.
+A completed batch does not mean that every source family in the Project migrated.
+
+The existing generic request command can read the report or submit an explicitly
+reviewed migration plan. Replace `PROJECT_UUID` and `MIGRATION_UUID` in these
+examples; `migration-plan.yaml` contains `source_kind: secret` and `limit: 100`:
+
+```sh
+woobe request GET /core/projects/PROJECT_UUID/configuration/capabilities
+woobe request POST /core/projects/PROJECT_UUID/configuration/migrations/preview --file migration-plan.yaml
+woobe request PUT /core/projects/PROJECT_UUID/configuration/migrations/MIGRATION_UUID --file migration-plan.yaml
+woobe request GET /core/projects/PROJECT_UUID/configuration/migrations/MIGRATION_UUID
+```
+
+Preview is read-only; PUT records the chosen inventory page. Cutover additionally
+requires the server's reviewed bridge-process inventory, current job revision and
+explicit drain attestation. Follow the server migration runbook for advancing
+batches. Do not invent process identities or bypass `CONFIG_MIGRATION_WORK_PENDING`:
+active/uncertain Runs, vector builds, pending operations and unconsumed plans must
+be resolved first.
+
+Migrated header templates retain their author snapshots. Values resolve on the
+server for captured consumers/destinations; a new Tool does not inherit authority
+by copying a Secret name. Rotation preserves an accepted Run's value version.
+After separating Environments, an ambiguous old writer receives
+`LEGACY_ENVIRONMENT_REQUIRED`. Configure the intended Environment centrally.
+Schema 2.0 exports contain declarations/references, never local alias authority or
+material. The CLI must not recreate a secret locally to bypass these diagnostics.

@@ -53,3 +53,17 @@ The queue request checks the exact build intent and configuration before accepti
 work. Repeating the same accepted request does not create another build. `BUILDING`
 is pending; wait for `READY` before Candidate/release preparation. A failed or
 changed intent requires a new snapshot version. The CLI does not supply values.
+
+Legacy migration is administrative work, separate from development. Check the
+server's `migration_source_kinds` before selecting Provider or Secret sources.
+Recognized Secret header templates can migrate without changing author snapshots;
+OAuth, mixed authentication and route-specific forms can require explicit review.
+Do not infer whole-Project completion from one successful source-family batch.
+`CONFIG_MIGRATION_WORK_PENDING` requires resolving active/uncertain Runs, builds,
+operations or unconsumed plans; never invent a fleet/drain attestation. Read the
+server migration runbook before advancing a reviewed job. Generic `woobe request`
+can inspect its reports; migration never requires local secret files.
+
+A copied legacy name does not grant a new Tool access. Use explicit destination
+approvals. After Environment separation, `LEGACY_ENVIRONMENT_REQUIRED` means an
+old writer is ambiguous; select the intended Environment in central configuration.
