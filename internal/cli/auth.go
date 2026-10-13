@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 	"io"
 	"path/filepath"
-	"strings"
 )
 
 func (a *App) authCommands() {
@@ -45,7 +44,11 @@ func (a *App) authCommands() {
 		if len(b) > 65536 {
 			return output.New(2, "credential too large")
 		}
-		if e = a.store().Put(name, strings.TrimSpace(string(b))); e != nil {
+		secret, e := credentialFromInput(b)
+		if e != nil {
+			return e
+		}
+		if e = a.store().Put(name, secret); e != nil {
 			return e
 		}
 		return a.emit(map[string]string{"credential": name})

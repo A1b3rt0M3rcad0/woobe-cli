@@ -88,7 +88,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	f.StringArrayVar(&a.Query, "query", nil, "Query name=value (repeatable)")
 	f.StringVar(&a.IfMatch, "if-match", "", "Expected server ETag")
 	f.StringVar(&a.IdempotencyKey, "idempotency-key", "", "Key, only when supported by server")
-	f.StringVar(&a.SecretFile, "secret-file", "", "Exclusive private destination for issued secret")
+	f.StringVar(&a.SecretFile, "secret-file", "", "Exclusive private issued-secret JSON destination; published after successful issuance")
 	r.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		path := strings.TrimPrefix(cmd.CommandPath(), "woobe ")
 		a.outputCommand = path

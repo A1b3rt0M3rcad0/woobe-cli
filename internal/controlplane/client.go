@@ -123,10 +123,14 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 					Version     string `json:"package_schema_version"`
 					ASaCVersion string `json:"asac_schema_version"`
 					Diagnostics []struct {
-						Code    string `json:"code"`
-						File    string `json:"file"`
-						Path    string `json:"path"`
-						Message string `json:"message"`
+						Kind             string `json:"kind"`
+						ResourceID       string `json:"resource_id"`
+						ExpectedRevision string `json:"expected_revision"`
+						ObservedRevision string `json:"observed_revision"`
+						Code             string `json:"code"`
+						File             string `json:"file"`
+						Path             string `json:"path"`
+						Message          string `json:"message"`
 					} `json:"diagnostics"`
 				} `json:"data"`
 			}
@@ -147,7 +151,26 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 					if len(diagnostic.Path) > 1024 || !safePath.MatchString(diagnostic.Path) {
 						diagnostic.Path = ""
 					}
-					failure.Diagnostics = append(failure.Diagnostics, output.DomainDiagnostic{Code: diagnostic.Code, File: diagnostic.File, Path: diagnostic.Path})
+					bounded := output.DomainDiagnostic{Code: diagnostic.Code, File: diagnostic.File, Path: diagnostic.Path}
+					revisionPattern := regexp.MustCompile(`^[A-Za-z0-9:+._-]{1,128}$`)
+					if diagnostic.Code == "PACKAGE_REVISION_CONFLICT" {
+						for _, kind := range []string{"Agent", "Network", "Model", "Tool", "Skill", "Knowledge", "Prompt", "Contract"} {
+							if diagnostic.Kind == kind {
+								bounded.Kind = kind
+							}
+						}
+						if regexp.MustCompile(`^[a-fA-F0-9-]{36}$`).MatchString(diagnostic.ResourceID) {
+							bounded.ResourceID = diagnostic.ResourceID
+						}
+						if revisionPattern.MatchString(diagnostic.ExpectedRevision) {
+							bounded.ExpectedRevision = diagnostic.ExpectedRevision
+						}
+						if revisionPattern.MatchString(diagnostic.ObservedRevision) {
+							bounded.ObservedRevision = diagnostic.ObservedRevision
+						}
+						failure.Message = "A dependency changed since the accepted local base; pull its owning Agent/Network, review the diff and plan again. package doctor checks compatibility; it does not refresh revisions"
+					}
+					failure.Diagnostics = append(failure.Diagnostics, bounded)
 					if message := packageExportIncompleteMessage(diagnostic.Code, diagnostic.Message); message != "" && failure.Message == "server rejected request" {
 						failure.Message = message
 					}

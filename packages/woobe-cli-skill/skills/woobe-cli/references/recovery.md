@@ -120,3 +120,22 @@ A legacy Network with incomplete pinned constituent snapshots needs operator
 review of the reported node/dependency. Updating the CLI or substituting today's
 Agent Draft does not repair the immutable original. Missing instance signing
 configuration also requires operator setup, not a generated replacement trust key.
+
+## Native test and issuance recovery
+
+`release run-test` and saved-snapshot `agent UUID test` default to two minutes;
+explicit `--timeout` wins. Before POST the CLI stores a private test UUID/hash.
+On timeout preserve `test_id` and execute its exact `recovery_command` to list
+results for the selected snapshot. Pending/absent observation is not a failure
+proof. Never repeat POST to discover the outcome; do not remove the intent.
+
+`PACKAGE_REVISION_CONFLICT` reports the dependency, expected/observed generation
+and binding path. Doctor does not refresh the base. Pull its owning Agent/Network,
+review the diff and plan again; do not create a duplicate Model or bypass CAS.
+
+Issued-secret files are private JSON envelopes (`woobe-issued-secret`, file schema
+`1`), with the native `data.key` retained. Failed requests leave no final stub.
+Credential import / CLI-Key stdin login validate the documented or legacy envelope
+and accept a raw token. Never use full JSON as an HTTP bearer token or print it.
+A committed issuance with a local file failure requires inspection/rotation,
+not an automatic second issuance.

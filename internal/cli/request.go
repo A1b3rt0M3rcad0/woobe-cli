@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/controlplane"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagecheckpoint"
 	"github.com/spf13/cobra"
-	"os"
 	"strings"
 )
 
@@ -47,28 +47,57 @@ func (a *App) call(cmd *cobra.Command, method, path string, b []byte, secret boo
 	if method == "DELETE" && !a.Yes {
 		return output.New(2, "destructive operation requires --yes")
 	}
-	var f *os.File
+	var destination *packagecheckpoint.PrivateDestination
 	if secret {
 		if a.SecretFile == "" {
 			return output.New(2, "issuance requires --secret-file")
 		}
-		f, e = os.OpenFile(a.SecretFile, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+		destination, e = packagecheckpoint.PreparePrivateDestination(a.SecretFile)
 		if e != nil {
-			return output.New(2, "secret destination must not exist and must be writable")
+			return e
 		}
-		defer f.Close()
+		defer destination.Close()
 	}
-	v, _, e := c.Request(cmd.Context(), method, path, q, b)
+	var v any
+	if method == "POST" && strings.HasSuffix(path, "/release-tests/run") {
+		v, e = a.requestReleaseTest(cmd, c, path, b)
+	} else {
+		v, _, e = c.Request(cmd.Context(), method, path, q, b)
+	}
 	if e != nil {
 		return e
 	}
-	if f != nil {
-		enc := json.NewEncoder(f)
-		if e = enc.Encode(v); e != nil {
-			return &output.Error{Code: 10, Message: "issuance succeeded but saving secret failed", Outcome: "committed"}
+	if destination != nil {
+		// Preserve the native response fields for existing readers, and version
+		// the custody format independently of API/envelope schema versions.
+		native, ok := v.(map[string]any)
+		if !ok {
+			return &output.Error{Code: 10, Message: "issuance succeeded but returned an invalid secret envelope", Outcome: "committed"}
 		}
-		if e = f.Sync(); e != nil {
-			return &output.Error{Code: 10, Message: "issuance succeeded but secret sync failed", Outcome: "committed"}
+		if native["success"] == false {
+			return &output.Error{Code: 9, Message: "Issuance response was unsuccessful; secret file was not published", Outcome: "unknown"}
+		}
+		document := make(map[string]any, len(native)+2)
+		for key, value := range native {
+			document[key] = value
+		}
+		document["format"], document["file_schema_version"] = "woobe-issued-secret", "1"
+		data, saveErr := json.MarshalIndent(document, "", "  ")
+		if saveErr == nil {
+			_, saveErr = credentialFromInput(data)
+		}
+		if saveErr == nil {
+			saveErr = destination.Publish(append(data, '\n'))
+		}
+		if saveErr != nil {
+			return &output.Error{Code: 10, Message: "issuance succeeded but private secret publication failed; do not repeat issuance blindly", Outcome: "committed"}
+		}
+	}
+	if method == "POST" && strings.HasSuffix(path, "/release-tests/run") {
+		if envelope, ok := v.(map[string]any); ok {
+			if outcome, ok := envelope["data"].(map[string]any); ok && outcome["status"] == "failed" {
+				return &releaseTestFailure{Data: outcome, Cause: &output.Error{Code: 6, Message: "Agent test failed; inspect validation_errors and actual_output", Outcome: "committed"}}
+			}
 		}
 	}
 	return a.emit(v)

@@ -22,3 +22,7 @@ func privateMode(info os.FileInfo) bool      { return false }
 func checkPrivateFile(file *os.File) error   { return supportedProtection() }
 func checkPrivateParent(root *os.Root) error { return supportedProtection() }
 func syncParent(file *os.File) error         { return supportedProtection() }
+
+func protectNewPrivateFile(file *os.File) error { return supportedProtection() }
+
+func checkPublicationParent(root *os.Root) error { return supportedProtection() }

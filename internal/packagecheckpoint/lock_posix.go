@@ -66,3 +66,21 @@ func checkPrivateFile(file *os.File) error {
 }
 func checkPrivateParent(root *os.Root) error { return nil }
 func syncParent(file *os.File) error         { return file.Sync() }
+
+func protectNewPrivateFile(file *os.File) error { return file.Chmod(0600) }
+
+func checkPublicationParent(root *os.Root) error {
+	parent, err := root.Open(".")
+	if err != nil {
+		return err
+	}
+	defer parent.Close()
+	info, err := parent.Stat()
+	if err != nil {
+		return err
+	}
+	if info.Mode().Perm()&0022 != 0 && info.Mode()&os.ModeSticky == 0 {
+		return output.New(3, "Secret destination parent grants other accounts write access; use an owner-controlled directory")
+	}
+	return nil
+}

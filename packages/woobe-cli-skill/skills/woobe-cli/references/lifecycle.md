@@ -313,3 +313,18 @@ selection rejects the stale testcase; legacy native Staging snapshots still work
 Use `current --env staging` to inspect authority/generation.
 
 For unified delivery and original intent recovery, read [deployment](deployment.md). Native UUID deploy works without the development registry; local delivery requires accepted source and bindings.
+
+## Native Prompt/Contract snapshots and saved tests
+
+Choose exact `prompt_version_id` / `contract_version_id` in a native Draft save;
+omit contradictory embedded text/schema. The backend materializes their selected
+content and freezes the Contract material. Saving Draft adopts deliberate changes;
+existing captures and exports keep their original material. Incomplete historical
+immutable snapshots need a new complete capture, not rewritten hashes.
+
+Tests validate the effective schema even without expected_output. Missing required
+schema records CONTRACT_MISSING without a provider call; invalid JSON/fields fail
+with exit 6. Inspect validation_errors and actual_output.output_valid; provider
+completion alone is insufficient. Strict runtime rejection can retain private invalid-output evidence for the
+authorized test, but cannot turn a failed test into passed. Quote --fields in PowerShell.
+For timeout use the original test UUID/read command in [recovery](recovery.md).

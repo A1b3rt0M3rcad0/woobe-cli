@@ -124,3 +124,58 @@ func lockCheckpoint(root *os.Root, name string) (*os.File, error) {
 	}
 	return file, nil
 }
+
+func protectNewPrivateFile(file *os.File) error {
+	user, err := windows.GetCurrentProcessToken().GetTokenUser()
+	if err != nil {
+		return err
+	}
+	descriptor, err := windows.SecurityDescriptorFromString("D:P(A;;FA;;;" + user.User.Sid.String() + ")(A;;FA;;;SY)(A;;FA;;;BA)")
+	if err != nil {
+		return err
+	}
+	acl, _, err := descriptor.DACL()
+	if err != nil {
+		return err
+	}
+	return windows.SetSecurityInfo(windows.Handle(file.Fd()), windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION|windows.PROTECTED_DACL_SECURITY_INFORMATION, nil, nil, acl, nil)
+}
+
+func checkPublicationParent(root *os.Root) error {
+	parent, err := root.Open(".")
+	if err != nil {
+		return err
+	}
+	defer parent.Close()
+	descriptor, err := windows.GetSecurityInfo(windows.Handle(parent.Fd()), windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
+	if err != nil {
+		return output.New(3, "Secret destination parent ACL cannot be verified")
+	}
+	user, err := windows.GetCurrentProcessToken().GetTokenUser()
+	if err != nil {
+		return err
+	}
+	acl, _, err := descriptor.DACL()
+	if err != nil || acl == nil {
+		return output.New(3, "Secret destination requires an owner-controlled parent directory")
+	}
+	// Directory write-data/append-data/delete-child masks are 0x2/0x4/0x40.
+	const unsafeWrite windows.ACCESS_MASK = windows.GENERIC_ALL | windows.GENERIC_WRITE | windows.WRITE_DAC | windows.WRITE_OWNER | windows.DELETE | 0x2 | 0x4 | 0x40 | windows.FILE_WRITE_ATTRIBUTES | windows.FILE_WRITE_EA
+	for index := uint32(0); index < uint32(acl.AceCount); index++ {
+		var ace *windows.ACCESS_ALLOWED_ACE
+		if err = windows.GetAce(acl, index, &ace); err != nil {
+			return err
+		}
+		if ace.Header.AceFlags&windows.INHERIT_ONLY_ACE != 0 || ace.Header.AceType == windows.ACCESS_DENIED_ACE_TYPE {
+			continue
+		}
+		if ace.Header.AceType != windows.ACCESS_ALLOWED_ACE_TYPE {
+			return output.New(3, "Secret destination parent ACL modality is unsupported")
+		}
+		sid := (*windows.SID)(unsafe.Pointer(&ace.SidStart)).String()
+		if ace.Mask&unsafeWrite != 0 && sid != user.User.Sid.String() && sid != "S-1-5-18" && sid != "S-1-5-32-544" {
+			return output.New(3, "Secret destination parent grants other accounts write access; use an owner-controlled directory")
+		}
+	}
+	return nil
+}
