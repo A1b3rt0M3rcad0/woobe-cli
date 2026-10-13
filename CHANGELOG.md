@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Negotiate remote-reference Package 2.0 in managed development, preserve distinct v1/v2 ASaC digests and author recipes, and retain typed references through capture, Draft sync, checkpoint, hydration and Candidate preparation. Fix schema2 bindings templates; update development/package guides and assistant skill.
+
 - Add metadata-only Project configuration declaration/list/usage/bind/check/test commands with explicit backend capability negotiation, blocked/unknown exit statuses, no local secret lookup and coordinated assistant guidance.
 
 - Verify local deployment capture origin and exact remotely accepted ancestors before sealing a Revision; preserve original-intent recovery and add actionable, bounded conflict messages. Local deployment requires backend `asac.draft_source_preflight`.

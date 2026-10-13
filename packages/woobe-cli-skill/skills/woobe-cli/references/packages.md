@@ -98,3 +98,8 @@ is pending; wait for `READY` before Candidate/release preparation. A failed or
 changed intent requires a new snapshot version. The CLI does not supply values.
 
 Structural Network import keeps captured Agent content but binds destination nodes to imported Drafts (`constituent_binding_policy: imported_draft`). It does not create Staging/Release snapshots or deploy constituent Agents. Review this policy in the approved plan before applying.
+
+For schema2, `package bindings` keeps schema2 and proposes explicit creation;
+review create/reuse choices before planning with `--structural`. Remote keys have
+no local `protected_ref` material. Managed pull/checkpoint uses the separately
+advertised ASaC v2 definition scope and preserves immutable v1 history.

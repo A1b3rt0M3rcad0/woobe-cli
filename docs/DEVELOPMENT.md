@@ -37,6 +37,21 @@ the same native credential to a second local Provider is rejected. `--dry-run`
 performs the read and validation without persisting. Providers captured by `pull`
 already have this binding.
 
+## Remote configuration in managed development
+
+`pull` negotiates Package 2.0 when Woobe advertises its ASaC definition scope and
+matching catalog. Captured Provider descriptors contain typed
+`spec.authentication` references, not values; native Provider UUIDs remain in
+private destination bindings. Validate, push, checkpoint and Stage keep that
+meaning. `push` updates Draft structurally; Candidate preparation, evaluation and
+deployment remain separate actions. Missing values or use grants still block
+runtime execution.
+
+Package 1.0 and its immutable history remain supported. A server without the new
+advertisement uses the existing workflow. An incompatible advertised catalog is
+an error, never a silent downgrade. Do not replace remote references with local
+environment variables or put secrets in author files.
+
 ### Surface authoring and lifecycle
 
 A Surface has one `spec.target_ref` to a registered Agent or Network. Pull or

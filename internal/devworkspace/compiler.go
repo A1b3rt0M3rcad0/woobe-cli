@@ -101,7 +101,12 @@ func clone(document map[string]any) map[string]any {
 
 // Compile creates a closed, disposable bundle. It follows registered graph
 // edges, copies declared support files and never broadens package path rules.
-const CurrentCompilerRecipe = "woobe-development-compiler@2.0"
+const CurrentCompilerRecipe = "woobe-development-compiler@3.0"
+const previousCompilerRecipe = "woobe-development-compiler@2.0"
+
+func supportedCompilerRecipe(recipe string) bool {
+	return recipe == "" || recipe == previousCompilerRecipe || recipe == CurrentCompilerRecipe
+}
 
 func (g *Graph) Compile(key string, requirements map[string]any, credentialIDs map[string]string) (*packagebundle.Bundle, map[string]any, error) {
 	return g.compileRecipe(key, requirements, credentialIDs, CurrentCompilerRecipe)
@@ -110,7 +115,7 @@ func (g *Graph) Compile(key string, requirements map[string]any, credentialIDs m
 // Historical source verification preserves the exact previous compiler recipe.
 // New writes/checkpoints always use the current recipe.
 func (g *Graph) compileRecipe(key string, requirements map[string]any, credentialIDs map[string]string, recipe string) (*packagebundle.Bundle, map[string]any, error) {
-	if recipe != "" && recipe != CurrentCompilerRecipe {
+	if !supportedCompilerRecipe(recipe) {
 		return nil, nil, fmt.Errorf("unsupported retained compiler recipe")
 	}
 
@@ -119,6 +124,15 @@ func (g *Graph) compileRecipe(key string, requirements map[string]any, credentia
 		return nil, nil, err
 	}
 	entry := g.Nodes[key]
+	version := "1.0"
+	for _, node := range nodes {
+		if node.Document["schema_version"] == "2.0" || packagefmt.Object(node.Document["spec"])["authentication"] != nil {
+			version = "2.0"
+		}
+	}
+	if version == "2.0" && recipe != CurrentCompilerRecipe {
+		return nil, nil, fmt.Errorf("retained compiler recipe does not support configuration references")
+	}
 	if entry.Resource.Kind != "Agent" && entry.Resource.Kind != "Network" {
 		return nil, nil, fmt.Errorf("package entrypoint must be an Agent or Network")
 	}
@@ -136,7 +150,11 @@ func (g *Graph) compileRecipe(key string, requirements map[string]any, credentia
 	if req == nil {
 		req = map[string]any{}
 	}
+	if version == "1.0" {
+		delete(req, "configuration")
+	}
 	credentials := map[string]any{}
+	connections := map[string]any{}
 	declared := map[string]bool{}
 	for _, item := range packagefmt.List(req["credentials"]) {
 		declared[packagefmt.Text(packagefmt.Object(item)["ref"])] = true
@@ -159,6 +177,9 @@ func (g *Graph) compileRecipe(key string, requirements map[string]any, credentia
 			continue
 		}
 		document := clone(node.Document)
+		if version == "2.0" {
+			document["schema_version"] = version
+		}
 		spec := packagefmt.Object(document["spec"])
 		if node.Resource.Kind == "Model" {
 			if providerKey := packagefmt.Text(spec["provider_ref"]); providerKey != "" {
@@ -177,7 +198,22 @@ func (g *Graph) compileRecipe(key string, requirements map[string]any, credentia
 				// Provider connection defaults belong to credential requirements.
 				// Preserve the Model's explicit override (including its absence),
 				// otherwise an untouched frozen export changes definition on push.
-				if !declared[providerKey] {
+				if version == "2.0" {
+					if provider["authentication"] == nil {
+						return nil, nil, fmt.Errorf("Provider %s needs explicit remote authentication before compiling schema 2.0", providerKey)
+					}
+					connection := map[string]any{"provider": provider["provider"], "name": packagefmt.Object(g.Nodes[providerKey].Document["metadata"])["name"], "authentication": provider["authentication"]}
+					metadata := map[string]any{}
+					for _, field := range []string{"base_url", "compatibility", "provider_family"} {
+						if value := packagefmt.Text(provider[field]); value != "" {
+							metadata[field] = value
+						}
+					}
+					if len(metadata) > 0 {
+						connection["metadata"] = metadata
+					}
+					connections[providerKey] = connection
+				} else if !declared[providerKey] {
 					requirement := map[string]any{"ref": providerKey, "provider": provider["provider"]}
 					metadata := map[string]any{}
 					for _, field := range []string{"base_url", "compatibility", "provider_family"} {
@@ -252,7 +288,20 @@ func (g *Graph) compileRecipe(key string, requirements map[string]any, credentia
 			return nil, nil, err
 		}
 	}
-	manifest := map[string]any{"format": "woobe-package", "schema_version": "1.0", "kind": "Package", "metadata": map[string]any{"name": packagefmt.Object(entry.Document["metadata"])["name"], "version": "0.0.0+development"}, "spec": map[string]any{"entrypoint": map[string]any{"kind": entry.Resource.Kind, "ref": key}, "resources": descriptors, "requires": req, "integrity": map[string]any{"algorithm": "sha256"}}}
+	manifestSpec := map[string]any{"entrypoint": map[string]any{"kind": entry.Resource.Kind, "ref": key}, "resources": descriptors, "requires": req, "integrity": map[string]any{"algorithm": "sha256"}}
+	if version == "2.0" {
+		manifestSpec["configuration"] = packagefmt.Object(req["configuration"])
+		if manifestSpec["configuration"] == nil {
+			manifestSpec["configuration"] = map[string]any{"keys": []any{}}
+		}
+		manifestSpec["connections"] = connections
+		structuralRequires := clone(req)
+		for _, group := range []string{"configuration", "credentials", "secrets", "project_environment"} {
+			delete(structuralRequires, group)
+		}
+		manifestSpec["requires"] = structuralRequires
+	}
+	manifest := map[string]any{"format": "woobe-package", "schema_version": version, "kind": "Package", "metadata": map[string]any{"name": packagefmt.Object(entry.Document["metadata"])["name"], "version": "0.0.0+development"}, "spec": manifestSpec}
 	data, err := Encode(manifest)
 	if err != nil {
 		return nil, nil, err
@@ -278,6 +327,18 @@ func (g *Graph) compileRecipe(key string, requirements map[string]any, credentia
 		}
 		bindingSpec[group] = values
 	}
-	bindings := map[string]any{"format": "woobe-package", "schema_version": "1.0", "kind": "ImportBindings", "metadata": map[string]any{"name": "Development", "description": ""}, "spec": bindingSpec}
+	if version == "2.0" {
+		delete(bindingSpec, "secrets")
+		for _, raw := range credentials {
+			packagefmt.Object(raw)["create"] = false
+		}
+		values := map[string]any{}
+		for _, raw := range packagefmt.List(packagefmt.Object(manifestSpec["configuration"])["keys"]) {
+			name := packagefmt.Text(packagefmt.Object(raw)["key"])
+			values[name] = map[string]any{"existing_key": name, "create": false}
+		}
+		bindingSpec["project_environment"] = values
+	}
+	bindings := map[string]any{"format": "woobe-package", "schema_version": version, "kind": "ImportBindings", "metadata": map[string]any{"name": "Development", "description": ""}, "spec": bindingSpec}
 	return bundle, bindings, nil
 }

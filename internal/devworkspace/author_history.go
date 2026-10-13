@@ -69,7 +69,11 @@ func (g *Graph) captureAuthors(resource Resource, bundle *packagebundle.Bundle) 
 		return nil, err
 	}
 	defer captured.Close()
-	result := &AuthorObject{CompilerRecipe: CurrentCompilerRecipe, Format: "woobe-author-object", Version: "1.0", UID: resource.UID, Components: map[string]AuthorComponent{}}
+	recipe := previousCompilerRecipe
+	if bundle.Graph.Manifest["schema_version"] == "2.0" {
+		recipe = CurrentCompilerRecipe
+	}
+	result := &AuthorObject{CompilerRecipe: recipe, Format: "woobe-author-object", Version: "1.0", UID: resource.UID, Components: map[string]AuthorComponent{}}
 	total := 0
 	for _, node := range nodes {
 		raw, err := packagebundle.ReadConfined(root, node.Descriptor, requestinput.MaxBytes)
@@ -151,7 +155,7 @@ func ValidateAuthorObject(resource Resource, record *Revision, raw []byte) (*Aut
 		return nil, fmt.Errorf("trailing author source content")
 	}
 	digest, err := authorDigest(&object)
-	if err != nil || digest != record.AuthorDigest || object.Format != "woobe-author-object" || (object.CompilerRecipe != "" && object.CompilerRecipe != CurrentCompilerRecipe) || object.Version != "1.0" || object.UID != resource.UID || len(object.Components) == 0 || len(object.Components) > 1024 {
+	if err != nil || digest != record.AuthorDigest || object.Format != "woobe-author-object" || !supportedCompilerRecipe(object.CompilerRecipe) || object.Version != "1.0" || object.UID != resource.UID || len(object.Components) == 0 || len(object.Components) > 1024 {
 		return nil, fmt.Errorf("author object integrity or identity mismatch")
 	}
 	entry, ok := object.Components[resource.UID]
@@ -457,7 +461,7 @@ func (g *Graph) validateAuthorExecution(resource Resource, record *Revision, obj
 	if err != nil {
 		return err
 	}
-	if definition != record.DefinitionDigest {
+	if definition != record.DefinitionDigest || DefinitionScope(bundle.Graph.Manifest) != record.DefinitionScope {
 		return fmt.Errorf("retained author source disagrees with sealed executable definition")
 	}
 	expected := map[string]string{}

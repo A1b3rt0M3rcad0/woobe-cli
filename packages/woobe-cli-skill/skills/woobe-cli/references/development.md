@@ -20,6 +20,13 @@ identities. The default is current Draft. `--env staging` and `--env production`
 select their current frozen definitions; `--env release --version VERSION`
 selects one exact Release. Unavailable environments fail without fallback.
 
+With a compatible server, managed pull uses Package 2.0: Provider authentication
+stays a typed remote key reference. Local validation/push/checkpoint/Stage preserve
+it; no local environment or credential-store lookup supplies its value. Draft
+push is structural, and a prepared Candidate does not prove runtime readiness.
+Keep old schema1 history unchanged; an incompatible advertisement must be fixed,
+not bypassed by silently downgrading the package.
+
 Edit the registered `agent.yaml`/`network.yaml` and declared support files. YAML
 uses blocks and multiline text; JSON descriptors remain accepted. Stable registry
 keys are used in refs inside YAML; `@alias` is for terminal commands.

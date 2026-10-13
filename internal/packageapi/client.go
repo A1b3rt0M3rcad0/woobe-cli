@@ -72,10 +72,11 @@ func (c *Client) requestPath(ctx context.Context, method, path string, body any,
 }
 
 type ASaCCapabilities struct {
-	AuthorSourceRetention      bool `json:"author_source_retention"`
-	RetainedObjectHydration    bool `json:"retained_object_hydration"`
-	RevisionCatalog            bool `json:"revision_catalog"`
-	AcceptedBindingGenerations bool `json:"accepted_binding_generations"`
+	DefinitionDigestScopes     []string `json:"definition_digest_scopes"`
+	AuthorSourceRetention      bool     `json:"author_source_retention"`
+	RetainedObjectHydration    bool     `json:"retained_object_hydration"`
+	RevisionCatalog            bool     `json:"revision_catalog"`
+	AcceptedBindingGenerations bool     `json:"accepted_binding_generations"`
 }
 
 type Capabilities struct {

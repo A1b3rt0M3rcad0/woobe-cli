@@ -60,7 +60,8 @@ func (a *App) packageBindingsCommand(group *cobra.Command) {
 			return err
 		}
 		defer bundle.Close()
-		requires := packagefmt.Object(packagefmt.Object(bundle.Graph.Manifest["spec"])["requires"])
+		requires := packagefmt.Requirements(bundle.Graph.Manifest)
+		version := packagefmt.Text(bundle.Graph.Manifest["schema_version"])
 		spec := map[string]any{}
 		for _, group := range []string{"credentials", "project_environment", "secrets", "knowledge"} {
 			bindings := map[string]any{}
@@ -68,7 +69,7 @@ func (a *App) packageBindingsCommand(group *cobra.Command) {
 			for _, item := range items {
 				requirement := packagefmt.Object(item)
 				alias := packagefmt.Text(requirement["ref"])
-				binding := map[string]string{}
+				binding := map[string]any{}
 				switch group {
 				case "credentials":
 					binding["credential_id"] = "REPLACE_WITH_DESTINATION_CREDENTIAL_UUID"
@@ -80,11 +81,17 @@ func (a *App) packageBindingsCommand(group *cobra.Command) {
 				case "secrets":
 					binding["protected_ref"] = "REPLACE_WITH_PRIVATE_CREDENTIAL_REFERENCE"
 				}
+				if version == "2.0" && (group == "credentials" || group == "project_environment") {
+					binding = map[string]any{"create": true}
+				}
 				bindings[alias] = binding
 			}
 			spec[group] = bindings
 		}
-		document := map[string]any{"format": "woobe-package", "schema_version": "1.0", "kind": "ImportBindings", "metadata": map[string]string{"name": "Destination"}, "spec": spec}
+		if version == "2.0" {
+			delete(spec, "secrets")
+		}
+		document := map[string]any{"format": "woobe-package", "schema_version": version, "kind": "ImportBindings", "metadata": map[string]string{"name": "Destination"}, "spec": spec}
 		data, err := devworkspace.Encode(document)
 		if err != nil {
 			return err
@@ -112,7 +119,11 @@ func (a *App) packageBindingsCommand(group *cobra.Command) {
 		if closeErr != nil {
 			return closeErr
 		}
-		return a.emit(map[string]any{"destination": absolute, "template": true, "ready": false, "next_command": "Fill placeholders, then run woobe package plan SOURCE --bindings " + absolute})
+		next := "Fill placeholders, then run woobe package plan SOURCE --bindings " + absolute
+		if version == "2.0" {
+			next = "Review create/reuse choices, then run woobe package plan SOURCE --structural --bindings " + absolute
+		}
+		return a.emit(map[string]any{"destination": absolute, "template": true, "ready": false, "next_command": next})
 	}}
 	command.Flags().StringVar(&destination, "destination", "", "New YAML file; otherwise print the template")
 	group.AddCommand(command)

@@ -317,3 +317,10 @@ is pending; wait for `READY` before Candidate/release preparation. A failed or
 changed intent requires a new snapshot version. The CLI does not supply values.
 
 Structural Network import keeps captured Agent content but binds destination nodes to imported Drafts (`constituent_binding_policy: imported_draft`). It does not create Staging/Release snapshots or deploy constituent Agents. Review this policy in the approved plan before applying.
+
+Schema2 `package bindings SOURCE` produces a schema2 YAML template with explicit
+`create: true` choices for declarations/connections. Review those choices or
+replace them with explicit existing bindings before `package plan --structural`.
+It never emits `protected_ref` placeholders for remote configuration. Knowledge
+references still require an explicit destination snapshot. Managed development
+also negotiates schema2; see [development](DEVELOPMENT.md#remote-configuration-in-managed-development).

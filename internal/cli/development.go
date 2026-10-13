@@ -211,7 +211,7 @@ func (a *App) developmentCommands() {
 							return output.New(2, err.Error())
 						}
 						modified = digests[resource.Key] != record.DefinitionDigest
-						if record.DefinitionScope == devworkspace.PortableDefinitionScope {
+						if devworkspace.SupportedDefinitionScope(record.DefinitionScope) {
 							bundle, _, err := graph.Compile(resource.Key, tracking.Requirements, state.Credentials)
 							if err != nil {
 								return output.New(2, err.Error())
@@ -290,7 +290,7 @@ func (a *App) developmentCommands() {
 					if err != nil {
 						return err
 					}
-					plan, err := client.Plan(ctx, packageapi.PlanRequest{Mode: "sync", RegistryID: c.RegistryID, ResourceBindings: targets, UploadID: uploaded.UploadID, ArtifactDigest: bundle.ArtifactDigest, Bindings: bindings, Lifecycle: "draft"})
+					plan, err := client.Plan(ctx, packageapi.PlanRequest{InstallationMode: developmentInstallationMode(bindings), Mode: "sync", RegistryID: c.RegistryID, ResourceBindings: targets, UploadID: uploaded.UploadID, ArtifactDigest: bundle.ArtifactDigest, Bindings: bindings, Lifecycle: "draft"})
 					if err != nil {
 						return err
 					}
@@ -384,7 +384,17 @@ func developmentCapture(ctx context.Context, client *packageapi.Client, kind, id
 	if kind == "network" {
 		targetKind = "Network"
 	}
-	receipt, err := client.Export(ctx, packageapi.ExportRequest{Kind: targetKind, TargetID: id, Source: &env, Knowledge: "portable", ReleaseVersion: version, Development: true})
+	schema := ""
+	caps, err := client.Capabilities(ctx)
+	if err != nil {
+		return packageapi.ExportReceipt{}, nil, err
+	}
+	for _, scope := range caps.ASaC.DefinitionDigestScopes {
+		if scope == devworkspace.ConfigurationDefinitionScope {
+			schema = "2.0"
+		}
+	}
+	receipt, err := client.Export(ctx, packageapi.ExportRequest{PackageSchemaVersion: schema, Kind: targetKind, TargetID: id, Source: &env, Knowledge: "portable", ReleaseVersion: version, Development: true})
 	if err != nil {
 		return receipt, nil, err
 	}
@@ -459,7 +469,7 @@ func (a *App) developmentPush(ctx context.Context, client *packageapi.Client, c 
 			if err != nil {
 				return err
 			}
-			plan, err = client.Plan(ctx, packageapi.PlanRequest{Mode: "sync", RegistryID: c.RegistryID, ResourceBindings: targets, UploadID: uploaded.UploadID, ArtifactDigest: digest, Bindings: bindings, Lifecycle: "draft"})
+			plan, err = client.Plan(ctx, packageapi.PlanRequest{InstallationMode: developmentInstallationMode(bindings), Mode: "sync", RegistryID: c.RegistryID, ResourceBindings: targets, UploadID: uploaded.UploadID, ArtifactDigest: digest, Bindings: bindings, Lifecycle: "draft"})
 			if err != nil {
 				return err
 			}
@@ -497,7 +507,7 @@ func (a *App) developmentPush(ctx context.Context, client *packageapi.Client, c 
 		if err = store.Save(cp); err != nil {
 			return err
 		}
-		result, err = client.Apply(ctx, cp.IdempotencyKey, packageapi.ApplyRequest{PlanID: plan.PlanID, PlanDigest: plan.PlanDigest, UploadID: plan.UploadID, ArtifactDigest: digest, Bindings: plan.Bindings, ProtectedBindings: map[string]string{}, Lifecycle: "draft", ReleaseNotes: plan.ReleaseNotes, Reason: plan.Reason})
+		result, err = client.Apply(ctx, cp.IdempotencyKey, packageapi.ApplyRequest{InstallationMode: plan.InstallationMode, PlanID: plan.PlanID, PlanDigest: plan.PlanDigest, UploadID: plan.UploadID, ArtifactDigest: digest, Bindings: plan.Bindings, ProtectedBindings: map[string]string{}, Lifecycle: "draft", ReleaseNotes: plan.ReleaseNotes, Reason: plan.Reason})
 		if err != nil {
 			_ = cp.Move(packagecheckpoint.OutcomeUnknown)
 			_ = store.Save(cp)
@@ -555,4 +565,11 @@ func developmentCapabilities(ctx context.Context, client *packageapi.Client) (pa
 		}
 	}
 	return capabilities, output.New(9, "This server does not support managed development; upgrade Woobe or use standalone package export/import")
+}
+
+func developmentInstallationMode(bindings map[string]any) string {
+	if bindings["schema_version"] == "2.0" {
+		return "structural"
+	}
+	return ""
 }

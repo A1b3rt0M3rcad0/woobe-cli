@@ -10,6 +10,41 @@ import (
 )
 
 const PortableDefinitionScope = "woobe-portable-definition@1.0"
+const ConfigurationDefinitionScope = "woobe-portable-definition@2.0"
+
+func DefinitionScope(manifest map[string]any) string {
+	if manifest["schema_version"] == "2.0" {
+		return ConfigurationDefinitionScope
+	}
+	if manifest["schema_version"] == "1.0" {
+		return PortableDefinitionScope
+	}
+	return ""
+}
+
+func SupportedDefinitionScope(scope string) bool {
+	return scope == PortableDefinitionScope || scope == ConfigurationDefinitionScope
+}
+
+func connectionIntents(manifest map[string]any) map[string]any {
+	spec := packagefmt.Object(manifest["spec"])
+	intents := map[string]any{}
+	if DefinitionScope(manifest) == ConfigurationDefinitionScope {
+		for key, raw := range packagefmt.Object(spec["connections"]) {
+			value := clone(packagefmt.Object(raw))
+			delete(value, "name")
+			intents[key] = value
+		}
+	} else {
+		for _, raw := range packagefmt.List(packagefmt.Object(spec["requires"])["credentials"]) {
+			value := clone(packagefmt.Object(raw))
+			key := packagefmt.Text(value["ref"])
+			delete(value, "ref")
+			intents[key] = value
+		}
+	}
+	return intents
+}
 
 // PortableDefinition seals execution intent from the closed package. Registry
 // aliases, physical paths, package names/versions and native credentials do not
@@ -20,13 +55,11 @@ func PortableDefinition(bundle *packagebundle.Bundle) (string, map[string]string
 		files[item.Path] = "sha256:" + item.SHA256
 	}
 	requirements := packagefmt.Object(packagefmt.Object(bundle.Graph.Manifest["spec"])["requires"])
-	intents := map[string]any{}
-	for _, raw := range packagefmt.List(requirements["credentials"]) {
-		requirement := clone(packagefmt.Object(raw))
-		alias := packagefmt.Text(requirement["ref"])
-		delete(requirement, "ref")
-		intents[alias] = requirement
+	if DefinitionScope(bundle.Graph.Manifest) == "" {
+		return "", nil, fmt.Errorf("unsupported portable definition schema")
 	}
+	v2 := DefinitionScope(bundle.Graph.Manifest) == ConfigurationDefinitionScope
+	intents := connectionIntents(bundle.Graph.Manifest)
 	components := map[string]string{}
 	for _, key := range bundle.Graph.Order {
 		document := clone(bundle.Graph.Components[key])
@@ -78,7 +111,11 @@ func PortableDefinition(bundle *packagebundle.Bundle) (string, map[string]string
 				item["path"] = digest
 			}
 		}
-		digest, err := asac.Digest("portable-component", document)
+		scope := "portable-component"
+		if v2 {
+			scope = "portable-component@2"
+		}
+		digest, err := asac.Digest(scope, document)
 		if err != nil {
 			return "", nil, err
 		}
@@ -91,8 +128,31 @@ func PortableDefinition(bundle *packagebundle.Bundle) (string, map[string]string
 	}
 	sort.Strings(values)
 	public := clone(requirements)
+	if public == nil {
+		public = map[string]any{}
+	}
 	delete(public, "credentials")
-	digest, err := asac.Digest("portable-definition", map[string]any{"entrypoint": components[entry], "components": values, "requires": public})
+	definition := map[string]any{"entrypoint": components[entry], "components": values, "requires": public}
+	scope := "portable-definition"
+	if v2 {
+		scope = "portable-definition@2"
+		spec := packagefmt.Object(bundle.Graph.Manifest["spec"])
+		declarations := append([]any{}, packagefmt.List(packagefmt.Object(spec["configuration"])["keys"])...)
+		sort.Slice(declarations, func(i, j int) bool {
+			return packagefmt.Text(packagefmt.Object(declarations[i])["key"]) < packagefmt.Text(packagefmt.Object(declarations[j])["key"])
+		})
+		providers, err := PortableProviderDigests(bundle)
+		if err != nil {
+			return "", nil, err
+		}
+		connections := []string{}
+		for _, digest := range providers {
+			connections = append(connections, digest)
+		}
+		sort.Strings(connections)
+		definition["configuration"], definition["connections"] = declarations, connections
+	}
+	digest, err := asac.Digest(scope, definition)
 	return digest, components, err
 }
 
@@ -100,6 +160,16 @@ func PortableDefinition(bundle *packagebundle.Bundle) (string, map[string]string
 // destination credentials and providers outside the captured closure.
 func PortableProviderDigests(bundle *packagebundle.Bundle) (map[string]string, error) {
 	result := map[string]string{}
+	if DefinitionScope(bundle.Graph.Manifest) == ConfigurationDefinitionScope {
+		for key, value := range connectionIntents(bundle.Graph.Manifest) {
+			digest, err := asac.Digest("portable-provider@2", value)
+			if err != nil {
+				return nil, err
+			}
+			result[key] = digest
+		}
+		return result, nil
+	}
 	requirements := packagefmt.Object(packagefmt.Object(bundle.Graph.Manifest["spec"])["requires"])
 	for _, raw := range packagefmt.List(requirements["credentials"]) {
 		item := packagefmt.Object(raw)
