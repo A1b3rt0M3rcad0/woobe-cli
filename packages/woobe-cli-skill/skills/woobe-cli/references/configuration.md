@@ -75,6 +75,10 @@ The Tool adapter handles global and route-local literals without retained snapsh
 retained inline snapshots and mixed authentication require
 explicit review; never broaden a route or rewrite history to bypass it.
 Do not infer whole-Project completion from one successful source-family batch.
+Old Provider/Tool material writes affect a shared compatibility slot and require
+value-write authority for all three Environments. A limited operator must use the
+central operation for the selected Environment. An ignored field in an old request
+does not narrow its scope; never suggest it as a permission workaround.
 `CONFIG_MIGRATION_WORK_PENDING` requires resolving active/uncertain Runs, builds,
 operations or unconsumed plans; never invent a fleet/drain attestation. Read the
 server migration runbook before advancing a reviewed job. Generic `woobe request`

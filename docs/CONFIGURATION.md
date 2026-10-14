@@ -145,6 +145,11 @@ retained inline snapshots and mixed authentication require
 review. Only select source families advertised by the connected backend.
 A completed batch does not mean that every source family in the Project migrated.
 
+Old Provider/Tool value writes have no Environment selector: their compatibility
+slot is shared. They require value-write authority in Draft, Staging and Production.
+An Environment-limited key must use the central value operation for its authorized
+Environment. Adding `environment` to an old request does not change that contract.
+
 The existing generic request command can read the report or submit an explicitly
 reviewed migration plan. Replace `PROJECT_UUID` and `MIGRATION_UUID` in these
 examples; `migration-plan.yaml` contains `source_kind: secret` and `limit: 100`:
