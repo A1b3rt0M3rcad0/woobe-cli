@@ -147,6 +147,14 @@ be resolved first.
 Migrated header templates retain their author snapshots. Values resolve on the
 server for captured consumers/destinations; a new Tool does not inherit authority
 by copying a Secret name. Rotation preserves an accepted Run's value version.
+New Secrets created through the compatibility API are centralized on their first
+commit, with the existing Secret UUID preserved. Adding a legacy Secret name to
+a new Tool requires `secret:read` and `project:environment:use-policy:write` for
+the compatibility routes in Draft, Staging and Production. A rejected approval
+rolls back the Tool write; editing an existing Tool never restores a revoked
+policy. Prefer explicit references and approvals for the intended Environment.
+MCP creation with Secret templates defers discovery; use the explicit connection
+test/preparation after reviewing its destination approval.
 After separating Environments, an ambiguous old writer receives
 `LEGACY_ENVIRONMENT_REQUIRED`. Configure the intended Environment centrally.
 Schema 2.0 exports contain declarations/references, never local alias authority or

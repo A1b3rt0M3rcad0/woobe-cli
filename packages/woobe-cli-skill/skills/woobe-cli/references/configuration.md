@@ -67,6 +67,12 @@ can inspect its reports; migration never requires local secret files.
 A copied legacy name does not grant a new Tool access. Use explicit destination
 approvals. After Environment separation, `LEGACY_ENVIRONMENT_REQUIRED` means an
 old writer is ambiguous; select the intended Environment in central configuration.
+New compatibility Secrets retain their UUID but store material centrally. Adding
+one to a new Tool requires Secret read and use-policy write authority for all
+three compatibility Environments; failed approval rolls back the Tool write.
+Do not retry with broader credentials just to bypass a denial. Existing revoked
+policies remain revoked after metadata edits. MCP creation with a Secret template
+defers discovery until explicit authorized connection preparation.
 
 Managed edits may explicitly reuse the same existing Provider UUID with a central
 legacy route. Keep that captured identity and review `binding_source` in the
