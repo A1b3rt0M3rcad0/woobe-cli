@@ -11,6 +11,8 @@ import (
 )
 
 type DomainDiagnostic struct {
+	Key              string `json:"key,omitempty"`
+	Environment      string `json:"environment,omitempty"`
 	Kind             string `json:"kind,omitempty"`
 	ResourceID       string `json:"resource_id,omitempty"`
 	ExpectedRevision string `json:"expected_revision,omitempty"`
@@ -129,6 +131,10 @@ func Redact(v any) any {
 	case map[string]any:
 		out := make(map[string]any, len(x))
 		for k, v := range x {
+			if k == "authentication" && authenticationReferenceMetadata(v) {
+				out[k] = copyAuthenticationReferenceMetadata(v)
+				continue
+			}
 			if Sensitive(k) && !(k == "fencing_token" && fencingCounter(v)) {
 				out[k] = "[REDACTED]"
 			} else {

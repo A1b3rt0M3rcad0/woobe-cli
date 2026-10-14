@@ -261,7 +261,7 @@ func validateRevision(resource Resource, id string, record Revision) (*Revision,
 }
 
 func ValidateRemoteRevision(resource Resource, record Revision) error {
-	if !revisionID.MatchString(record.ID) || record.DefinitionScope != PortableDefinitionScope {
+	if !revisionID.MatchString(record.ID) || !SupportedDefinitionScope(record.DefinitionScope) {
 		return fmt.Errorf("ASAC_REVISION_INVALID: remote revision scope mismatch")
 	}
 	_, err := validateRevision(resource, record.ID, record)
@@ -436,7 +436,7 @@ func (g *Graph) CreateRevision(resource Resource, state *State, message string, 
 			}
 		}
 	}
-	record := Revision{Format: "woobe-revision", SchemaVersion: asac.Version, ID: "rv_" + id, UID: resource.UID, Kind: resource.Kind, Parents: parents, Message: message, AuthorDigest: authorHash, ArtifactDigest: "sha256:" + bundle.ArtifactDigest, DefinitionDigest: definition, DefinitionScope: PortableDefinitionScope, Components: components}
+	record := Revision{Format: "woobe-revision", SchemaVersion: asac.Version, ID: "rv_" + id, UID: resource.UID, Kind: resource.Kind, Parents: parents, Message: message, AuthorDigest: authorHash, ArtifactDigest: "sha256:" + bundle.ArtifactDigest, DefinitionDigest: definition, DefinitionScope: DefinitionScope(bundle.Graph.Manifest), Components: components}
 	record.RecordDigest, err = revisionRecordDigest(record)
 	if err != nil {
 		return nil, err

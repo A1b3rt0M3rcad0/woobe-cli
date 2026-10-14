@@ -11,7 +11,7 @@ import (
 func TestSyncPlanPinsRegistryNativeResourceAndSourceEvidence(t *testing.T) {
 	for _, alteration := range []string{"none", "registry", "uid", "native", "source", "release"} {
 		t.Run(alteration, func(t *testing.T) {
-			bindings := map[string]any{"spec": map[string]any{}}
+			bindings := map[string]any{"schema_version": "1.0", "spec": map[string]any{}}
 			digest, _ := BindingsDigest(bindings)
 			target := DevelopmentTarget{ResourceUID: "uid", ResourceID: "native", ExpectedRevision: 7, SourceExportID: "export", SourceComponent: "agent", SnapshotID: "release"}
 			request := PlanRequest{Mode: "sync", RegistryID: "registry", ResourceBindings: map[string]DevelopmentTarget{"agent": target}, UploadID: "upload", ArtifactDigest: strings.Repeat("a", 64), Bindings: bindings, Lifecycle: "draft"}

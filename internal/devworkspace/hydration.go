@@ -17,7 +17,7 @@ func ValidateExecutableObject(resource Resource, record Revision, bundle *packag
 		return fmt.Errorf("ASAC_ARTIFACT_MISMATCH: executable object differs from selected revision")
 	}
 	definition, _, err := PortableDefinition(bundle)
-	if err != nil || definition != record.DefinitionDigest {
+	if err != nil || definition != record.DefinitionDigest || DefinitionScope(bundle.Graph.Manifest) != record.DefinitionScope {
 		return fmt.Errorf("ASAC_ARTIFACT_MISMATCH: executable definition differs from selected revision")
 	}
 	return nil

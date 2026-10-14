@@ -96,20 +96,24 @@ func TestCancellation(t *testing.T) {
 }
 
 func TestPackageDiagnosticsAreBoundedAndDoNotEchoProtectedMessages(t *testing.T) {
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		_, _ = w.Write([]byte(`{"data":{"package_schema_version":"1.0","diagnostics":[{"code":"PACKAGE_SCHEMA_INVALID","file":"knowledge-1.yaml","path":"/spec/vector_snapshot","message":"private-provider-secret","input":"private-provider-secret"}]}}`))
-	}))
-	defer s.Close()
-	client, _ := New(s.URL, "fixture", time.Second)
-	_, _, err := client.Request(context.Background(), "POST", "/projects/p/packages/export", nil, nil)
-	failure := output.Normalize(err)
-	if failure.Code != 2 || failure.DomainCode != "PACKAGE_SCHEMA_INVALID" || len(failure.Diagnostics) != 1 || failure.Diagnostics[0].Path != "/spec/vector_snapshot" {
-		t.Fatalf("missing structured diagnostic: %+v", failure)
-	}
-	encoded, _ := json.Marshal(failure)
-	if bytes.Contains(encoded, []byte("private-provider-secret")) {
-		t.Fatal("protected message copied into diagnostic")
+	for _, version := range []string{"1.0", "2.0"} {
+		t.Run(version, func(t *testing.T) {
+			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				_, _ = w.Write([]byte(`{"data":{"package_schema_version":"` + version + `","diagnostics":[{"code":"PACKAGE_SCHEMA_INVALID","file":"knowledge-1.yaml","path":"/spec/vector_snapshot","message":"private-provider-secret","input":"private-provider-secret"}]}}`))
+			}))
+			defer s.Close()
+			client, _ := New(s.URL, "fixture", time.Second)
+			_, _, err := client.Request(context.Background(), "POST", "/projects/p/packages/export", nil, nil)
+			failure := output.Normalize(err)
+			if failure.Code != 2 || failure.DomainCode != "PACKAGE_SCHEMA_INVALID" || len(failure.Diagnostics) != 1 || failure.Diagnostics[0].Path != "/spec/vector_snapshot" {
+				t.Fatalf("missing structured diagnostic: %+v", failure)
+			}
+			encoded, _ := json.Marshal(failure)
+			if bytes.Contains(encoded, []byte("private-provider-secret")) {
+				t.Fatal("protected message copied into diagnostic")
+			}
+		})
 	}
 }
 

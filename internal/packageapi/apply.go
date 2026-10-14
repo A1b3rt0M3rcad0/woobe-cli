@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 	"net/http"
 )
 
 type ApplyRequest struct {
+	InstallationMode  string            `json:"installation_mode,omitempty"`
 	PlanID            string            `json:"plan_id"`
 	PlanDigest        string            `json:"plan_digest"`
 	UploadID          string            `json:"upload_id"`
@@ -24,6 +26,17 @@ type ApplyRequest struct {
 func (c *Client) Apply(ctx context.Context, key string, request ApplyRequest) (Operation, error) {
 	if !identifier.MatchString(key) || !identifier.MatchString(request.PlanID) || !identifier.MatchString(request.UploadID) || !digestPattern.MatchString(request.PlanDigest) || !digestPattern.MatchString(request.ArtifactDigest) {
 		return Operation{}, output.New(2, "Invalid Package apply identity")
+	}
+	version := packagefmt.Text(request.Bindings["schema_version"])
+	if version == "" {
+		version = "1.0"
+	}
+	structural := request.InstallationMode == "structural"
+	if (request.InstallationMode != "" && request.InstallationMode != "operational" && !structural) || (version == "2.0" && !structural) || (structural && (request.Lifecycle != "draft" || len(request.ProtectedBindings) > 0)) {
+		return Operation{}, output.New(2, "Structural installation requires Draft and remote configuration references only")
+	}
+	if err := c.RequireSchema(ctx, version, structural); err != nil {
+		return Operation{}, err
 	}
 	encoded, encodingErr := json.Marshal(request)
 	if encodingErr != nil || len(encoded) > 2<<20 {
@@ -43,7 +56,7 @@ func (c *Client) Apply(ctx context.Context, key string, request ApplyRequest) (O
 		}
 		return result, normalized
 	}
-	if err == nil && result.ArtifactDigest != request.ArtifactDigest {
+	if err == nil && (result.ArtifactDigest != request.ArtifactDigest || result.PackageSchemaVersion != version) {
 		return Operation{}, &output.Error{Code: 9, Message: "Server returned a different accepted Package artifact", Outcome: "unknown"}
 	}
 	return result, err

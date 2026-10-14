@@ -1,6 +1,6 @@
 # Executable command catalog
 
-Generated from current discovery: 361 executable entries, including 202 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
+Generated from current discovery: 369 executable entries, including 203 HTTP operations. Route advertisement does not grant authority. See [USAGE.md](USAGE.md) for workflows, [PAGINATION.md](PAGINATION.md) for reviewed pagination and [AGENT_SKILL.md](AGENT_SKILL.md) for embedded assistant skill setup.
 
 Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`. Assistant installation uses local `skills` commands, not HTTP operations. The optional npm `woobe-skill` executable uses the same payload and receipts.
 
@@ -189,6 +189,13 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `project catalog execution-strategies` | `http` | `GET /ai/execution-strategies` | `observed` | — | — |
 | `project catalog knowledge-strategies` | `http` | `GET /ai/knowledge-strategies` | `observed` | — | — |
 | `project catalog rag-strategies` | `http` | `GET /ai/rag-strategies` | `observed` | — | — |
+| `project configuration bind` | `local` | — | `local` | — | — |
+| `project configuration check` | `local` | — | `local` | — | — |
+| `project configuration declare` | `local` | — | `local` | — | — |
+| `project configuration list` | `local` | — | `local` | — | — |
+| `project configuration summary` | `local` | — | `local` | — | — |
+| `project configuration test` | `local` | — | `local` | — | — |
+| `project configuration usage` | `local` | — | `local` | — | — |
 | `project create` | `http` | `POST /core/projects` | `observed` | — | — |
 | `project env list` | `http` | `GET /core/projects/{project_id}/environment-keys` | `observed` | project:environment:read | — |
 | `project env set` | `http` | `PUT /core/projects/{project_id}/environment-keys/{key}` | `observed` | project:environment:write | — |
@@ -209,6 +216,7 @@ Regenerate with `python3 scripts/command_catalog.py --binary bin/woobe --write`.
 | `project knowledge snapshot create` | `http` | `POST /agent/knowledge/collections/{collection_id}/vector-snapshots` | `observed` | knowledge:write | — |
 | `project knowledge snapshot get` | `http` | `GET /agent/knowledge/vector-snapshots/{snapshot_id}` | `observed` | knowledge:read | — |
 | `project knowledge snapshot list` | `http` | `GET /agent/knowledge/collections/{collection_id}/vector-snapshots` | `observed` | knowledge:read | — |
+| `project knowledge snapshot prepare` | `http` | `POST /agent/knowledge/vector-snapshots/{snapshot_id}/prepare` | `proposed` | knowledge:write | — |
 | `project lifecycle operation` | `http` | `GET /core/projects/{project_id}/lifecycle-policy/operations/{operation_id}` | `proposed` | project:read | — |
 | `project lifecycle show` | `http` | `GET /core/projects/{project_id}/lifecycle-policy` | `proposed` | project:read | — |
 | `project lifecycle update` | `http` | `PUT /core/projects/{project_id}/lifecycle-policy` | `proposed` | project:access:write | — |

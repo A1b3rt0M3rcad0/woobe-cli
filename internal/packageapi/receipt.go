@@ -38,8 +38,11 @@ func (r PlanReceipt) Validate() error {
 	}
 	created, e := time.Parse(time.RFC3339Nano, r.Plan.CreatedAt)
 	expires, e2 := time.Parse(time.RFC3339Nano, r.Plan.ExpiresAt)
-	if e != nil || e2 != nil || !expires.After(created) || len(r.Plan.Effects) == 0 || r.Plan.PackageSchemaVersion != "1.0" {
+	if e != nil || e2 != nil || !expires.After(created) || len(r.Plan.Effects) == 0 || (r.Plan.PackageSchemaVersion != "1.0" && r.Plan.PackageSchemaVersion != "2.0") {
 		return output.New(2, "Invalid Package plan metadata")
+	}
+	if r.Plan.Bindings["schema_version"] != r.Plan.PackageSchemaVersion || (r.Plan.InstallationMode != "" && r.Plan.InstallationMode != "structural") || (r.Plan.InstallationMode == "structural" && r.Plan.Lifecycle != "draft") || (r.Plan.PackageSchemaVersion == "2.0" && r.Plan.InstallationMode != "structural") {
+		return output.New(2, "Invalid Package installation mode or schema identity")
 	}
 	if r.Plan.Lifecycle != "draft" && r.Plan.Lifecycle != "staging" && r.Plan.Lifecycle != "release" && r.Plan.Lifecycle != "production" {
 		return output.New(2, "Invalid Package plan lifecycle")

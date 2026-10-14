@@ -15,6 +15,10 @@ type InventoryFile struct {
 }
 
 func InventoryDigest(inventory []InventoryFile) string {
+	return VersionInventoryDigest(inventory, "1.0")
+}
+
+func VersionInventoryDigest(inventory []InventoryFile, version string) string {
 	sorted := append([]InventoryFile(nil), inventory...)
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Path < sorted[j].Path })
 	tuples := make([][3]any, 0, len(sorted))
@@ -34,6 +38,6 @@ func InventoryDigest(inventory []InventoryFile) string {
 	// two literals is unambiguous and matches the backend's canonical UTF-8 JSON.
 	canonical = bytes.ReplaceAll(canonical, []byte(`\u2028`), []byte("\u2028"))
 	canonical = bytes.ReplaceAll(canonical, []byte(`\u2029`), []byte("\u2029"))
-	digest := sha256.Sum256(append([]byte("woobe-package@1.0\n"), canonical...))
+	digest := sha256.Sum256(append([]byte("woobe-package@"+version+"\n"), canonical...))
 	return hex.EncodeToString(digest[:])
 }

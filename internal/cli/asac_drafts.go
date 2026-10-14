@@ -390,7 +390,7 @@ func (a *App) runASaCDraft(cmd *cobra.Command, kind string, args []string, from,
 		if record.AuthorDigest != "" && supported["author_digest_declarations"] != true {
 			return output.New(9, "Server does not support declared author digests; update the backend before registering this revision")
 		}
-		if record.DefinitionScope != devworkspace.PortableDefinitionScope || record.DefinitionDigest != observed.Definition {
+		if !asacSupportsDefinition(supported, record.DefinitionScope) || record.DefinitionDigest != observed.Definition {
 			return output.New(9, "Revision differs from the saved isolated Draft; push its exact content first")
 		}
 		graph, err := devworkspace.LoadGraph(c)
@@ -490,4 +490,19 @@ func (a *App) runASaCDraft(cmd *cobra.Command, kind string, args []string, from,
 		return output.New(10, "Draft committed; run draft reconcile to repair its local receipt")
 	}
 	return a.emit(data)
+}
+
+func asacSupportsDefinition(capabilities map[string]any, scope string) bool {
+	if !devworkspace.SupportedDefinitionScope(scope) {
+		return false
+	}
+	if capabilities["definition_digest_scope"] == scope {
+		return true
+	}
+	for _, item := range packagefmt.List(capabilities["definition_digest_scopes"]) {
+		if item == scope {
+			return true
+		}
+	}
+	return false
 }

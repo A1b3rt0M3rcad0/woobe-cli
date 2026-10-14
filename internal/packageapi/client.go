@@ -10,6 +10,7 @@ import (
 
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/controlplane"
 	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/output"
+	"github.com/A1b3rt0M3rcad0/woobe-cli/internal/packagefmt"
 )
 
 var identifier = regexp.MustCompile(`^[A-Za-z0-9_.:-]{1,128}$`)
@@ -60,8 +61,8 @@ func (c *Client) requestPath(ctx context.Context, method, path string, body any,
 		return output.New(9, "Server returned an invalid Package envelope")
 	}
 	data, ok := envelope["data"].(map[string]any)
-	if !ok || data["package_schema_version"] != "1.0" {
-		return output.New(9, "Server does not support Package schema 1.0")
+	if !ok || (data["package_schema_version"] != "1.0" && data["package_schema_version"] != "2.0") {
+		return output.New(9, "Server returned an unsupported Package schema")
 	}
 	encoded, err = json.Marshal(data)
 	if err != nil || json.Unmarshal(encoded, destination) != nil {
@@ -71,18 +72,38 @@ func (c *Client) requestPath(ctx context.Context, method, path string, body any,
 }
 
 type ASaCCapabilities struct {
-	AuthorSourceRetention      bool `json:"author_source_retention"`
-	RetainedObjectHydration    bool `json:"retained_object_hydration"`
-	RevisionCatalog            bool `json:"revision_catalog"`
-	AcceptedBindingGenerations bool `json:"accepted_binding_generations"`
+	DefinitionDigestScopes     []string `json:"definition_digest_scopes"`
+	AuthorSourceRetention      bool     `json:"author_source_retention"`
+	RetainedObjectHydration    bool     `json:"retained_object_hydration"`
+	RevisionCatalog            bool     `json:"revision_catalog"`
+	AcceptedBindingGenerations bool     `json:"accepted_binding_generations"`
 }
 
 type Capabilities struct {
-	ASaC                 ASaCCapabilities `json:"asac"`
-	PackageSchemaVersion string           `json:"package_schema_version"`
-	SchemaCatalogSHA256  string           `json:"schema_catalog_sha256"`
-	SupportedOperations  []string         `json:"supported_operations"`
-	PrincipalFingerprint string           `json:"principal_fingerprint"`
+	SupportedSchemas       map[string]string `json:"supported_package_schemas"`
+	StructuralInstallation bool              `json:"structural_installation"`
+	ASaC                   ASaCCapabilities  `json:"asac"`
+	PackageSchemaVersion   string            `json:"package_schema_version"`
+	SchemaCatalogSHA256    string            `json:"schema_catalog_sha256"`
+	SupportedOperations    []string          `json:"supported_operations"`
+	PrincipalFingerprint   string            `json:"principal_fingerprint"`
+}
+
+func (c *Client) RequireSchema(ctx context.Context, version string, structural bool) error {
+	if version == "1.0" && !structural {
+		return nil
+	}
+	if packagefmt.VersionCatalogDigest(version) == "" {
+		return output.New(9, "Unsupported Package schema")
+	}
+	caps, err := c.Capabilities(ctx)
+	if err != nil {
+		return err
+	}
+	if caps.SupportedSchemas[version] != packagefmt.VersionCatalogDigest(version) || (structural && !caps.StructuralInstallation) {
+		return output.New(9, "Server does not advertise this Package schema and structural installation; update Woobe before retrying")
+	}
+	return nil
 }
 
 func (c *Client) Capabilities(ctx context.Context) (Capabilities, error) {
@@ -111,23 +132,28 @@ type Diagnostic struct {
 	Path string `json:"path,omitempty"`
 }
 type Operation struct {
-	PackageSchemaVersion string          `json:"package_schema_version"`
-	OperationID          string          `json:"operation_id"`
-	ProjectID            string          `json:"project_id"`
-	ArtifactDigest       string          `json:"artifact_digest"`
-	State                string          `json:"state"`
-	Terminal             bool            `json:"terminal"`
-	Phase                string          `json:"phase,omitempty"`
-	PhasesCompleted      int64           `json:"phases_completed"`
-	PhasesTotal          int64           `json:"phases_total"`
-	Revision             int64           `json:"revision"`
-	NextPollAfterMS      int64           `json:"next_poll_after_ms,omitempty"`
-	LifecycleState       string          `json:"lifecycle_state,omitempty"`
-	ConfigurationReady   bool            `json:"configuration_ready"`
-	ExecutionReady       bool            `json:"execution_ready"`
-	Inventory            []InventoryItem `json:"inventory"`
-	Dependencies         []Dependency    `json:"dependencies"`
-	Diagnostics          []Diagnostic    `json:"diagnostics"`
+	InstallationMode         string          `json:"installation_mode,omitempty"`
+	InstallationStatus       string          `json:"installation_status,omitempty"`
+	ConfigurationStatus      string          `json:"configuration_status,omitempty"`
+	RuntimePreparationStatus string          `json:"runtime_preparation_status,omitempty"`
+	DeploymentStatus         string          `json:"deployment_status,omitempty"`
+	PackageSchemaVersion     string          `json:"package_schema_version"`
+	OperationID              string          `json:"operation_id"`
+	ProjectID                string          `json:"project_id"`
+	ArtifactDigest           string          `json:"artifact_digest"`
+	State                    string          `json:"state"`
+	Terminal                 bool            `json:"terminal"`
+	Phase                    string          `json:"phase,omitempty"`
+	PhasesCompleted          int64           `json:"phases_completed"`
+	PhasesTotal              int64           `json:"phases_total"`
+	Revision                 int64           `json:"revision"`
+	NextPollAfterMS          int64           `json:"next_poll_after_ms,omitempty"`
+	LifecycleState           string          `json:"lifecycle_state,omitempty"`
+	ConfigurationReady       bool            `json:"configuration_ready"`
+	ExecutionReady           bool            `json:"execution_ready"`
+	Inventory                []InventoryItem `json:"inventory"`
+	Dependencies             []Dependency    `json:"dependencies"`
+	Diagnostics              []Diagnostic    `json:"diagnostics"`
 }
 
 func (c *Client) operation(ctx context.Context, method, suffix string, body any) (Operation, error) {

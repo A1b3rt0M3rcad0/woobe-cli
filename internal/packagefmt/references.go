@@ -17,6 +17,18 @@ func Object(value any) map[string]any { object, _ := value.(map[string]any); ret
 func Text(value any) string           { text, _ := value.(string); return text }
 func List(value any) []any            { list, _ := value.([]any); return list }
 
+func Requirements(manifest map[string]any) map[string]any {
+	spec := Object(manifest["spec"])
+	if manifest["schema_version"] != "2.0" {
+		return Object(spec["requires"])
+	}
+	credentials := []any{}
+	for alias, raw := range Object(spec["connections"]) {
+		credentials = append(credentials, map[string]any{"ref": alias, "provider": Object(raw)["provider"]})
+	}
+	return map[string]any{"credentials": credentials, "project_environment": Object(spec["configuration"])["keys"], "knowledge": Object(spec["requires"])["knowledge"]}
+}
+
 func References(document map[string]any) []Reference {
 	spec := Object(document["spec"])
 	refs := []Reference{}
@@ -60,6 +72,9 @@ func Resolve(manifest map[string]any, documents map[string]*Document) (*Graph, e
 	sort.Strings(paths)
 	for _, path := range paths {
 		document := documents[path].Value
+		if document["schema_version"] != manifest["schema_version"] {
+			return nil, fail("PACKAGE_SCHEMA_UNSUPPORTED", "Components must use the manifest schema version", path, "")
+		}
 		kind := Text(document["kind"])
 		if kind == "Package" || kind == "PackageLock" || kind == "ImportBindings" {
 			return nil, fail("PACKAGE_RESOURCE_INVALID", "Operational documents cannot be components", path, "")
@@ -75,7 +90,7 @@ func Resolve(manifest map[string]any, documents map[string]*Document) (*Graph, e
 		return nil, fail("PACKAGE_REFERENCE_NOT_FOUND", "Entrypoint does not resolve to its declared kind", "", "")
 	}
 	adjacency := map[string][]string{}
-	declared := Object(Object(manifest["spec"])["requires"])
+	declared := Requirements(manifest)
 	knowledgeRequirements := map[string]bool{}
 	for _, group := range []string{"credentials", "project_environment", "secrets", "knowledge"} {
 		field := "ref"
@@ -95,13 +110,49 @@ func Resolve(manifest map[string]any, documents map[string]*Document) (*Graph, e
 		}
 	}
 	requirements := map[string]string{}
-	for _, raw := range List(Object(Object(manifest["spec"])["requires"])["credentials"]) {
+	for _, raw := range List(declared["credentials"]) {
 		requirement := Object(raw)
 		alias := Text(requirement["ref"])
 		if _, exists := requirements[alias]; exists {
 			return nil, fail("PACKAGE_REQUIREMENT_DUPLICATE", "Credential requirement is duplicated", "", "")
 		}
 		requirements[alias] = Text(requirement["provider"])
+	}
+	if manifest["schema_version"] == "2.0" {
+		keys := map[string]string{}
+		for _, raw := range List(declared["project_environment"]) {
+			item := Object(raw)
+			kind := Text(item["kind"])
+			if kind == "" {
+				kind = "secret"
+			}
+			if _, exists := keys[Text(item["key"])]; exists {
+				return nil, fail("PACKAGE_REQUIREMENT_DUPLICATE", "Configuration key is duplicated", "", "")
+			}
+			keys[Text(item["key"])] = kind
+		}
+		auths := []map[string]any{}
+		for _, raw := range Object(Object(manifest["spec"])["connections"]) {
+			auths = append(auths, Object(Object(raw)["authentication"]))
+		}
+		for _, item := range graph.Components {
+			if item["kind"] == "Tool" {
+				config := Object(Object(item["spec"])["config"])
+				auths = append(auths, Object(config["authentication"]))
+				for _, raw := range List(config["routes"]) {
+					if auth := Object(raw)["authentication"]; auth != nil {
+						auths = append(auths, Object(auth))
+					}
+				}
+			}
+		}
+		for _, auth := range auths {
+			for _, raw := range Object(auth["fields"]) {
+				if keys[Text(Object(raw)["key"])] != "secret" {
+					return nil, fail("PACKAGE_REQUIREMENT_INVALID", "Authentication requires a declared secret configuration key", "", "")
+				}
+			}
+		}
 	}
 	keys := make([]string, 0, len(graph.Components))
 	for key := range graph.Components {

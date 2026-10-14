@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -175,7 +176,22 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 	// Promote credential requirements to explicit Provider resources; native UUIDs
 	// are private bindings, while models reference stable logical Provider keys.
 	providers := map[string]string{}
-	for _, raw := range packagefmt.List(packagefmt.Object(packagefmt.Object(bundle.Graph.Manifest["spec"])["requires"])["credentials"]) {
+	manifestSpec := packagefmt.Object(bundle.Graph.Manifest["spec"])
+	requirements := packagefmt.List(packagefmt.Object(manifestSpec["requires"])["credentials"])
+	v2 := bundle.Graph.Manifest["schema_version"] == "2.0"
+	if v2 {
+		aliases := []string{}
+		for name := range packagefmt.Object(manifestSpec["connections"]) {
+			aliases = append(aliases, name)
+		}
+		sort.Strings(aliases)
+		for _, name := range aliases {
+			item := clone(packagefmt.Object(packagefmt.Object(manifestSpec["connections"])[name]))
+			item["ref"] = name
+			requirements = append(requirements, item)
+		}
+	}
+	for _, raw := range requirements {
 		requirement := packagefmt.Object(raw)
 		oldAlias := packagefmt.Text(requirement["ref"])
 		nativeID := credentials[oldAlias]
@@ -207,6 +223,10 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 		spec["provider"] = requirement["provider"]
 		spec["credential_ref"] = provider.Key
 		document := map[string]any{"kind": "Provider", "metadata": map[string]any{"key": provider.Key, "name": provider.Alias}, "spec": spec}
+		if v2 {
+			spec["authentication"] = requirement["authentication"]
+			document["format"], document["schema_version"] = "woobe-package", "2.0"
+		}
 		resources["provider:"+oldAlias] = provider
 		nextState.Bindings[provider.UID] = Binding{ResourceID: nativeID, Base: document}
 	}
@@ -379,6 +399,27 @@ func (c *Config) ImportCapture(bundle *packagebundle.Bundle, state *State, captu
 	// These requirements retain portable environment/secret names; credentials
 	// themselves are represented by Providers and transformed by the compiler.
 	delete(nextState.Requirements, "credentials")
+	if v2 {
+		// Merge declarations as metadata, never resolve a key from local env/files.
+		declarations := append([]any{}, packagefmt.List(packagefmt.Object(nextState.Requirements["configuration"])["keys"])...)
+		for _, incoming := range packagefmt.List(packagefmt.Object(manifestSpec["configuration"])["keys"]) {
+			name := packagefmt.Text(packagefmt.Object(incoming)["key"])
+			found := false
+			for _, existing := range declarations {
+				if packagefmt.Text(packagefmt.Object(existing)["key"]) != name {
+					continue
+				}
+				found = true
+				if !reflect.DeepEqual(existing, incoming) {
+					return nil, nil, fmt.Errorf("shared configuration declaration %s has conflicting definitions", name)
+				}
+			}
+			if !found {
+				declarations = append(declarations, incoming)
+			}
+		}
+		nextState.Requirements["configuration"] = map[string]any{"keys": declarations}
+	}
 	stateBytes, err := json.MarshalIndent(&nextState, "", "  ")
 	if err != nil {
 		return nil, nil, err

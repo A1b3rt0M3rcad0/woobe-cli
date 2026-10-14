@@ -236,6 +236,13 @@ func (g *Graph) Path(node *Node) string {
 // fields keep newly introduced authentication mechanisms out of author files.
 func validateProvider(spec map[string]any) error {
 	for key := range spec {
+		if key == "authentication" {
+			document := map[string]any{"format": "woobe-package", "schema_version": "2.0", "kind": "Package", "metadata": map[string]any{"name": "Provider", "version": "1"}, "spec": map[string]any{"entrypoint": map[string]any{"kind": "Agent", "ref": "agent"}, "resources": []any{"agent.yaml"}, "connections": map[string]any{"provider": map[string]any{"provider": spec["provider"], "name": "Provider", "authentication": spec[key]}}}}
+			if err := packagefmt.Validate(&packagefmt.Document{Value: document}); err != nil {
+				return fmt.Errorf("Provider authentication must contain remote configuration references only")
+			}
+			continue
+		}
 		switch key {
 		case "provider", "credential_ref", "base_url", "compatibility", "provider_family":
 		default:

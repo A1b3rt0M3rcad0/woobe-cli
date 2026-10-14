@@ -152,6 +152,7 @@ func New(in io.Reader, out, errOut io.Writer) *App {
 	a.requestPagesCommand()
 	a.workspaceCommands()
 	a.projectCommands()
+	a.configurationCommands()
 	a.agentCommands()
 	a.releaseCommands()
 	a.networkCommands()
@@ -390,6 +391,10 @@ func (a *App) Execute(ctx context.Context, args []string) int {
 	}
 	if failure, ok := e.(*releaseTestFailure); ok {
 		_ = a.writeOutput(a.Out, failure.Data, nil, failure.Cause, map[string]any{"complete": true, "executed": true})
+		return failure.Cause.Code
+	}
+	if failure, ok := e.(*configurationReadinessFailure); ok {
+		_ = a.writeOutput(a.Out, failure.Data, map[string]string{"workspace_id": a.Workspace, "project_id": a.Project}, failure.Cause, map[string]any{"complete": true, "executed": false})
 		return failure.Cause.Code
 	}
 	if failure, ok := e.(*developmentBatchFailure); ok {

@@ -115,6 +115,9 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 			outcome = "unknown"
 		}
 		failure := &output.Error{Code: code, Message: "server rejected request", Status: resp.StatusCode, RequestID: resp.Header.Get("X-Request-ID"), Outcome: outcome}
+		if configurationDiagnostic(b, failure) {
+			return nil, resp.Header, failure
+		}
 		// Package owns stable diagnostics. Preserve only bounded machine fields;
 		// provider messages, input snapshots and protected values are omitted.
 		if (strings.Contains(path, "/packages/") || asacDiagnosticPath(path)) && jsoninput.Validate(b) == nil {
@@ -134,7 +137,7 @@ func (c *Client) RequestReader(ctx context.Context, method, path string, q url.V
 					} `json:"diagnostics"`
 				} `json:"data"`
 			}
-			if json.Unmarshal(b, &envelope) == nil && (envelope.Data.Version == "1.0" && strings.Contains(path, "/packages/") || envelope.Data.ASaCVersion == "1.0" && asacDiagnosticPath(path)) && len(envelope.Data.Diagnostics) <= 32 {
+			if json.Unmarshal(b, &envelope) == nil && ((envelope.Data.Version == "1.0" || envelope.Data.Version == "2.0") && strings.Contains(path, "/packages/") || envelope.Data.ASaCVersion == "1.0" && asacDiagnosticPath(path)) && len(envelope.Data.Diagnostics) <= 32 {
 				prefix := "PACKAGE_"
 				if asacDiagnosticPath(path) {
 					prefix = "ASAC_"

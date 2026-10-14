@@ -45,6 +45,31 @@ func candidateBindings(requirements map[string]any, credentials map[string]strin
 		"metadata": map[string]any{"name": "Candidate"}, "spec": spec}, nil
 }
 
+func candidateManifestBindings(manifest map[string]any, credentials map[string]string) (map[string]any, error) {
+	spec := packagefmt.Object(manifest["spec"])
+	requirements := packagefmt.Object(spec["requires"])
+	if manifest["schema_version"] != "2.0" {
+		return candidateBindings(requirements, credentials)
+	}
+	connections := []any{}
+	for alias := range packagefmt.Object(spec["connections"]) {
+		connections = append(connections, map[string]any{"ref": alias})
+	}
+	bindings, err := candidateBindings(map[string]any{"credentials": connections,
+		"project_environment": packagefmt.List(packagefmt.Object(spec["configuration"])["keys"]), "knowledge": requirements["knowledge"]}, credentials)
+	if err != nil {
+		return nil, err
+	}
+	bindings["schema_version"] = "2.0"
+	delete(packagefmt.Object(bindings["spec"]), "secrets")
+	for _, group := range []string{"credentials", "project_environment"} {
+		for _, raw := range packagefmt.Object(packagefmt.Object(bindings["spec"])[group]) {
+			packagefmt.Object(raw)["create"] = false
+		}
+	}
+	return bindings, nil
+}
+
 func (a *App) asacCandidateCommands() {
 	for _, kind := range []string{"agent", "network"} {
 		command := &cobra.Command{Use: "candidate REFERENCE CANDIDATE_UUID", Short: "Inspect exact isolated preparation without selecting an environment", Args: cobra.ExactArgs(2),
@@ -160,7 +185,7 @@ func (a *App) stageASaCRevision(cmd *cobra.Command, kind, reference, revision st
 		return output.New(9, "Verify or hydrate the sealed revision object before Stage: "+err.Error())
 	}
 	defer bundle.Close()
-	bindings, err := candidateBindings(packagefmt.Object(packagefmt.Object(bundle.Graph.Manifest["spec"])["requires"]), state.Credentials)
+	bindings, err := candidateManifestBindings(bundle.Graph.Manifest, state.Credentials)
 	if err != nil {
 		return err
 	}
@@ -186,6 +211,9 @@ func (a *App) stageASaCRevision(cmd *cobra.Command, kind, reference, revision st
 	supported := packagefmt.Object(capabilities["asac"])
 	if supported["candidate_preparation"] != true || supported["schema_version"] != "1.0" {
 		return output.New(9, "Backend does not support isolated Candidate preparation; update it before Stage --revision")
+	}
+	if record.DefinitionScope == devworkspace.ConfigurationDefinitionScope && !asacSupportsDefinition(supported, record.DefinitionScope) {
+		return output.New(9, "Backend does not advertise configuration-aware Candidate definitions; update Woobe before Stage")
 	}
 	remote, err := request("GET", base+"/drafts/"+url.PathEscape(selected.DraftID), nil)
 	if err != nil {

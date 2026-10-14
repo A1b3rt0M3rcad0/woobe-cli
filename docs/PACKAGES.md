@@ -266,3 +266,66 @@ hashes. Keep the original, prepare/evaluate a complete new Candidate and publish
 a new Release. Export again from the explicitly repaired Draft/new Release.
 The CLI cannot reconstruct missing historical facts or repair an operator's
 stored snapshots without access to those resources.
+
+
+## Remote configuration packages (schema 2.0)
+
+With a server advertising the matching 2.0 catalog and structural installation:
+
+```sh
+woobe package export agent AGENT_UUID --package-schema 2.0
+woobe package plan ./support --structural --save-plan ./support-plan.json
+woobe package import --plan-file ./support-plan.json --wait
+```
+
+The manifest declares configuration keys and Provider connections without values.
+The CLI generates explicit create bindings for these declarations; it does not
+adopt existing keys or connections by name. To reuse them deliberately, pass
+`--bind configuration.PRIMARY_API_KEY=EXISTING_KEY` and/or
+`--bind credential.primary=CREDENTIAL_UUID` when planning or importing.
+An explicit bindings file must cover every requirement.
+
+Structural installation is Draft-only and never reads local protected values,
+performs MCP discovery, builds embeddings or activates a deployment. The receipt
+reports installation, configuration, runtime preparation and deployment
+separately. Missing values are filled by an authorized operator in Woobe →
+Project → Environments. The matching capability is checked before mutation;
+older servers reject this flow without falling back to local secrets.
+
+Export defaults to the unchanged 1.0 format. Select `--package-schema 2.0` for
+remote authentication declarations. Existing operational 1.0 imports preserve
+their behavior; `--structural` is explicit and never silently inferred.
+
+HTTP group routes can declare their own remote `authentication` in schema 2.0.
+Each referenced key must be declared by the manifest. Omitted route authentication
+inherits the connection; explicit `none` suppresses its private headers. Protected
+typed routes cannot be exported as 1.0. See [configuration](CONFIGURATION.md).
+
+This branch is under qualification; complete preparation/resume and ASaC
+integration are not yet ready for release.
+
+
+Knowledge installed structurally retains a `PENDING_PREPARATION` vector snapshot.
+After the operator fills the referenced values and approves their use, read its
+`build_config_hash` with `woobe project knowledge snapshot get SNAPSHOT_UUID`.
+Create a YAML file containing `project_id`, `environment` and
+`expected_build_config_hash`, then queue it explicitly:
+
+```sh
+woobe project knowledge snapshot prepare SNAPSHOT_UUID --file prepare.yaml
+woobe project knowledge snapshot get SNAPSHOT_UUID
+```
+
+The queue request checks the exact build intent and configuration before accepting
+work. Repeating the same accepted request does not create another build. `BUILDING`
+is pending; wait for `READY` before Candidate/release preparation. A failed or
+changed intent requires a new snapshot version. The CLI does not supply values.
+
+Structural Network import keeps captured Agent content but binds destination nodes to imported Drafts (`constituent_binding_policy: imported_draft`). It does not create Staging/Release snapshots or deploy constituent Agents. Review this policy in the approved plan before applying.
+
+Schema2 `package bindings SOURCE` produces a schema2 YAML template with explicit
+`create: true` choices for declarations/connections. Review those choices or
+replace them with explicit existing bindings before `package plan --structural`.
+It never emits `protected_ref` placeholders for remote configuration. Knowledge
+references still require an explicit destination snapshot. Managed development
+also negotiates schema2; see [development](DEVELOPMENT.md#remote-configuration-in-managed-development).

@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Page Project configuration summaries with bounded `--limit` and scoped `--cursor`, capability negotiation and explicit page evidence. The final page never implies complete Project readiness; update help, docs and the assistant skill.
+
+- Bind HTTP group authentication per stable route ID with capability negotiation and compare-and-swap. Validate route keys in Package 2.0 while keeping the 1.0 catalog unchanged. Preserve closed authentication reference metadata in output so editing never replaces a reference with a redaction marker; values remain masked.
+
+- Add a negotiated, metadata-only Project configuration summary with distinct blocked/incomplete exits and scoped counts; update help and the embedded assistant skill.
+
+- Preserve bounded configuration diagnostics across runtime and deployment, with actionable guidance and Environment scope.
+
+- Negotiate remote-reference Package 2.0 in managed development, preserve distinct v1/v2 ASaC digests and author recipes, and retain typed references through capture, Draft sync, checkpoint, hydration and Candidate preparation. Fix schema2 bindings templates; update development/package guides and assistant skill.
+
+- Add metadata-only Project configuration declaration/list/usage/bind/check/test commands with explicit backend capability negotiation, blocked/unknown exit statuses, no local secret lookup and coordinated assistant guidance.
+
 - Verify local deployment capture origin and exact remotely accepted ancestors before sealing a Revision; preserve original-intent recovery and add actionable, bounded conflict messages. Local deployment requires backend `asac.draft_source_preflight`.
 - Normalize missing Windows credentials to authentication exit 3 and reject missing command scope before capability/network requests. Add native CI regressions and coordinated help/assistant guidance.
 

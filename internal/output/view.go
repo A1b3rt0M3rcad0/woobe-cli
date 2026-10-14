@@ -231,6 +231,32 @@ var relevantFields = []string{
 }
 
 func summarize(command string, value any) any {
+	if command == "project configuration bind" {
+		if data, ok := value.(map[string]any); ok {
+			if data["executed"] == false {
+				return project(data, []string{"method", "path", "body", "executed"}, false)
+			}
+			result := project(data, []string{"target_kind", "target_id", "route_id", "revision"}, false).(map[string]any)
+			if result["route_id"] == nil {
+				delete(result, "route_id")
+			}
+			if auth, ok := data["authentication"].(map[string]any); ok {
+				result["authentication"] = auth["type"]
+				if fields, ok := auth["fields"].(map[string]any); ok {
+					bindings, sources := map[string]any{}, map[string]any{}
+					for name, raw := range fields {
+						if ref, ok := raw.(map[string]any); ok {
+							bindings[name], sources[name] = ref["key"], ref["source"]
+						}
+					}
+					if len(bindings) > 0 {
+						result["bindings"], result["sources"] = bindings, sources
+					}
+				}
+			}
+			return result
+		}
+	}
 	if command == "init" {
 		return project(value, []string{"initialized", "executed", "reused", "config", "root", "context", "agents", "instructions", "lab"}, false)
 	}

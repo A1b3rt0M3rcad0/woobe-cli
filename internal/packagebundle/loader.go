@@ -33,7 +33,7 @@ type Bundle struct {
 
 func (b *Bundle) Close() error { return os.RemoveAll(b.Root) }
 func (b *Bundle) Lock() map[string]any {
-	return map[string]any{"format": "woobe-package", "schema_version": "1.0", "kind": "PackageLock", "algorithm": "sha256", "inventory": b.Inventory, "artifact_digest": b.ArtifactDigest}
+	return map[string]any{"format": "woobe-package", "schema_version": b.Graph.Manifest["schema_version"], "kind": "PackageLock", "algorithm": "sha256", "inventory": b.Inventory, "artifact_digest": b.ArtifactDigest}
 }
 func failure(code, message, file string) error {
 	return &packagefmt.Diagnostic{Code: code, Message: message, File: file}
@@ -241,7 +241,7 @@ func load(input string, locked, verifyLock bool) (bundle *Bundle, err error) {
 		return nil, err
 	}
 	sort.Slice(bundle.Inventory, func(i, j int) bool { return bundle.Inventory[i].Path < bundle.Inventory[j].Path })
-	bundle.ArtifactDigest = InventoryDigest(bundle.Inventory)
+	bundle.ArtifactDigest = VersionInventoryDigest(bundle.Inventory, bundle.Graph.Manifest["schema_version"].(string))
 	bundle.LockIntegrity = "not_evaluated"
 	if !verifyLock {
 		return bundle, nil

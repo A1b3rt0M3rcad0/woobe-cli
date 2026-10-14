@@ -28,6 +28,7 @@ policy. Existing authorization does not require repeated confirmation.
 | Connect, select Project, troubleshoot scope | [connection](references/connection.md) |
 | Create/edit an Agent or Network with YAML | [development](references/development.md) |
 | Providers/Models/Tools/Skills/Knowledge and shared dependencies | [dependencies](references/dependencies.md) |
+| Declare configuration without secrets; inspect Environment status | [configuration](references/configuration.md) |
 | Transfer portable packages between Projects | [packages](references/packages.md) |
 | Unified deploy, delivery from Release/Staging/local and CI recovery | [deployment](references/deployment.md) |
 | Tests, staging, release, production, rollback or archive | [lifecycle](references/lifecycle.md) |

@@ -15,15 +15,16 @@ import (
 )
 
 type ExportRequest struct {
-	Development    bool    `json:"development,omitempty"`
-	ReleaseVersion string  `json:"release_version,omitempty"`
-	Kind           string  `json:"kind"`
-	TargetID       string  `json:"target_id"`
-	Source         *string `json:"source,omitempty"`
-	SnapshotID     *string `json:"snapshot_id,omitempty"`
-	Knowledge      string  `json:"knowledge"`
-	Name           string  `json:"name,omitempty"`
-	Version        string  `json:"version,omitempty"`
+	PackageSchemaVersion string  `json:"package_schema_version,omitempty"`
+	Development          bool    `json:"development,omitempty"`
+	ReleaseVersion       string  `json:"release_version,omitempty"`
+	Kind                 string  `json:"kind"`
+	TargetID             string  `json:"target_id"`
+	Source               *string `json:"source,omitempty"`
+	SnapshotID           *string `json:"snapshot_id,omitempty"`
+	Knowledge            string  `json:"knowledge"`
+	Name                 string  `json:"name,omitempty"`
+	Version              string  `json:"version,omitempty"`
 }
 
 type ExportReceipt struct {
@@ -50,10 +51,17 @@ func (c *Client) Export(ctx context.Context, request ExportRequest) (ExportRecei
 	if (request.Kind != "Agent" && request.Kind != "Network") || !identifier.MatchString(request.TargetID) || (request.Source == nil) == (request.SnapshotID == nil) {
 		return receipt, output.New(2, "Export requires a target and exactly one source selector")
 	}
+	version := request.PackageSchemaVersion
+	if version == "" {
+		version = "1.0"
+	}
+	if err := c.RequireSchema(ctx, version, false); err != nil {
+		return receipt, err
+	}
 	if err := c.request(ctx, http.MethodPost, "/export", request, &receipt); err != nil {
 		return receipt, err
 	}
-	if !identifier.MatchString(receipt.ExportID) || receipt.ProjectID != c.ProjectID || !receipt.ClosureComplete || !digestPattern.MatchString(receipt.ArtifactDigest) || !digestPattern.MatchString(receipt.TransportDigest) || receipt.SizeBytes <= 0 || receipt.SizeBytes > 128<<20 || len(receipt.Inventory) == 0 || !validExpiry(receipt.ExpiresAt) || receipt.Knowledge != request.Knowledge || (request.Knowledge == "portable" && !receipt.SelfContained) {
+	if receipt.PackageSchemaVersion != version || !identifier.MatchString(receipt.ExportID) || receipt.ProjectID != c.ProjectID || !receipt.ClosureComplete || !digestPattern.MatchString(receipt.ArtifactDigest) || !digestPattern.MatchString(receipt.TransportDigest) || receipt.SizeBytes <= 0 || receipt.SizeBytes > 128<<20 || len(receipt.Inventory) == 0 || !validExpiry(receipt.ExpiresAt) || receipt.Knowledge != request.Knowledge || (request.Knowledge == "portable" && !receipt.SelfContained) {
 		return ExportReceipt{}, output.New(9, "Server returned incomplete Package export evidence")
 	}
 	return receipt, nil
@@ -116,7 +124,7 @@ func (c *Client) downloadArchive(ctx context.Context, path string, receipt Expor
 	if err != nil {
 		return nil, err
 	}
-	if bundle.ArtifactDigest != receipt.ArtifactDigest || !reflect.DeepEqual(bundle.Inventory, receipt.Inventory) {
+	if bundle.Graph.Manifest["schema_version"] != receipt.PackageSchemaVersion || bundle.ArtifactDigest != receipt.ArtifactDigest || !reflect.DeepEqual(bundle.Inventory, receipt.Inventory) {
 		bundle.Close()
 		return nil, output.New(9, "Downloaded Package closure differs from its receipt")
 	}

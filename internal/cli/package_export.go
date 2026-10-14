@@ -15,7 +15,7 @@ import (
 func (a *App) packageExportCommands(group *cobra.Command) {
 	export := &cobra.Command{Use: "export", Short: "Export a complete portable native snapshot"}
 	for _, kind := range []string{"agent", "network"} {
-		var destination, source, environment, snapshot, knowledge, name, version, packageVersion string
+		var destination, source, environment, snapshot, knowledge, name, version, packageVersion, packageSchema string
 		var deadline time.Duration
 		command := &cobra.Command{Use: kind + " NAME_OR_UUID", Short: "Capture an exact " + kind + " source and all portable dependencies", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 			if err := packageFlags(cmd, "yes", "validate-body", "validate-parameters", "schema-sha256"); err != nil {
@@ -74,7 +74,7 @@ func (a *App) packageExportCommands(group *cobra.Command) {
 			if err != nil {
 				return err
 			}
-			request := packageapi.ExportRequest{Kind: targetKind, TargetID: targetID, Knowledge: knowledge, Name: name, Version: packageVersion}
+			request := packageapi.ExportRequest{PackageSchemaVersion: packageSchema, Kind: targetKind, TargetID: targetID, Knowledge: knowledge, Name: name, Version: packageVersion}
 			if !legacy && source == "release" {
 				request.ReleaseVersion = version
 			}
@@ -120,8 +120,9 @@ func (a *App) packageExportCommands(group *cobra.Command) {
 			if err = bundle.Publish(absolute); err != nil {
 				return packageError(err)
 			}
-			return a.emit(map[string]any{"package_schema_version": "1.0", "destination": absolute, "export_id": receipt.ExportID, "artifact_digest": receipt.ArtifactDigest, "transport_digest": receipt.TransportDigest, "inventory": receipt.Inventory, "closure_complete": receipt.ClosureComplete, "self_contained": receipt.SelfContained, "knowledge": receipt.Knowledge, "name": metadata["name"], "version": metadata["version"], "source": receipt.Source, "integrity": "verified", "next_command": "woobe package validate " + strconv.Quote(absolute) + " --locked"})
+			return a.emit(map[string]any{"package_schema_version": receipt.PackageSchemaVersion, "destination": absolute, "export_id": receipt.ExportID, "artifact_digest": receipt.ArtifactDigest, "transport_digest": receipt.TransportDigest, "inventory": receipt.Inventory, "closure_complete": receipt.ClosureComplete, "self_contained": receipt.SelfContained, "knowledge": receipt.Knowledge, "name": metadata["name"], "version": metadata["version"], "source": receipt.Source, "integrity": "verified", "next_command": "woobe package validate " + strconv.Quote(absolute) + " --locked"})
 		}}
+		command.Flags().StringVar(&packageSchema, "package-schema", "1.0", "Package contract: 1.0 (legacy) or 2.0 (remote configuration declarations)")
 		command.Flags().StringVar(&destination, "destination", "", "New directory; defaults to ./normalized-resource-name")
 		command.Flags().StringVar(&environment, "env", "draft", "Environment: draft (default), staging, release or production; release requires --version")
 		command.Flags().StringVar(&source, "source", "", "Legacy environment selector; --version remains package metadata with --source")

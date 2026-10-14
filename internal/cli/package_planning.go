@@ -31,6 +31,26 @@ func packageLifecycle(lifecycle, notes, reason string) error {
 	return nil
 }
 
+func packageInstallation(bindings map[string]any, structural bool, lifecycle string) (string, error) {
+	if bindings["schema_version"] == "2.0" && !structural {
+		return "", output.New(2, "Package 2.0 requires --structural; configure remote values in Project → Environments after installation")
+	}
+	if !structural {
+		return "", nil
+	}
+	if lifecycle != "draft" {
+		return "", output.New(2, "--structural installs Draft resources; preparation and deployment are separate operations")
+	}
+	for _, group := range packagefmt.Object(bindings["spec"]) {
+		for _, raw := range packagefmt.Object(group) {
+			if packagefmt.Object(raw)["protected_ref"] != nil {
+				return "", output.New(2, "Structural installation does not read local protected values; bind remote identities")
+			}
+		}
+	}
+	return "structural", nil
+}
+
 // Package requests use the advertised HTTP contracts while keeping domain
 // decisions in the server's owner modules.
 func (a *App) validatePackageRequest(doc map[string]any, method, suffix string, params map[string]string, query url.Values, body any) error {
@@ -60,7 +80,7 @@ func (a *App) validatePackageRequest(doc map[string]any, method, suffix string, 
 func (a *App) packagePlanningCommands(group *cobra.Command) {
 	var bindingsPath, savePath, lifecycle, notes, reason string
 	var shortcuts []string
-	var locked bool
+	var locked, structural bool
 	var deadline time.Duration
 	command := &cobra.Command{Use: "plan SOURCE", Short: "Plan native Package effects and destination bindings without materializing resources", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		if err := packageFlags(cmd, "yes", "validate-body", "validate-parameters", "schema-sha256"); err != nil {
@@ -87,8 +107,12 @@ func (a *App) packagePlanningCommands(group *cobra.Command) {
 		if err != nil {
 			return packageError(err)
 		}
+		installationMode, err := packageInstallation(bindings, structural, lifecycle)
+		if err != nil {
+			return err
+		}
 		if a.DryRun {
-			return a.emit(packagePublic(map[string]any{"package_schema_version": "1.0", "artifact_digest": bundle.ArtifactDigest, "inventory": bundle.Inventory, "bindings": bindings, "lifecycle": lifecycle, "materialization_order": bundle.Graph.Order, "executed": false, "authorization": "not_evaluated", "semantic_validation": "server_required"}))
+			return a.emit(packagePublic(map[string]any{"package_schema_version": bundle.Graph.Manifest["schema_version"], "structural": structural, "artifact_digest": bundle.ArtifactDigest, "inventory": bundle.Inventory, "bindings": bindings, "lifecycle": lifecycle, "materialization_order": bundle.Graph.Order, "executed": false, "authorization": "not_evaluated", "semantic_validation": "server_required"}))
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), deadline)
 		defer cancel()
@@ -116,7 +140,7 @@ func (a *App) packagePlanningCommands(group *cobra.Command) {
 		}
 		// Validate the plan contract before upload using a syntactically valid UUID;
 		// the accepted upload identity is validated again before the plan POST.
-		request := packageapi.PlanRequest{Mode: "create", UploadID: "00000000-0000-4000-8000-000000000000", ArtifactDigest: bundle.ArtifactDigest, Bindings: bindings, Lifecycle: lifecycle}
+		request := packageapi.PlanRequest{InstallationMode: installationMode, Mode: "create", UploadID: "00000000-0000-4000-8000-000000000000", ArtifactDigest: bundle.ArtifactDigest, Bindings: bindings, Lifecycle: lifecycle}
 		if notes != "" {
 			request.ReleaseNotes = &notes
 		}
@@ -155,9 +179,10 @@ func (a *App) packagePlanningCommands(group *cobra.Command) {
 		return a.emit(packagePublic(approved))
 	}}
 	command.Flags().StringVar(&bindingsPath, "bindings", "", "Destination ImportBindings file; protected references remain unresolved")
-	command.Flags().StringArrayVar(&shortcuts, "bind", nil, "Bind credential.ALIAS=UUID without overriding another binding")
+	command.Flags().StringArrayVar(&shortcuts, "bind", nil, "Explicit reuse: credential.ALIAS=UUID or configuration.KEY=REMOTE_KEY (schema 2.0)")
 	command.Flags().StringVar(&savePath, "save-plan", "", "Exclusive private destination for the approved plan receipt")
 	command.Flags().BoolVar(&locked, "locked", false, "Require the captured package's inventory lock")
+	command.Flags().BoolVar(&structural, "structural", false, "Install definitions and remote configuration references without local secrets or deployment")
 	command.Flags().StringVar(&lifecycle, "lifecycle", "draft", "Explicit destination lifecycle: draft, staging, release, production")
 	command.Flags().StringVar(&notes, "release-notes", "", "Audit notes required for release and production")
 	command.Flags().StringVar(&reason, "reason", "", "Activation reason required for production")
