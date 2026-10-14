@@ -167,6 +167,11 @@ Existing persisted-Tool execution and MCP refresh commands also use the central
 resolver on a supporting backend. Their legacy contracts select Draft; choose the
 configuration preparation command for another Environment. A revoked use grant
 is an authorization failure (exit 4), while a blocked readiness `check` exits 6.
+An exact pre-v1 captured `tool:write` grant can preserve the old MCP refresh
+operation in Draft. This compatibility translation also requires the current
+Tool-write grant and destination authorization. It grants no access to the new
+configuration test route; newly issued keys still need explicit validation
+permission. An operator cannot enable this provenance through a request flag.
 After separating Environments, an ambiguous old writer receives
 `LEGACY_ENVIRONMENT_REQUIRED`. Configure the intended Environment centrally.
 Schema 2.0 exports contain declarations/references, never local alias authority or

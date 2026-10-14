@@ -81,6 +81,10 @@ reference-only definitions and central value editing. Do not copy private legacy
 aliases into YAML; use the configuration binding operation. Literal replacement
 does not grant a different destination or restore revoked authority.
 Existing Tool execute and MCP refresh use Draft with those legacy contracts.
+Old captured Tool-write authority can preserve Draft MCP refresh, subject to the
+current grant and destination policy. New keys need explicit validation authority.
+The translation does not authorize central test endpoints or other Environments;
+never manufacture legacy provenance or retry a denial with a broader key.
 Revoked destination authority is exit 4; blocked metadata readiness is exit 6.
 Use explicit configuration preparation for Staging/Production instead of assuming
 an old refresh command selected the runtime Environment.
