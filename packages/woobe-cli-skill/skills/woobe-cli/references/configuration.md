@@ -55,9 +55,11 @@ is pending; wait for `READY` before Candidate/release preparation. A failed or
 changed intent requires a new snapshot version. The CLI does not supply values.
 
 Legacy migration is administrative work, separate from development. Check the
-server's `migration_source_kinds` before selecting Provider or Secret sources.
+server's `migration_source_kinds` before selecting Provider, Secret or Tool sources.
 Recognized Secret header templates can migrate without changing author snapshots;
-OAuth, mixed authentication and route-specific forms can require explicit review.
+The Tool adapter handles global literals without retained snapshots. OAuth,
+retained inline snapshots, mixed authentication and route-specific forms require
+explicit review; never broaden a route or rewrite history to bypass it.
 Do not infer whole-Project completion from one successful source-family batch.
 `CONFIG_MIGRATION_WORK_PENDING` requires resolving active/uncertain Runs, builds,
 operations or unconsumed plans; never invent a fleet/drain attestation. Read the
@@ -73,6 +75,11 @@ three compatibility Environments; failed approval rolls back the Tool write.
 Do not retry with broader credentials just to bypass a denial. Existing revoked
 policies remain revoked after metadata edits. MCP creation with a Secret template
 defers discovery until explicit authorized connection preparation.
+Newly supplied sensitive global HTTP/MCP header literals are stored centrally;
+Tool responses contain owner references, not the submitted material. Prefer
+reference-only definitions and central value editing. Do not copy private legacy
+aliases into YAML; use the configuration binding operation. Literal replacement
+does not grant a different destination or restore revoked authority.
 Existing Tool execute and MCP refresh use Draft with those legacy contracts.
 Revoked destination authority is exit 4; blocked metadata readiness is exit 6.
 Use explicit configuration preparation for Staging/Production instead of assuming

@@ -122,8 +122,10 @@ changed intent requires a new snapshot version. The CLI does not supply values.
 
 Migration is a separate administrative operation. Inspect the server's
 `migration_source_kinds` capability before choosing a source family. The current
-bridge supports Provider credentials and recognized API-key/custom Secret header
-templates; OAuth, mixed authentication and route-specific forms may require review.
+bridge supports Provider credentials, recognized API-key/custom Secret header
+templates and unretained global Tool header literals (`source_kind: tool`). OAuth,
+retained inline snapshots, mixed authentication and route-specific forms require
+review. Only select source families advertised by the connected backend.
 A completed batch does not mean that every source family in the Project migrated.
 
 The existing generic request command can read the report or submit an explicitly
@@ -155,6 +157,12 @@ rolls back the Tool write; editing an existing Tool never restores a revoked
 policy. Prefer explicit references and approvals for the intended Environment.
 MCP creation with Secret templates defers discovery; use the explicit connection
 test/preparation after reviewing its destination approval.
+Newly supplied sensitive global HTTP/MCP header literals also become central
+owner references before the backend commits the Tool. Responses and list output
+do not repeat the submitted material. Replacing a literal rotates the same
+source; it does not grant a changed destination or restore a revoked policy.
+Prefer reference-only definitions and the central value editor. Use `configuration
+bind` for reference changes instead of copying private legacy aliases into YAML.
 Existing persisted-Tool execution and MCP refresh commands also use the central
 resolver on a supporting backend. Their legacy contracts select Draft; choose the
 configuration preparation command for another Environment. A revoked use grant
