@@ -33,6 +33,20 @@ to reading local protected files or using a value from another Environment.
 
 Bind an existing connection with `woobe project configuration bind provider CREDENTIAL_UUID --key PRIMARY_API_KEY`. Tool bindings support explicit api_key, bearer, basic, headers or none; use declared names only. The server compares the binding revision and rejects concurrent edits. Migrate existing inline credentials before replacing their authority.
 
+For an HTTP group, bind one stable route ID:
+
+```sh
+woobe project configuration bind tool TOOL_UUID --route orders --type bearer --field token=ORDERS_TOKEN
+```
+
+The backend must advertise route bindings. An omitted route definition inherits
+connection authentication; explicit route `none` suppresses its private headers.
+Approve the route's fixed destination, never broaden it to make a failure pass.
+Package 2.0 route YAML retains these references and requires matching declarations.
+Valid reference metadata remains readable in terminal output; a redaction marker
+is not a replacement reference. Metadata round-trips preserve bindings; changing
+or removing one requires configuration-bind permission.
+
 Use `woobe project configuration test provider CREDENTIAL_UUID --env staging` only when an external connection test is requested. For MCP discovery use `woobe project configuration test tool MCP_TOOL_UUID --env draft`. These make outbound requests and may save MCP discovery; they do not execute an Agent or arbitrary HTTP Tool. `check` remains read-only with no external I/O. Never retrieve a value or substitute a local token to make readiness succeed.
 
 For packages, use negotiated schema `2.0` and explicit `--structural` installation as described in [packages](packages.md). Never provide or recover local secret values for this flow. An installed structure can still require configuration and preparation.
@@ -57,8 +71,8 @@ changed intent requires a new snapshot version. The CLI does not supply values.
 Legacy migration is administrative work, separate from development. Check the
 server's `migration_source_kinds` before selecting Provider, Secret or Tool sources.
 Recognized Secret header templates can migrate without changing author snapshots;
-The Tool adapter handles global literals without retained snapshots. OAuth,
-retained inline snapshots, mixed authentication and route-specific forms require
+The Tool adapter handles global and route-local literals without retained snapshots. OAuth,
+retained inline snapshots and mixed authentication require
 explicit review; never broaden a route or rewrite history to bypass it.
 Do not infer whole-Project completion from one successful source-family batch.
 `CONFIG_MIGRATION_WORK_PENDING` requires resolving active/uncertain Runs, builds,

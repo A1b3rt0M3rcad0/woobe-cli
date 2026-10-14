@@ -131,6 +131,10 @@ func Redact(v any) any {
 	case map[string]any:
 		out := make(map[string]any, len(x))
 		for k, v := range x {
+			if k == "authentication" && authenticationReferenceMetadata(v) {
+				out[k] = copyAuthenticationReferenceMetadata(v)
+				continue
+			}
 			if Sensitive(k) && !(k == "fencing_token" && fencingCounter(v)) {
 				out[k] = "[REDACTED]"
 			} else {

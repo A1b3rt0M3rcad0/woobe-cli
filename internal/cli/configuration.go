@@ -77,7 +77,7 @@ func (a *App) configurationCommands() {
 	}}
 	usage.Flags().IntVar(&usageOffset, "offset", 0, "Number of consumers to skip")
 	group.AddCommand(usage)
-	var bindingKey, authType string
+	var bindingKey, authType, bindingRoute string
 	var bindingFields []string
 	bind := &cobra.Command{Use: "bind provider|tool UUID", Short: "Bind an existing resource to declared remote keys without reading values", Args: cobra.ExactArgs(2), RunE: func(cmd *cobra.Command, args []string) error {
 		kind := args[0]
@@ -86,6 +86,9 @@ func (a *App) configurationCommands() {
 		}
 		if (kind != "provider_credential" && kind != "tool") || !uuidReference(args[1]) {
 			return output.New(2, "Use bind provider|tool UUID")
+		}
+		if bindingRoute != "" && (kind != "tool" || len(bindingRoute) > 128 || strings.ContainsAny(bindingRoute, "\r\n\x00")) {
+			return output.New(2, "Use --route with a stable HTTP Tool route ID (1..128 characters)")
 		}
 		fields := map[string]any{}
 		requestedFields := append([]string(nil), bindingFields...)
@@ -121,12 +124,17 @@ func (a *App) configurationCommands() {
 		if !valid {
 			return output.New(2, "Authentication type and declared field references are incompatible")
 		}
-		return a.configurationCall(cmd, "PUT", "/bindings/"+kind+"/"+args[1], nil, map[string]any{"authentication": map[string]any{"type": authType, "fields": fields}})
+		body := map[string]any{"authentication": map[string]any{"type": authType, "fields": fields}}
+		if bindingRoute != "" {
+			body["route_id"] = bindingRoute
+		}
+		return a.configurationCall(cmd, "PUT", "/bindings/"+kind+"/"+args[1], nil, body)
 	}}
 	bind.Flags().StringVar(&bindingKey, "key", "", "Declared key name for api_key authentication (not its value)")
 	bind.Flags().StringVar(&authType, "type", "api_key", "api_key; Tools also support bearer, basic, headers or none")
 	bind.Flags().StringArrayVar(&bindingFields, "field", nil, "Bind FIELD=DECLARED_KEY (repeatable; never values)")
-	bind.Example = "woobe project configuration bind provider UUID --key PRIMARY_API_KEY\nwoobe project configuration bind tool UUID --type basic --field username=TOOL_USER --field password=TOOL_PASSWORD"
+	bind.Flags().StringVar(&bindingRoute, "route", "", "Bind only this stable HTTP group route ID")
+	bind.Example = "woobe project configuration bind provider UUID --key PRIMARY_API_KEY\nwoobe project configuration bind tool UUID --type basic --field username=TOOL_USER --field password=TOOL_PASSWORD\nwoobe project configuration bind tool UUID --route orders --type bearer --field token=ORDERS_TOKEN"
 	group.AddCommand(bind)
 	var testEnvironment string
 	test := &cobra.Command{Use: "test provider|tool UUID", Short: "Explicitly test a provider connection or prepare an MCP Tool",
@@ -234,7 +242,14 @@ func (a *App) configurationCall(cmd *cobra.Command, method, suffix string, query
 		if capabilities["binding_updates"] != true {
 			return output.New(9, "Server does not support configuration binding updates; no mutation was sent")
 		}
-		current, _, readErr := control.Request(cmd.Context(), "GET", path+suffix, nil, nil)
+		var bindingQuery url.Values
+		if route, _ := body["route_id"].(string); route != "" {
+			if capabilities["route_authentication_bindings"] != true {
+				return output.New(9, "Server does not advertise route authentication bindings; no mutation was sent")
+			}
+			bindingQuery = url.Values{"route_id": {route}}
+		}
+		current, _, readErr := control.Request(cmd.Context(), "GET", path+suffix, bindingQuery, nil)
 		if readErr != nil {
 			return readErr
 		}

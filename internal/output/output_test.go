@@ -2,6 +2,7 @@ package output
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -31,6 +32,26 @@ func TestFencingCounterExceptionNeverExposesTextualTokensOrOtherCredentials(t *t
 		data := Redact(map[string]any{"fencing_token": value, "Fencing_Token": "private-token"}).(map[string]any)
 		if data["fencing_token"] != "[REDACTED]" || data["Fencing_Token"] != "[REDACTED]" {
 			t.Fatal("Textual/invalid token exposed", data)
+		}
+	}
+}
+
+func TestAuthenticationReferenceMetadataSurvivesWhileMaterialAndLookalikesDoNot(t *testing.T) {
+	for _, source := range []string{"project_environment", "legacy_configuration"} {
+		ref := map[string]any{"source": source, "key": "PROVIDER_TOKEN"}
+		if source == "legacy_configuration" {
+			ref["alias_id"] = "00000000-0000-4000-8000-000000000001"
+		}
+		auth := map[string]any{"type": "bearer", "fields": map[string]any{"token": ref}}
+		data := Redact(map[string]any{"config": map[string]any{"authentication": auth}, "token": ref}).(map[string]any)
+		got := data["config"].(map[string]any)["authentication"].(map[string]any)["fields"].(map[string]any)["token"]
+		if !reflect.DeepEqual(got, ref) || data["token"] != "[REDACTED]" {
+			t.Fatal(data)
+		}
+		ref["value"] = "private-reference-canary"
+		encoded, _ := json.Marshal(Redact(map[string]any{"config": map[string]any{"authentication": auth}}))
+		if strings.Contains(string(encoded), "private-reference-canary") {
+			t.Fatal("material leaked")
 		}
 	}
 }

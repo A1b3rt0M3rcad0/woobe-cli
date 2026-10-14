@@ -296,6 +296,11 @@ Export defaults to the unchanged 1.0 format. Select `--package-schema 2.0` for
 remote authentication declarations. Existing operational 1.0 imports preserve
 their behavior; `--structural` is explicit and never silently inferred.
 
+HTTP group routes can declare their own remote `authentication` in schema 2.0.
+Each referenced key must be declared by the manifest. Omitted route authentication
+inherits the connection; explicit `none` suppresses its private headers. Protected
+typed routes cannot be exported as 1.0. See [configuration](CONFIGURATION.md).
+
 This branch is under qualification; complete preparation/resume and ASaC
 integration are not yet ready for release.
 

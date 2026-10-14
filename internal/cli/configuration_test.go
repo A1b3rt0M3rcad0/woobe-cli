@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -309,5 +310,45 @@ func TestConfigurationSummaryRejectsInvalidCountsAndCrossEnvironmentReply(t *tes
 		if validConfigurationSummary(base, "draft") {
 			t.Fatal("invalid count accepted")
 		}
+	}
+}
+
+func TestConfigurationRouteBindingNegotiatesAndPreservesRouteCAS(t *testing.T) {
+	for _, supported := range []bool{false, true} {
+		t.Run(fmt.Sprint(supported), func(t *testing.T) {
+			requests := []string{}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests = append(requests, r.Method)
+				data := map[string]any{"schema_version": "project_configuration.v1", "declaration_without_value": true,
+					"binding_updates": true, "route_authentication_bindings": supported}
+				if strings.Contains(r.URL.Path, "/bindings/") {
+					data = map[string]any{"revision": "route-revision"}
+					if r.Method == "GET" && r.URL.Query().Get("route_id") != "orders/read" {
+						t.Error("route read lost scope")
+					}
+					if r.Method == "PUT" {
+						var body map[string]any
+						if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+							t.Fatal(err)
+						}
+						if body["route_id"] != "orders/read" || body["expected_revision"] != "route-revision" {
+							t.Error(body)
+						}
+					}
+				}
+				_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": data})
+			}))
+			defer server.Close()
+			code, result := invoke(t, []string{"project", "configuration", "bind", "tool",
+				"01a00d46-b804-7f4c-b5bd-e3c814db9f0f", "--route", "orders/read", "--type", "bearer", "--field", "token=ORDER_TOKEN",
+				"--project", "p", "--api-url", server.URL, "--output", "json"}, "")
+			if supported {
+				if code != 0 || strings.Join(requests, ",") != "GET,GET,PUT" {
+					t.Fatal(code, result, requests)
+				}
+			} else if code != 9 || strings.Join(requests, ",") != "GET" {
+				t.Fatal(code, result, requests)
+			}
+		})
 	}
 }

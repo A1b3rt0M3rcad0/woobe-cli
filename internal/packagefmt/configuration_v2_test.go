@@ -66,3 +66,43 @@ func TestConfigurationV2IntentBindingsAndCatalogIsolation(t *testing.T) {
 		}
 	}
 }
+
+func TestRouteAuthenticationIsTypedAndRequiresItsOwnDeclaredKey(t *testing.T) {
+	tool, err := Decode([]byte(`{"format":"woobe-package","schema_version":"2.0","kind":"Tool","metadata":{"key":"http","name":"Scoped HTTP"},"spec":{"type":"http","config":{"mode":"group","base_url":"https://approved.example","authentication":{"type":"none"},"routes":[{"id":"orders/read","name":"Read orders","description":"Read orders","path":"/orders","authentication":{"type":"bearer","fields":{"token":{"source":"project_environment","key":"ROUTE_TOKEN"}}}}]}}}`), "tool.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = Validate(tool); err != nil {
+		t.Fatal(err)
+	}
+	config := Object(Object(tool.Value["spec"])["config"])
+	auth := Object(Object(List(config["routes"])[0])["authentication"])
+	auth["fields"] = map[string]any{"api_key": map[string]any{"source": "project_environment", "key": "ROUTE_TOKEN"}}
+	if err = Validate(tool); err == nil {
+		t.Fatal("invalid bearer field accepted for route")
+	}
+	auth["fields"] = map[string]any{"token": map[string]any{"source": "project_environment", "key": "ROUTE_TOKEN"}}
+	manifest, _ := Decode([]byte(`{"format":"woobe-package","schema_version":"2.0","kind":"Package","metadata":{"name":"Support","version":"1"},"spec":{"entrypoint":{"kind":"Agent","ref":"agent"},"resources":["agent.yaml","model.yaml","tool.yaml"],"configuration":{"keys":[{"key":"PRIMARY_KEY"}]},"connections":{"primary":{"provider":"openai","name":"Main","authentication":{"type":"api_key","fields":{"api_key":{"source":"project_environment","key":"PRIMARY_KEY"}}}}}}}`), "woobe.yaml")
+	documents := map[string]*Document{"tool.yaml": tool}
+	for path, content := range map[string]string{
+		"agent.yaml": `{"format":"woobe-package","schema_version":"2.0","kind":"Agent","metadata":{"key":"agent","name":"Support"},"spec":{"legacy_system_prompt":"Help","model":{"primary":{"ref":"model"}},"tools":[{"ref":"http"}]}}`,
+		"model.yaml": `{"format":"woobe-package","schema_version":"2.0","kind":"Model","metadata":{"key":"model","name":"Main"},"spec":{"provider":"openai","model":"gpt-4o-mini","credential":{"ref":"primary"}}}`,
+	} {
+		document, decodeErr := Decode([]byte(content), path)
+		if decodeErr != nil {
+			t.Fatal(decodeErr)
+		}
+		documents[path] = document
+	}
+	if _, err = Resolve(manifest.Value, documents); err == nil {
+		t.Fatal("undeclared route key accepted")
+	}
+	Object(Object(manifest.Value["spec"])["configuration"])["keys"] = []any{map[string]any{"key": "PRIMARY_KEY"}, map[string]any{"key": "ROUTE_TOKEN"}}
+	if _, err = Resolve(manifest.Value, documents); err != nil {
+		t.Fatal(err)
+	}
+	tool.Value["schema_version"] = "1.0"
+	if err = Validate(tool); err == nil {
+		t.Fatal("route authentication silently entered old schema")
+	}
+}

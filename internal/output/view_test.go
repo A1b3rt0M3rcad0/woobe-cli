@@ -196,3 +196,18 @@ func TestOutputInitPreviewKeepsPathsAndExecutionStatus(t *testing.T) {
 		t.Fatal(text)
 	}
 }
+
+func TestConfigurationBindingViewShowsSelectedRouteReferencesAndDryRunIntent(t *testing.T) {
+	data := map[string]any{"target_kind": "tool", "target_id": "tool-id", "route_id": "orders", "revision": "revision",
+		"authentication": map[string]any{"type": "bearer", "fields": map[string]any{"token": map[string]any{"source": "project_environment", "key": "ORDER_TOKEN"}}},
+		"routes":         []any{map[string]any{"id": "unrelated", "authentication": map[string]any{"type": "none"}}}}
+	text, _ := view(t, Options{Mode: "text", Command: "project configuration bind"}, data, nil, nil)
+	if !strings.Contains(text, "orders") || !strings.Contains(text, "ORDER_TOKEN") || strings.Contains(text, "unrelated") || strings.Contains(text, "[REDACTED]") {
+		t.Fatal(text)
+	}
+	preview := map[string]any{"method": "PUT", "path": "/configuration/bindings/tool/tool-id", "body": map[string]any{"route_id": "orders"}, "executed": false}
+	text, _ = view(t, Options{Mode: "text", Command: "project configuration bind"}, preview, nil, nil)
+	if !strings.Contains(text, "PUT") || !strings.Contains(text, "executed: false") || !strings.Contains(text, "orders") {
+		t.Fatal(text)
+	}
+}

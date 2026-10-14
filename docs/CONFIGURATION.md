@@ -78,6 +78,7 @@ without contacting the server, so it cannot prove compatibility or authorization
 ```sh
 woobe project configuration bind provider CREDENTIAL_UUID --key PRIMARY_API_KEY
 woobe project configuration bind tool TOOL_UUID --type basic --field username=TOOL_USER --field password=TOOL_PASSWORD
+woobe project configuration bind tool TOOL_UUID --route orders --type bearer --field token=ORDERS_TOKEN
 woobe project configuration test provider CREDENTIAL_UUID --env staging
 woobe project configuration test tool MCP_TOOL_UUID --env draft
 ```
@@ -89,6 +90,22 @@ also accept `bearer` (`token`), `basic` (`username`, `password`), `headers`
 (repeated header-name references), or explicit `none`. A reference is never a
 secret value. Legacy inline credentials must follow the server's migration flow;
 binding must not silently discard their current material.
+
+`--route` selects a stable HTTP group route ID. The backend advertises
+`route_authentication_bindings`; an older server is rejected before mutation.
+The revision covers the connection and all route authentication paths, so a
+concurrent retarget or reference change rejects the update. A route without its
+own definition inherits connection authentication. Explicit route `none`
+suppresses the connection's private headers. Its other request headers remain.
+Values are authorized for the selected route destination at every send; a grant
+for one path does not approve another path.
+
+Package 2.0 YAML can include `authentication` under an HTTP route, with remote
+references and matching declarations. Package 1.0 retains its original schema.
+Tool metadata output preserves valid authentication references, including key
+names; material and arbitrary token objects are still masked. Re-sending unchanged
+Tool bindings for a metadata edit requires Tool-write authority. Changing or
+removing a remote association additionally requires configuration-bind authority.
 
 `check` only inspects metadata. **`test` contacts the external system** using
 server-resolved values and approved destinations for the selected Environment.
@@ -123,8 +140,8 @@ changed intent requires a new snapshot version. The CLI does not supply values.
 Migration is a separate administrative operation. Inspect the server's
 `migration_source_kinds` capability before choosing a source family. The current
 bridge supports Provider credentials, recognized API-key/custom Secret header
-templates and unretained global Tool header literals (`source_kind: tool`). OAuth,
-retained inline snapshots, mixed authentication and route-specific forms require
+templates and unretained global or route-local Tool header literals (`source_kind: tool`). OAuth,
+retained inline snapshots and mixed authentication require
 review. Only select source families advertised by the connected backend.
 A completed batch does not mean that every source family in the Project migrated.
 

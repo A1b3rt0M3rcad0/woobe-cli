@@ -118,8 +118,16 @@ func Validate(document *Document) error {
 					return failure("PACKAGE_SCHEMA_INVALID", "Invalid remote authentication fields", "/spec/connections")
 				}
 			}
-		} else if kind == "Tool" && !validateConfigurationAuthentication(Object(Object(spec["config"])["authentication"]), false) {
-			return failure("PACKAGE_SCHEMA_INVALID", "Invalid remote authentication fields", "/spec/config/authentication")
+		} else if kind == "Tool" {
+			config := Object(spec["config"])
+			if !validateConfigurationAuthentication(Object(config["authentication"]), false) {
+				return failure("PACKAGE_SCHEMA_INVALID", "Invalid remote authentication fields", "/spec/config/authentication")
+			}
+			for _, raw := range List(config["routes"]) {
+				if auth := Object(raw)["authentication"]; auth != nil && !validateConfigurationAuthentication(Object(auth), false) {
+					return failure("PACKAGE_SCHEMA_INVALID", "Invalid remote route authentication fields", "/spec/config/routes")
+				}
+			}
 		}
 	}
 	return nil

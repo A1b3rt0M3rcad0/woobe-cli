@@ -137,7 +137,13 @@ func Resolve(manifest map[string]any, documents map[string]*Document) (*Graph, e
 		}
 		for _, item := range graph.Components {
 			if item["kind"] == "Tool" {
-				auths = append(auths, Object(Object(Object(item["spec"])["config"])["authentication"]))
+				config := Object(Object(item["spec"])["config"])
+				auths = append(auths, Object(config["authentication"]))
+				for _, raw := range List(config["routes"]) {
+					if auth := Object(raw)["authentication"]; auth != nil {
+						auths = append(auths, Object(auth))
+					}
+				}
 			}
 		}
 		for _, auth := range auths {

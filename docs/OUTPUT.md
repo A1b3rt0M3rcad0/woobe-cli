@@ -18,6 +18,12 @@ Woobe separates the information needed for the next action from the complete API
 response. Presentation never changes the request, authorization, saved credential
 or resource. The CLI keeps full IDs and every returned row.
 
+Typed authentication references remain visible as metadata, including fields
+named `token` or `password`, when they contain only a declared remote key or an
+owner-produced compatibility alias. Literal material and objects with additional
+value fields are redacted. Configuration binding output identifies the selected
+Tool route and its revision without listing unrelated routes by default.
+
 ## Choose a format
 
 | Format | Behavior | Use |
