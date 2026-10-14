@@ -155,6 +155,10 @@ rolls back the Tool write; editing an existing Tool never restores a revoked
 policy. Prefer explicit references and approvals for the intended Environment.
 MCP creation with Secret templates defers discovery; use the explicit connection
 test/preparation after reviewing its destination approval.
+Existing persisted-Tool execution and MCP refresh commands also use the central
+resolver on a supporting backend. Their legacy contracts select Draft; choose the
+configuration preparation command for another Environment. A revoked use grant
+is an authorization failure (exit 4), while a blocked readiness `check` exits 6.
 After separating Environments, an ambiguous old writer receives
 `LEGACY_ENVIRONMENT_REQUIRED`. Configure the intended Environment centrally.
 Schema 2.0 exports contain declarations/references, never local alias authority or

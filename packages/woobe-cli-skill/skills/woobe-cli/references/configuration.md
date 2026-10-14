@@ -73,6 +73,10 @@ three compatibility Environments; failed approval rolls back the Tool write.
 Do not retry with broader credentials just to bypass a denial. Existing revoked
 policies remain revoked after metadata edits. MCP creation with a Secret template
 defers discovery until explicit authorized connection preparation.
+Existing Tool execute and MCP refresh use Draft with those legacy contracts.
+Revoked destination authority is exit 4; blocked metadata readiness is exit 6.
+Use explicit configuration preparation for Staging/Production instead of assuming
+an old refresh command selected the runtime Environment.
 
 Managed edits may explicitly reuse the same existing Provider UUID with a central
 legacy route. Keep that captured identity and review `binding_source` in the
