@@ -119,6 +119,11 @@ Do not broaden an approval to make a changed endpoint pass.
 
 Start a Project-wide review with `woobe project configuration summary --env draft`.
 It reports metadata for current selections, not historical costs or execution
-success. The backend bounds the observation to 50 Agents and 50 Networks;
-`unknown` / incomplete exits 9, blocked exits 6. Follow with an exact target
+success. The default bound is 50 Agents and 50 Networks; set `--limit 1..200` and
+follow `next_cursor` with `--cursor CURSOR` in the same Project and Environment.
+Page counts are not global totals. `has_next` is enumeration; `page_complete`
+and `page_state` describe this page. Even the last ready page exits 9 because it
+cannot qualify earlier pages. Pages observe different times, so do not add shared
+key counts or infer permission from their aggregate. Incomplete exits 9, a complete
+blocked Project exits 6. Follow with an exact target
 `check`; never treat incomplete aggregate counts as permission to execute.

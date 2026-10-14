@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Page Project configuration summaries with bounded `--limit` and scoped `--cursor`, capability negotiation and explicit page evidence. The final page never implies complete Project readiness; update help, docs and the assistant skill.
+
 - Bind HTTP group authentication per stable route ID with capability negotiation and compare-and-swap. Validate route keys in Package 2.0 while keeping the 1.0 catalog unchanged. Preserve closed authentication reference metadata in output so editing never replaces a reference with a redaction marker; values remain masked.
 
 - Add a negotiated, metadata-only Project configuration summary with distinct blocked/incomplete exits and scoped counts; update help and the embedded assistant skill.

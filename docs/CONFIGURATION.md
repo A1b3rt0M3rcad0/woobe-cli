@@ -216,13 +216,24 @@ placeholders in the origin and requests outside the approved destination fail.
 ```sh
 woobe project configuration summary --env draft
 woobe project configuration summary --env production
+woobe project configuration summary --env staging --limit 25
+woobe project configuration summary --env staging --cursor CURSOR
 ```
 
 This metadata-only command reports distinct keys, connections and affected
 Agent/Network targets for the selected Environment's current selections. It does
 not inspect historical Runs or test credentials. Targets without a deployed
-selection are counted separately. The backend bounds the inventory to 50 Agents
-and 50 Networks; a larger or unresolved observation exits 9 with `unknown` and
-`complete: false`. A complete blocked observation exits 6. Use `check` for an
+selection are counted separately. By default the backend inspects up to 50 Agents
+and 50 Networks; `--limit 1..200` sets each owner's page size. Continue with the
+returned `next_cursor` using `--cursor` in the same Project and Environment.
+Counts describe only the inspected page, and shared dependencies can appear on
+different pages. Do not add page counts to infer global totals. The last page's
+`page_state: ready` does not qualify earlier pages: paginated observations always
+exit 9 with `unknown` and `complete: false`. `has_next` indicates another page;
+`page_complete` describes resolved closures within this page. A complete blocked
+observation exits 6. Pages observe different times rather than a shared snapshot.
+Use `check` for an
 exact target/Candidate before execution. An older server without the optional
 `project_summary` capability is rejected before the summary request is sent.
+Explicit pagination also requires `project_summary_pagination`; an older server
+cannot silently ignore the selectors and return a different observation.

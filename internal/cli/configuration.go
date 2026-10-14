@@ -155,17 +155,30 @@ func (a *App) configurationCommands() {
 	test.Flags().StringVar(&testEnvironment, "env", "draft", "Environment whose values and use approvals authorize the external test")
 	test.Example = "woobe project configuration test provider UUID --env staging\nwoobe project configuration test tool UUID --env draft"
 	group.AddCommand(test)
-	var summaryEnvironment string
+	var summaryEnvironment, summaryCursor string
+	var summaryLimit int
 	summary := &cobra.Command{Use: "summary", Short: "Summarize current Agent and Network configuration in one Environment",
-		Long: "Inspect current selections without reading values, running external tests or deploying. The backend reports a bounded Project observation. Incomplete inventories return exit 9; blocked configuration returns exit 6. Use check for an exact target or Candidate.", Args: cobra.NoArgs,
+		Long: "Inspect current selections without reading values, running external tests or deploying. Each page inspects at most --limit Agents and --limit Networks. Follow next_cursor with --cursor. Page counts are not global totals, and the final page does not qualify earlier pages. Partial observations return exit 9; a complete blocked Project returns exit 6. Use check for authoritative evidence for an exact target or Candidate.", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if summaryEnvironment != "draft" && summaryEnvironment != "staging" && summaryEnvironment != "production" {
 				return output.New(2, "Use --env draft, staging or production")
 			}
-			return a.configurationCall(cmd, "GET", "/summary", url.Values{"environment": {summaryEnvironment}}, nil)
+			if summaryLimit < 1 || summaryLimit > 200 || len(summaryCursor) > 1024 {
+				return output.New(2, "Use --limit 1..200 and the next_cursor returned by the same Project and Environment")
+			}
+			query := url.Values{"environment": {summaryEnvironment}}
+			if cmd.Flags().Changed("limit") {
+				query.Set("limit", strconv.Itoa(summaryLimit))
+			}
+			if summaryCursor != "" {
+				query.Set("cursor", summaryCursor)
+			}
+			return a.configurationCall(cmd, "GET", "/summary", query, nil)
 		}}
 	summary.Flags().StringVar(&summaryEnvironment, "env", "draft", "Environment whose current selections are inspected")
-	summary.Example = "woobe project configuration summary --env draft"
+	summary.Flags().IntVar(&summaryLimit, "limit", 50, "Maximum Agents and Networks to inspect per page (1..200)")
+	summary.Flags().StringVar(&summaryCursor, "cursor", "", "Continue with next_cursor from this Project and Environment")
+	summary.Example = "woobe project configuration summary --env draft\nwoobe project configuration summary --env staging --limit 25\nwoobe project configuration summary --env staging --cursor CURSOR"
 	group.AddCommand(summary)
 	var checkEnvironment, version string
 	check := &cobra.Command{Use: "check agent|network|provider|tool UUID", Short: "Check remote configuration for the selected target and Environment",
@@ -235,6 +248,9 @@ func (a *App) configurationCall(cmd *cobra.Command, method, suffix string, query
 	if suffix == "/summary" && capabilities["project_summary"] != true {
 		return output.New(9, "Server does not advertise Project configuration summaries; use check for an exact target")
 	}
+	if suffix == "/summary" && (query.Has("limit") || query.Has("cursor")) && capabilities["project_summary_pagination"] != true {
+		return output.New(9, "Server does not advertise Project summary pagination; upgrade Woobe or check an exact target")
+	}
 	if strings.HasPrefix(suffix, "/tests/") && capabilities["external_validation"] != true {
 		return output.New(9, "Server does not advertise external configuration validation; no external test was requested")
 	}
@@ -287,6 +303,9 @@ func (a *App) configurationCall(cmd *cobra.Command, method, suffix string, query
 		if !validConfigurationSummary(data, query.Get("environment")) {
 			return output.New(9, "Server returned incomplete Project configuration evidence")
 		}
+		if query.Has("cursor") && data["scope"] != "current_selections_page" {
+			return output.New(9, "Server did not return the requested Project summary page")
+		}
 	}
 	if strings.HasPrefix(suffix, "/readiness/") || suffix == "/summary" {
 		switch data["state"] {
@@ -337,7 +356,26 @@ func configurationContainsMaterial(value any) bool {
 
 func validConfigurationSummary(data map[string]any, environment string) bool {
 	complete, ok := data["complete"].(bool)
-	if !ok || data["environment"] != environment || data["scope"] != "current_selections" || (!complete && data["state"] != "unknown") {
+	scope := data["scope"]
+	if !ok || data["environment"] != environment || (scope != "current_selections" && scope != "current_selections_page") || (!complete && data["state"] != "unknown") {
+		return false
+	}
+	if scope == "current_selections_page" {
+		pageComplete, pageOK := data["page_complete"].(bool)
+		hasNext, nextOK := data["has_next"].(bool)
+		cursor, cursorOK := data["next_cursor"].(string)
+		if complete || data["state"] != "unknown" || !pageOK || !nextOK ||
+			(hasNext && (!cursorOK || cursor == "" || len(cursor) > 1024)) ||
+			(!hasNext && data["next_cursor"] != nil) {
+			return false
+		}
+		pageState := data["page_state"]
+		if (pageState != "ready" && pageState != "ready_with_notices" && pageState != "blocked" && pageState != "unknown") ||
+			(!pageComplete && pageState != "unknown") {
+			return false
+		}
+	}
+	if scope == "current_selections" && data["has_next"] == true {
 		return false
 	}
 	for _, name := range []string{"inspected_target_count", "unselected_target_count", "affected_target_count", "blocked_key_count", "missing_key_count", "required_key_count", "affected_consumer_count"} {

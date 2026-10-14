@@ -313,6 +313,58 @@ func TestConfigurationSummaryRejectsInvalidCountsAndCrossEnvironmentReply(t *tes
 	}
 }
 
+func TestConfigurationSummaryPaginationIsExplicitAndNeverQualifiesLastPage(t *testing.T) {
+	for _, advertised := range []bool{false, true} {
+		t.Run(fmt.Sprint(advertised), func(t *testing.T) {
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests++
+				data := map[string]any{"schema_version": "project_configuration.v1", "declaration_without_value": true,
+					"project_summary": true, "project_summary_pagination": advertised}
+				if strings.HasSuffix(r.URL.Path, "/summary") {
+					if r.URL.Query().Get("cursor") != "previous-page" || r.URL.Query().Get("limit") != "2" {
+						t.Error("page selectors not preserved")
+					}
+					data = map[string]any{"scope": "current_selections_page", "environment": "staging", "state": "unknown", "complete": false,
+						"page_state": "ready", "page_complete": true, "has_next": false, "next_cursor": nil,
+						"inspected_target_count": 2, "unselected_target_count": 2, "affected_target_count": 0,
+						"blocked_key_count": 0, "missing_key_count": 0, "required_key_count": 0, "affected_consumer_count": 0}
+				}
+				_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": data})
+			}))
+			defer server.Close()
+			code, result := invoke(t, []string{"project", "configuration", "summary", "--env", "staging", "--cursor", "previous-page", "--limit", "2",
+				"--project", "p", "--api-url", server.URL, "--output", "json"}, "")
+			if code != 9 || (advertised && requests != 2) || (!advertised && requests != 1) {
+				t.Fatal(code, result, requests)
+			}
+		})
+	}
+}
+
+func TestConfigurationSummaryRejectsPagePretendingToBeGlobalEvidence(t *testing.T) {
+	base := map[string]any{"scope": "current_selections_page", "environment": "draft", "state": "unknown", "complete": false,
+		"page_state": "ready", "page_complete": true, "has_next": true, "next_cursor": "next-page",
+		"inspected_target_count": 1, "unselected_target_count": 1, "affected_target_count": 0,
+		"blocked_key_count": 0, "missing_key_count": 0, "required_key_count": 0, "affected_consumer_count": 0}
+	if !validConfigurationSummary(base, "draft") {
+		t.Fatal("valid page rejected")
+	}
+	for _, changed := range []map[string]any{{"state": "ready"}, {"complete": true}, {"next_cursor": nil},
+		{"page_complete": nil}, {"has_next": false}, {"scope": "current_selections"}} {
+		copy := map[string]any{}
+		for key, value := range base {
+			copy[key] = value
+		}
+		for key, value := range changed {
+			copy[key] = value
+		}
+		if validConfigurationSummary(copy, "draft") {
+			t.Fatal("partial observation accepted", changed)
+		}
+	}
+}
+
 func TestConfigurationRouteBindingNegotiatesAndPreservesRouteCAS(t *testing.T) {
 	for _, supported := range []bool{false, true} {
 		t.Run(fmt.Sprint(supported), func(t *testing.T) {
